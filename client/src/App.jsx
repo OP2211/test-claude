@@ -1,19 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { io } from 'socket.io-client';
 import MatchList from './components/MatchList';
 import MatchRoom from './components/MatchRoom';
 import OnboardingModal from './components/OnboardingModal';
 import './App.css';
 
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
+// In production (Vercel) API lives on same origin. In dev, proxy in package.json handles it.
+const API = '';
 
 function generateUserId() {
   return 'user-' + Math.random().toString(36).slice(2, 10);
 }
 
 export default function App() {
-  const [user, setUser] = useState(null); // { userId, username, fanTeamId }
-  const [socket, setSocket] = useState(null);
+  const [user, setUser] = useState(null);
   const [matches, setMatches] = useState([]);
   const [activeMatch, setActiveMatch] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -27,18 +26,10 @@ export default function App() {
     }
   }, []);
 
-  // Connect socket when user is set
-  useEffect(() => {
-    if (!user) return;
-    const s = io(SERVER_URL, { transports: ['websocket', 'polling'] });
-    setSocket(s);
-    return () => s.disconnect();
-  }, [user]);
-
   // Fetch matches
   const fetchMatches = useCallback(async () => {
     try {
-      const res = await fetch(`${SERVER_URL}/api/matches`);
+      const res = await fetch(`${API}/api/matches`);
       const data = await res.json();
       setMatches(data);
     } catch (err) {
@@ -101,11 +92,10 @@ export default function App() {
       </header>
 
       <main className="app-main">
-        {activeMatch && user && socket ? (
+        {activeMatch && user ? (
           <MatchRoom
             match={activeMatch}
             user={user}
-            socket={socket}
             onBack={handleBack}
           />
         ) : (

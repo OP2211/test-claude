@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Pusher from 'pusher-js';
 import ChatPanel from './ChatPanel';
 import TeamSheet from './TeamSheet';
 import Predictions from './Predictions';
 import './MatchRoom.css';
-
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
 
 const TABS = [
   { id: 'predictions', label: '🎯 Predictions', desc: 'Scoreline calls & votes' },
@@ -12,43 +11,64 @@ const TABS = [
   { id: 'banter',      label: '🔥 Banter',      desc: 'Rival fan trash talk' },
 ];
 
-export default function MatchRoom({ match, user, socket, onBack }) {
+export default function MatchRoom({ match, user, onBack }) {
   const [activeTab, setActiveTab] = useState('predictions');
   const [messages, setMessages] = useState({ predictions: [], teamsheet: [], banter: [] });
   const [votes, setVotes] = useState({ home: 0, draw: 0, away: 0 });
   const [userVote, setUserVote] = useState(null);
-  const [onlineCount, setOnlineCount] = useState(1);
   const [notifications, setNotifications] = useState([]);
-  const joinedRef = useRef(false);
+  const pusherRef = useRef(null);
+  const channelRef = useRef(null);
 
-  // Join the match room
+  // Fetch initial data
   useEffect(() => {
-    if (!socket || joinedRef.current) return;
-    joinedRef.current = true;
+    async function init() {
+      try {
+        // Load messages for all three tabs in parallel
+        const [pRes, tRes, bRes, vRes] = await Promise.all([
+          fetch(`/api/messages?matchId=${match.id}&tab=predictions`),
+          fetch(`/api/messages?matchId=${match.id}&tab=teamsheet`),
+          fetch(`/api/messages?matchId=${match.id}&tab=banter`),
+          fetch(`/api/vote?matchId=${match.id}`),
+        ]);
+        const [predictions, teamsheet, banter, tally] = await Promise.all([
+          pRes.json(), tRes.json(), bRes.json(), vRes.json(),
+        ]);
+        setMessages({ predictions, teamsheet, banter });
+        setVotes(tally);
+      } catch (err) {
+        console.error('Failed to load room data', err);
+      }
+    }
+    init();
+  }, [match.id]);
 
-    socket.emit('join_match', {
-      matchId: match.id,
-      userId: user.userId,
-      username: user.username,
-      fanTeamId: user.fanTeamId,
-    });
+  // Subscribe to Pusher channel
+  useEffect(() => {
+    const key = process.env.REACT_APP_PUSHER_KEY;
+    const cluster = process.env.REACT_APP_PUSHER_CLUSTER || 'eu';
 
-    socket.on('room_history', ({ predictions, teamsheet, banter }) => {
-      setMessages({ predictions, teamsheet, banter });
-    });
+    if (!key) {
+      console.warn('REACT_APP_PUSHER_KEY not set — real-time updates disabled');
+      return;
+    }
 
-    socket.on('votes_updated', (tally) => {
-      setVotes(tally);
-    });
+    pusherRef.current = new Pusher(key, { cluster });
+    const channel = pusherRef.current.subscribe(`match-${match.id}`);
+    channelRef.current = channel;
 
-    socket.on('new_message', (msg) => {
+    channel.bind('new-message', (msg) => {
       setMessages(prev => ({
         ...prev,
         [msg.tab]: [...(prev[msg.tab] || []), msg],
       }));
     });
 
-    socket.on('reaction_updated', ({ messageId, reactions }) => {
+    channel.bind('vote-updated', (tally) => {
+      setVotes(tally);
+    });
+
+    channel.bind('reaction-updated', ({ messageId, reactions }) => {
       setMessages(prev => {
         const updated = {};
         for (const tab of ['predictions', 'teamsheet', 'banter']) {
@@ -60,32 +80,15 @@ export default function MatchRoom({ match, user, socket, onBack }) {
       });
     });
 
-    socket.on('online_count', setOnlineCount);
-
-    socket.on('user_joined', ({ username, teamName }) => {
-      if (username !== user.username) {
-        addNotification(`${username} (${teamName}) joined`);
-      }
-    });
-
-    socket.on('user_left', ({ username }) => {
-      if (username !== user.username) {
-        addNotification(`${username} left`);
-      }
+    channel.bind('user-event', ({ text }) => {
+      addNotification(text);
     });
 
     return () => {
-      ['room_history', 'votes_updated', 'new_message', 'reaction_updated',
-       'online_count', 'user_joined', 'user_left'].forEach(e => socket.off(e));
+      channel.unbind_all();
+      pusherRef.current.unsubscribe(`match-${match.id}`);
+      pusherRef.current.disconnect();
     };
-  }, [socket, match.id, user]);
-
-  // Fetch user's existing vote
-  useEffect(() => {
-    fetch(`${SERVER_URL}/api/matches/${match.id}/predictions/votes`)
-      .then(r => r.json())
-      .then(setVotes)
-      .catch(() => {});
   }, [match.id]);
 
   function addNotification(text) {
@@ -94,61 +97,76 @@ export default function MatchRoom({ match, user, socket, onBack }) {
     setTimeout(() => setNotifications(n => n.filter(x => x.id !== id)), 3500);
   }
 
-  const sendMessage = useCallback((text) => {
-    if (!text.trim() || !socket) return;
-    socket.emit('send_message', {
-      matchId: match.id,
-      tab: activeTab,
-      userId: user.userId,
-      username: user.username,
-      fanTeamId: user.fanTeamId,
-      text,
-    });
-  }, [socket, match.id, activeTab, user]);
+  const sendMessage = useCallback(async (text) => {
+    if (!text.trim()) return;
+    try {
+      await fetch('/api/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          matchId: match.id,
+          tab: activeTab,
+          userId: user.userId,
+          username: user.username,
+          fanTeamId: user.fanTeamId,
+          text,
+        }),
+      });
+    } catch (err) {
+      console.error('Send failed', err);
+    }
+  }, [match.id, activeTab, user]);
 
-  const reactToMessage = useCallback((messageId, tab, emoji) => {
-    if (!socket) return;
-    socket.emit('react_message', {
-      matchId: match.id,
-      messageId,
-      tab,
-      emoji,
-      userId: user.userId,
-    });
-  }, [socket, match.id, user.userId]);
+  const reactToMessage = useCallback(async (messageId, tab, emoji) => {
+    try {
+      await fetch('/api/react', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          matchId: match.id,
+          tab,
+          messageId,
+          emoji,
+          userId: user.userId,
+        }),
+      });
+    } catch (err) {
+      console.error('React failed', err);
+    }
+  }, [match.id, user.userId]);
 
   const castVote = useCallback(async (vote) => {
     try {
-      const res = await fetch(`${SERVER_URL}/api/matches/${match.id}/predictions/vote`, {
+      const res = await fetch('/api/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.userId, vote }),
+        body: JSON.stringify({ matchId: match.id, userId: user.userId, vote }),
       });
-      const data = await res.json();
-      setVotes(data);
+      const tally = await res.json();
+      setVotes(tally);
       setUserVote(vote);
-    } catch {}
+    } catch (err) {
+      console.error('Vote failed', err);
+    }
   }, [match.id, user.userId]);
 
   const kickoff = new Date(match.kickoff);
   const isLive = match.status === 'live';
   const kickoffStr = kickoff.toLocaleString('en-GB', {
     weekday: 'short', day: 'numeric', month: 'short',
-    hour: '2-digit', minute: '2-digit'
+    hour: '2-digit', minute: '2-digit',
   });
-
-  const unreadByTab = { predictions: 0, teamsheet: 0, banter: 0 };
 
   return (
     <div className="match-room">
-      {/* Notifications */}
+      {/* Toast notifications */}
       <div className="notifications">
         {notifications.map(n => (
           <div key={n.id} className="notification">{n.text}</div>
         ))}
       </div>
 
-      {/* Room header */}
+      {/* Header */}
       <div className="room-header">
         <button className="back-btn" onClick={onBack}>← All Matches</button>
 
@@ -170,7 +188,6 @@ export default function MatchRoom({ match, user, socket, onBack }) {
             ) : (
               <span className="room-kickoff">⏰ {kickoffStr}</span>
             )}
-            <span className="room-online">👥 {onlineCount} online</span>
           </div>
         </div>
       </div>
