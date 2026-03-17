@@ -1,0 +1,188 @@
+.teamsheet {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Switcher */
+.ts-switcher {
+  display: flex;
+  gap: 8px;
+}
+
+.ts-switch-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+
+.ts-switch-btn.active {
+  border-color: var(--accent-blue);
+  background: rgba(41,121,255,0.1);
+  color: var(--text-primary);
+}
+
+.ts-switch-btn:hover:not(.active) {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+/* Status */
+.ts-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ts-confirmed {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.ts-confirmed.yes { color: var(--accent-green); }
+.ts-confirmed.no  { color: var(--accent-yellow); }
+
+.ts-formation {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+/* Pitch */
+.pitch { width: 100%; }
+
+.pitch-surface {
+  background: linear-gradient(180deg, #1a4a1a 0%, #1e5a1e 50%, #1a4a1a 100%);
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.12);
+  padding: 10px 6px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 200px;
+}
+
+.pitch-halfway {
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%; height: 1px;
+  background: rgba(255,255,255,0.15);
+}
+
+.pitch-center-circle {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px; height: 50px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.12);
+  pointer-events: none;
+}
+
+.pitch-goal {
+  height: 8px;
+  width: 40%;
+  margin: 0 auto;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+}
+
+.home-goal { order: 10; }
+
+.pitch-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.pitch-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.player-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 800; color: #fff;
+  border: 2px solid rgba(255,255,255,0.25);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.player-name-pitch {
+  font-size: 0.58rem; font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  white-space: nowrap;
+  max-width: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.player-pos-pitch {
+  font-size: 0.5rem; font-weight: 800;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+}
+
+/* Squad list */
+.squad-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.squad-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.squad-num {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  width: 16px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.squad-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
