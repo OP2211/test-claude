@@ -1,0 +1,119 @@
+/* ── Overlay ──────────────────────────────────────────────────── */
+.ob-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: flex-end; justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+/* ── Sheet ────────────────────────────────────────────────────── */
+.ob-sheet {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-bottom: none;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 12px 20px calc(24px + var(--safe-bottom));
+  width: 100%; max-width: 480px;
+  max-height: 90vh; max-height: 90dvh;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  animation: slideUp 0.35s var(--ease-out);
+  box-shadow: var(--shadow-4);
+}
+.ob-handle { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); margin: 0 auto 16px; }
+.ob-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,0.06); color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--duration-fast);
+}
+.ob-close:active { transform: scale(0.9); background: rgba(255,255,255,0.1); }
+
+/* ── Progress dots ───────────────────────────────────────────── */
+.ob-progress { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; }
+.ob-progress-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); transition: all var(--duration-normal); }
+.ob-progress-dot.active { background: var(--accent-blue); width: 20px; border-radius: 4px; }
+.ob-progress-dot.done { background: var(--color-success); }
+
+/* ── Steps ────────────────────────────────────────────────────── */
+.ob-step { display: flex; flex-direction: column; gap: 20px; animation: fadeInUp 0.3s var(--ease-out); }
+.ob-hero { text-align: center; padding: 8px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.ob-hero.compact { gap: 6px; }
+.ob-title { font-size: var(--text-xl); font-weight: 900; letter-spacing: -0.5px; color: var(--text-primary); }
+.ob-subtitle { color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.5; max-width: 320px; }
+.ob-back {
+  display: flex; align-items: center; gap: 4px;
+  background: none; color: var(--text-secondary);
+  font-size: var(--text-sm); font-weight: 600;
+  padding: 4px 0; align-self: flex-start; min-height: 32px;
+  transition: color var(--duration-fast);
+}
+.ob-back:active { color: var(--text-primary); }
+
+/* ── Input ────────────────────────────────────────────────────── */
+.ob-field { display: flex; flex-direction: column; gap: 8px; }
+.ob-label { font-size: var(--text-xs); font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+.ob-input-wrap { position: relative; }
+.ob-input {
+  width: 100%; background: var(--bg-primary);
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--text-base); font-weight: 600;
+  padding: 14px 60px 14px 16px;
+  min-height: 52px; transition: border-color 0.2s;
+}
+.ob-input:focus { border-color: var(--accent-blue); }
+.ob-input::placeholder { color: var(--text-dim); font-weight: 400; }
+.ob-char-count { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: var(--text-xs); font-weight: 600; color: var(--text-dim); }
+.ob-error { color: var(--color-live); font-size: var(--text-sm); font-weight: 600; text-align: center; animation: fadeInUp 0.2s var(--ease-out); }
+
+/* ── Team Grid ───────────────────────────────────────────────── */
+.ob-team-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.ob-team-card {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: var(--bg-primary); border: 1.5px solid var(--border);
+  border-radius: var(--radius-md); padding: 14px 8px 10px;
+  text-align: center; transition: all var(--duration-normal) var(--ease-smooth); overflow: hidden;
+}
+.ob-team-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--team-color); opacity: 0; transition: opacity 0.2s;
+}
+.ob-team-card:active { transform: scale(0.97); }
+.ob-team-card.selected { border-color: var(--team-color); background: color-mix(in srgb, var(--team-color) 8%, var(--bg-primary)); }
+.ob-team-card.selected::before { opacity: 1; }
+.ob-team-badge { font-size: 1.5rem; }
+.ob-team-name { font-size: var(--text-xs); font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+.ob-team-league { font-size: 0.6rem; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+.ob-team-check {
+  position: absolute; top: 6px; right: 6px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--team-color); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  animation: scaleIn 0.2s var(--ease-spring);
+}
+
+/* ── Button ───────────────────────────────────────────────────── */
+.ob-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; font-size: var(--text-base); font-weight: 700;
+  padding: 14px; border-radius: var(--radius-md); min-height: 52px;
+  transition: all var(--duration-normal) var(--ease-smooth);
+}
+.ob-btn.primary { background: var(--gradient-brand); color: #060613; }
+.ob-btn.primary:active:not(:disabled) { transform: scale(0.98); opacity: 0.9; }
+.ob-btn.disabled, .ob-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── Desktop ──────────────────────────────────────────────────── */
+@media (min-width: 600px) {
+  .ob-overlay { align-items: center; padding: 16px; }
+  .ob-sheet { border-radius: var(--radius-xl); border-bottom: 1px solid var(--border-light); padding: 24px 32px 32px; animation: scaleIn 0.3s var(--ease-out); }
+  .ob-handle { display: none; }
+  .ob-team-grid { grid-template-columns: repeat(3, 1fr); }
+  .ob-title { font-size: var(--text-2xl); }
+}

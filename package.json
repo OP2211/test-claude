@@ -1,17 +1,27 @@
 {
-  "name": "football-fan-chat",
-  "version": "1.0.0",
-  "description": "Matchday football fan chat app",
+  "name": "matchday-chat",
+  "version": "2.0.0",
+  "description": "MatchDay - Live Football Fan Hub",
   "private": true,
   "scripts": {
-    "dev": "vercel dev",
-    "build": "cd client && npm install && npm run build",
-    "install:all": "npm install --prefix api && npm install --prefix client",
-    "dev:legacy": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:server": "npm run dev --prefix server",
-    "dev:client": "npm start --prefix client"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^14.2.0",
+    "pusher": "^5.2.0",
+    "pusher-js": "^8.3.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "concurrently": "^8.2.0"
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^9.0.8",
+    "typescript": "^6.0.2"
   }
 }
