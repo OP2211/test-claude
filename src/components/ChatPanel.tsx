@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
 import type { Message, User } from '@/lib/types';
 import './ChatPanel.css';
 
@@ -78,7 +77,8 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
               {!isOwn && (
                 <div className="cp-msg-avatar" style={{ background: color }}>
                   {msg.image ? (
-                    <Image src={msg.image} alt="Profile picture" width={32} height={32} />
+                    // eslint-disable-next-line @next/next/no-img-element -- OAuth avatars use many domains; next/image would error without listing every host
+                    <img src={msg.image} alt="" width={32} height={32} />
                   ) : (
                     msg.username?.[0]?.toUpperCase()
                   )}
@@ -148,7 +148,8 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
         <div className="cp-input-wrap">
           <div className="cp-input-avatar" style={{ background: teamColor(user.fanTeamId) }}>
             {user.image ? (
-              <Image src={user.image} alt="Profile picture" width={26} height={26} />
+              // eslint-disable-next-line @next/next/no-img-element -- OAuth avatars use many domains
+              <img src={user.image} alt="" width={26} height={26} />
             ) : (
               user.username?.[0]?.toUpperCase()
             )}

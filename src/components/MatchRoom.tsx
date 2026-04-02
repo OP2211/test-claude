@@ -61,6 +61,35 @@ interface Notification {
   text: string;
 }
 
+const TAB_IDS: TabId[] = ['predictions', 'teamsheet', 'banter'];
+
+function isTabId(v: unknown): v is TabId {
+  return typeof v === 'string' && (TAB_IDS as readonly string[]).includes(v);
+}
+
+/** Normalize Pusher payload (sometimes stringified or partial). */
+function parseIncomingMessage(raw: unknown): Message | null {
+  try {
+    const o = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (!o || typeof o !== 'object') return null;
+    const m = o as Partial<Message>;
+    if (typeof m.id !== 'string' || !isTabId(m.tab)) return null;
+    return {
+      id: m.id,
+      userId: typeof m.userId === 'string' ? m.userId : '',
+      username: typeof m.username === 'string' ? m.username : '',
+      fanTeamId: m.fanTeamId ?? null,
+      image: typeof m.image === 'string' ? m.image : undefined,
+      tab: m.tab,
+      text: typeof m.text === 'string' ? m.text : '',
+      timestamp: typeof m.timestamp === 'string' ? m.timestamp : new Date().toISOString(),
+      reactions: m.reactions && typeof m.reactions === 'object' ? m.reactions : {},
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
   const [activeTab, setActiveTab] = useState<TabId>('predictions');
   const [messages, setMessages] = useState<MessagesByTab>({ predictions: [], teamsheet: [], banter: [] });
@@ -70,11 +99,13 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
   const pusherRef = useRef<Pusher | null>(null);
 
   const upsertMessage = useCallback((msg: Message) => {
+    if (!isTabId(msg.tab)) return;
     setMessages(prev => {
-      const tab = msg.tab as keyof MessagesByTab;
+      const tab = msg.tab;
       const existing = prev[tab] || [];
       if (existing.some(m => m.id === msg.id)) return prev;
-      return { ...prev, [tab]: [...existing, msg] };
+      const normalized: Message = { ...msg, reactions: msg.reactions || {} };
+      return { ...prev, [tab]: [...existing, normalized] };
     });
   }, []);
 
@@ -109,8 +140,9 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
     pusherRef.current = new Pusher(key, { cluster });
     const channel = pusherRef.current.subscribe(`match-${match.id}`);
 
-    channel.bind('new-message', (msg: Message) => {
-      upsertMessage(msg);
+    channel.bind('new-message', (raw: unknown) => {
+      const msg = parseIncomingMessage(raw);
+      if (msg) upsertMessage(msg);
     });
 
     channel.bind('vote-updated', (tally: VoteTally) => setVotes(tally));
