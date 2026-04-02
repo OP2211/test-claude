@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import { openGoogleSignInPopup } from '@/lib/google-signin-popup';
 import MatchList from '@/components/MatchList';
 import MatchRoom from '@/components/MatchRoom';
 import OnboardingModal from '@/components/OnboardingModal';
@@ -20,7 +21,7 @@ function generateUserId(): string {
 }
 
 export default function Home() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus, update: updateSession } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [activeMatch, setActiveMatch] = useState<Match | null>(null);
@@ -129,6 +130,8 @@ export default function Home() {
           onInstall: handleInstall,
           user,
           onSignOut: handleSignOut,
+          showGoogleSignIn: sessionStatus === 'unauthenticated',
+          onSignInWithGoogle: () => void openGoogleSignInPopup(() => updateSession()),
         }}
       />
 

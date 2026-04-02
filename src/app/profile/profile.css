@@ -143,6 +143,12 @@
   padding: 18px;
   box-shadow: var(--shadow-2);
 }
+.profile-status-msg {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  padding: 24px 0;
+}
+
 .profile-empty p { color: var(--text-secondary); }
 .profile-empty a {
   display: inline-flex;
