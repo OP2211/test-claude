@@ -20,20 +20,23 @@
 /* ── Header ───────────────────────────────────────────────────── */
 .mr-header {
   display: flex; align-items: center; gap: 8px;
-  padding: 10px 12px; border-bottom: 1px solid var(--border);
-  flex-shrink: 0; background: var(--bg-primary);
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent), var(--bg-primary);
 }
 .mr-back {
   width: 36px; height: 36px; border-radius: 50%;
-  background: rgba(255,255,255,0.05); color: var(--text-secondary);
+  background: rgba(255,255,255,0.045); color: rgba(255,255,255,0.78);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; transition: all var(--duration-fast);
 }
-.mr-back:active { transform: scale(0.9); background: rgba(255,255,255,0.08); }
+.mr-back:hover { background: rgba(255,255,255,0.065); }
+.mr-back:active { transform: scale(0.96); background: rgba(255,255,255,0.08); }
 .mr-match-strip { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 .mr-strip-badge { font-size: 1.2rem; flex-shrink: 0; }
 .mr-strip-info { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; text-align: center; }
-.mr-strip-teams { font-size: var(--text-sm); font-weight: 800; color: var(--text-primary); letter-spacing: -0.3px; }
+.mr-strip-teams { font-size: var(--text-sm); font-weight: 760; color: rgba(255,255,255,0.92); letter-spacing: -0.25px; }
 .mr-strip-meta { font-size: var(--text-xs); color: var(--text-dim); font-weight: 600; }
 .mr-strip-live { display: inline-flex; align-items: center; gap: 4px; color: var(--color-live); font-weight: 800; letter-spacing: 0.5px; }
 .mr-strip-live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-live); animation: livePulse 1.5s infinite; }
@@ -42,18 +45,21 @@
 .mr-tabs { padding: 8px 12px 0; flex-shrink: 0; }
 .mr-tabs-inner {
   display: flex; gap: 2px;
-  background: var(--bg-surface); border: 1px solid var(--border);
-  border-radius: var(--radius-md); padding: 3px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px;
+  padding: 3px;
 }
 .mr-tab {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
-  padding: 8px 6px; border-radius: calc(var(--radius-md) - 3px);
+  padding: 9px 10px;
+  border-radius: 999px;
   background: transparent; color: var(--text-dim);
   font-size: var(--text-xs); font-weight: 600;
   transition: all var(--duration-normal) var(--ease-smooth);
   min-height: 40px; position: relative;
 }
-.mr-tab.active { background: var(--bg-elevated); color: var(--text-primary); box-shadow: var(--shadow-1); }
+.mr-tab.active { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.92); box-shadow: 0 0 0 1px rgba(255,255,255,0.06) inset; }
 .mr-tab:active:not(.active) { background: rgba(255,255,255,0.03); }
 .mr-tab-label { display: none; }
 .mr-tab-badge {
@@ -62,7 +68,7 @@
   background: rgba(255,255,255,0.06); color: var(--text-muted);
   display: flex; align-items: center; justify-content: center;
 }
-.mr-tab.active .mr-tab-badge { background: rgba(77,141,255,0.2); color: var(--accent-blue); }
+.mr-tab.active .mr-tab-badge { background: rgba(59,130,246,0.20); color: rgba(255,255,255,0.90); }
 
 /* ── Content ──────────────────────────────────────────────────── */
 .mr-content { flex: 1; overflow: hidden; padding: 10px 12px 0; }
