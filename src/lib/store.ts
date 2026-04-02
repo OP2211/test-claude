@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getMatch } from './data';
-import type { Message, TabId, VoteChoice, VoteTally, Reactions } from './types';
+import type { Message, TabId, TeamId, VoteChoice, VoteTally, Reactions } from './types';
 
 type Room = Record<TabId, Message[]>;
 
@@ -23,7 +23,7 @@ interface AddMessageParams {
   tab: TabId;
   userId: string;
   username: string;
-  fanTeamId: string | null;
+  fanTeamId: TeamId | null;
   image?: string;
   text: string;
 }

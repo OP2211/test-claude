@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@next/third-parties": "^16.2.2",
     "next": "^14.2.0",
     "next-auth": "^4.24.13",
     "pusher": "^5.2.0",

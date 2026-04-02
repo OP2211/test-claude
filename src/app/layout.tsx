@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { GoogleTagManager } from '@next/third-parties/google';
 import { Inter, Instrument_Sans, Instrument_Serif } from 'next/font/google';
 import './globals.css';
 
@@ -57,6 +58,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body>
+        {process.env.NEXT_PUBLIC_GTM_ID ? (
+          <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID} />
+        ) : null}
         <AuthContext>{children}</AuthContext>
         <script
           dangerouslySetInnerHTML={{

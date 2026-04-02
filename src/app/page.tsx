@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import Link from 'next/link';
-import Image from 'next/image';
 import MatchList from '@/components/MatchList';
 import MatchRoom from '@/components/MatchRoom';
 import OnboardingModal from '@/components/OnboardingModal';
-import Logo from '@/components/Logo';
+import AppHeader from '@/components/AppHeader';
+import SiteFooter from '@/components/SiteFooter';
 import type { Match, User, TeamId } from '@/lib/types';
 import './page.css';
 
@@ -112,49 +111,26 @@ export default function Home() {
 
   const isInRoom = activeMatch && user;
 
+  const handleSignOut = () => {
+    localStorage.removeItem('ffc_user');
+    setUser(null);
+    setActiveMatch(null);
+    signOut();
+  };
+
   return (
     <div className="app">
-      <header className={`app-header ${isInRoom ? 'in-room' : ''}`}>
-        <div className="app-header-inner">
-          <button className="logo-btn" onClick={handleBack}>
-            <Logo size={30} />
-            <span className="logo-text">FanGround</span>
-          </button>
-          <div className="header-right">
-            {installPrompt && (
-              <button className="install-btn" onClick={handleInstall}>
-                <span className="install-icon">+</span>
-                Install
-              </button>
-            )}
-            {user && (
-              <>
-                <Link href="/profile">
-                  <button className="user-avatar-btn" aria-label="Open profile">
-                    {user.image ? (
-                      <Image src={user.image} alt="Profile picture" width={32} height={32} />
-                    ) : (
-                      <span className="user-avatar-letter">{user.username?.[0]?.toUpperCase()}</span>
-                    )}
-                  </button>
-                </Link>
-                <button
-                  className="logout-btn"
-                  onClick={() => {
-                    localStorage.removeItem('ffc_user');
-                    setUser(null);
-                    setActiveMatch(null);
-                    signOut();
-                  }}
-                  aria-label="Log out"
-                >
-                  Log out
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <AppHeader
+        variant="home"
+        onLogoClick={handleBack}
+        inRoom={!!isInRoom}
+        homeActions={{
+          installPrompt: !!installPrompt,
+          onInstall: handleInstall,
+          user,
+          onSignOut: handleSignOut,
+        }}
+      />
 
       <main className="app-main">
         {isInRoom ? (
@@ -168,6 +144,8 @@ export default function Home() {
           />
         )}
       </main>
+
+      <SiteFooter />
 
       {showOnboarding && (
         <OnboardingModal

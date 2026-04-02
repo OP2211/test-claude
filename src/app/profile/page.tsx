@@ -3,7 +3,8 @@
 import { useSession, signOut } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import Logo from '@/components/Logo';
+import AppHeader from '@/components/AppHeader';
+import SiteFooter from '@/components/SiteFooter';
 import '../page.css';
 import './profile.css';
 
@@ -13,15 +14,7 @@ export default function Profile() {
   if (!session) {
     return (
       <div className="app">
-        <header className="app-header">
-          <div className="app-header-inner">
-            <Link className="logo-btn" href="/" aria-label="Back to matches">
-              <Logo size={30} />
-              <span className="logo-text">FanGround</span>
-            </Link>
-            <div className="header-right" />
-          </div>
-        </header>
+        <AppHeader variant="simple" />
 
         <main className="app-main">
           <div className="ml-page">
@@ -40,6 +33,8 @@ export default function Profile() {
             </div>
           </div>
         </main>
+
+        <SiteFooter />
       </div>
     );
   }
@@ -50,19 +45,7 @@ export default function Profile() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <div className="app-header-inner">
-          <Link className="logo-btn" href="/" aria-label="Back to matches">
-            <Logo size={30} />
-            <span className="logo-text">FanGround</span>
-          </Link>
-          <div className="header-right">
-            <button className="logout-btn" onClick={() => signOut()} aria-label="Log out">
-              Log out
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader variant="profile" onProfileSignOut={() => signOut()} />
 
       <main className="app-main">
         <div className="ml-page">
@@ -105,6 +88,8 @@ export default function Profile() {
           </div>
         </div>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }
