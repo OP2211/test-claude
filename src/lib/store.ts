@@ -1,11 +1,21 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getMatch } from './data';
-import type { Message, TabId, TeamId, VoteChoice, VoteTally, Reactions } from './types';
+import type { Message, TabId, TeamId, VoteChoice, VoteTally, VoteSnapshot, VoteVoter, VoteHistoryPoint, Reactions } from './types';
 
 type Room = Record<TabId, Message[]>;
 
 const _messages: Record<string, Room> = {};
-const _votes: Record<string, Record<string, VoteChoice>> = {};
+interface StoredVote {
+  vote: VoteChoice;
+  username: string;
+  image?: string;
+  fanTeamId: TeamId | null;
+}
+
+const _votes: Record<string, Record<string, StoredVote>> = {};
+const _voteHistory: Record<string, VoteHistoryPoint[]> = {};
+
+const MAX_VOTE_HISTORY = 200;
 
 function getRoom(matchId: string): Room {
   if (!_messages[matchId]) {
@@ -62,18 +72,65 @@ export function toggleReaction(matchId: string, tab: TabId, messageId: string, e
   return msg.reactions;
 }
 
-export function castVote(matchId: string, userId: string, vote: VoteChoice): VoteTally {
+export interface CastVoteMeta {
+  username: string;
+  image?: string;
+  fanTeamId?: TeamId | null;
+}
+
+function computeVoteState(matchId: string): { tally: VoteTally; byChoice: Record<VoteChoice, VoteVoter[]> } {
+  const byChoice: Record<VoteChoice, VoteVoter[]> = { home: [], draw: [], away: [] };
+  for (const [uid, rec] of Object.entries(_votes[matchId] || {})) {
+    byChoice[rec.vote].push({
+      userId: uid,
+      username: rec.username,
+      image: rec.image,
+      fanTeamId: rec.fanTeamId ?? null,
+    });
+  }
+  return {
+    tally: {
+      home: byChoice.home.length,
+      draw: byChoice.draw.length,
+      away: byChoice.away.length,
+    },
+    byChoice,
+  };
+}
+
+function snapshotHistory(matchId: string): VoteHistoryPoint[] {
+  return [...(_voteHistory[matchId] || [])];
+}
+
+export function castVote(matchId: string, userId: string, vote: VoteChoice, meta: CastVoteMeta): VoteSnapshot {
   if (!_votes[matchId]) _votes[matchId] = {};
-  _votes[matchId][userId] = vote;
-  return getVoteTally(matchId);
+  const prev = _votes[matchId][userId];
+  const name = meta.username.trim().slice(0, 64) || prev?.username || 'Fan';
+  _votes[matchId][userId] = {
+    vote,
+    username: name,
+    image: meta.image || prev?.image,
+    fanTeamId: meta.fanTeamId !== undefined ? meta.fanTeamId : (prev?.fanTeamId ?? null),
+  };
+  const base = computeVoteState(matchId);
+  if (!_voteHistory[matchId]) _voteHistory[matchId] = [];
+  _voteHistory[matchId].push({
+    at: new Date().toISOString(),
+    tally: { ...base.tally },
+  });
+  if (_voteHistory[matchId].length > MAX_VOTE_HISTORY) {
+    _voteHistory[matchId] = _voteHistory[matchId].slice(-MAX_VOTE_HISTORY);
+  }
+  return { ...base, history: snapshotHistory(matchId) };
+}
+
+export function getVoteSnapshot(matchId: string): VoteSnapshot {
+  const base = computeVoteState(matchId);
+  return { ...base, history: snapshotHistory(matchId) };
 }
 
 export function getVoteTally(matchId: string): VoteTally {
-  const tally: VoteTally = { home: 0, draw: 0, away: 0 };
-  Object.values(_votes[matchId] || {}).forEach(v => {
-    if (v in tally) tally[v]++;
-  });
-  return tally;
+  return getVoteSnapshot(matchId).tally;
 }
 
 function seedMessages(matchId: string): void {

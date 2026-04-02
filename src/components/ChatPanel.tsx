@@ -26,9 +26,11 @@ interface ChatPanelProps {
   onReact: (messageId: string, emoji: string) => void;
   placeholder?: string;
   fullHeight?: boolean;
+  /** Denser bubbles and spacing — fits more messages on screen */
+  compact?: boolean;
 }
 
-export default function ChatPanel({ messages, user, onSendMessage, onReact, placeholder, fullHeight }: ChatPanelProps) {
+export default function ChatPanel({ messages, user, onSendMessage, onReact, placeholder, fullHeight, compact }: ChatPanelProps) {
   const [input, setInput] = useState<string>('');
   const [showEmojiFor, setShowEmojiFor] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -53,7 +55,7 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
   };
 
   return (
-    <div className={`cp ${fullHeight ? 'cp-full' : ''}`} onClick={() => setShowEmojiFor(null)}>
+    <div className={`cp ${fullHeight ? 'cp-full' : ''} ${compact ? 'cp-compact' : ''}`} onClick={() => setShowEmojiFor(null)}>
 
       {/* Messages */}
       <div className="cp-messages">
@@ -78,7 +80,7 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
                 <div className="cp-msg-avatar" style={{ background: color }}>
                   {msg.image ? (
                     // eslint-disable-next-line @next/next/no-img-element -- OAuth avatars use many domains; next/image would error without listing every host
-                    <img src={msg.image} alt="" width={32} height={32} />
+                    <img src={msg.image} alt="" width={compact ? 24 : 32} height={compact ? 24 : 32} />
                   ) : (
                     msg.username?.[0]?.toUpperCase()
                   )}
@@ -149,7 +151,7 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
           <div className="cp-input-avatar" style={{ background: teamColor(user.fanTeamId) }}>
             {user.image ? (
               // eslint-disable-next-line @next/next/no-img-element -- OAuth avatars use many domains
-              <img src={user.image} alt="" width={26} height={26} />
+              <img src={user.image} alt="" width={compact ? 22 : 26} height={compact ? 22 : 26} />
             ) : (
               user.username?.[0]?.toUpperCase()
             )}

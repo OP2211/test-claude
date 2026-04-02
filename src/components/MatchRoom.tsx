@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Pusher from 'pusher-js';
-import type { Match, User, Message, VoteTally, VoteChoice, TabId, Reactions } from '@/lib/types';
+import type { Match, User, Message, VoteTally, VoteChoice, VoteVoter, VoteHistoryPoint, TabId, Reactions, TeamId } from '@/lib/types';
 import ChatPanel from './ChatPanel';
 import TeamSheet from './TeamSheet';
-import Predictions from './Predictions';
+import VotePicker from './VotePicker';
 import './MatchRoom.css';
 
 interface TabDef {
@@ -57,8 +57,120 @@ interface MessagesByTab {
 }
 
 interface Notification {
-  id: number;
+  id: string;
   text: string;
+  kind?: 'prediction';
+}
+
+const VOTE_CHOICES: readonly VoteChoice[] = ['home', 'draw', 'away'];
+
+function isVoteChoice(v: unknown): v is VoteChoice {
+  return typeof v === 'string' && (VOTE_CHOICES as readonly string[]).includes(v);
+}
+
+function emptyVoteByChoice(): Record<VoteChoice, VoteVoter[]> {
+  return { home: [], draw: [], away: [] };
+}
+
+function parseVoteByChoice(raw: unknown): Record<VoteChoice, VoteVoter[]> | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const o = raw as Record<string, unknown>;
+  const out: Record<VoteChoice, VoteVoter[]> = { home: [], draw: [], away: [] };
+  for (const k of VOTE_CHOICES) {
+    const arr = o[k];
+    if (!Array.isArray(arr)) return undefined;
+    const voters: VoteVoter[] = [];
+    for (const item of arr) {
+      if (!item || typeof item !== 'object') continue;
+      const v = item as Record<string, unknown>;
+      if (typeof v.userId !== 'string' || typeof v.username !== 'string') continue;
+      const fid = v.fanTeamId;
+      voters.push({
+        userId: v.userId,
+        username: v.username,
+        image: typeof v.image === 'string' ? v.image : undefined,
+        fanTeamId:
+          fid === null || fid === undefined || fid === ''
+            ? null
+            : (fid as TeamId),
+      });
+    }
+    out[k] = voters;
+  }
+  return out;
+}
+
+function parseVoteHistory(raw: unknown): VoteHistoryPoint[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out: VoteHistoryPoint[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    if (typeof o.at !== 'string' || !o.tally || typeof o.tally !== 'object') continue;
+    const t = o.tally as Record<string, unknown>;
+    if (typeof t.home !== 'number' || typeof t.draw !== 'number' || typeof t.away !== 'number') continue;
+    out.push({
+      at: o.at,
+      tally: { home: t.home, draw: t.draw, away: t.away },
+    });
+  }
+  return out;
+}
+
+/** Pusher: tally + optional byChoice + history + toast meta; or legacy tally-only. */
+function parseVoteUpdated(raw: unknown): {
+  tally: VoteTally;
+  byChoice?: Record<VoteChoice, VoteVoter[]>;
+  history?: VoteHistoryPoint[];
+  meta?: { userId: string; username: string; vote: VoteChoice };
+} {
+  const empty: VoteTally = { home: 0, draw: 0, away: 0 };
+  if (!raw || typeof raw !== 'object') return { tally: empty };
+  const o = raw as Record<string, unknown>;
+  if (o.tally && typeof o.tally === 'object' && o.tally !== null) {
+    const t = o.tally as Record<string, unknown>;
+    if (typeof t.home === 'number' && typeof t.draw === 'number' && typeof t.away === 'number') {
+      const tally = o.tally as VoteTally;
+      const byChoice = parseVoteByChoice(o.byChoice);
+      const history = parseVoteHistory(o.history);
+      const meta =
+        typeof o.userId === 'string' &&
+        typeof o.username === 'string' &&
+        isVoteChoice(o.vote)
+          ? { userId: o.userId, username: o.username, vote: o.vote }
+          : undefined;
+      return { tally, byChoice: byChoice ?? undefined, history: history ?? undefined, meta };
+    }
+  }
+  if (typeof o.home === 'number' && typeof o.draw === 'number' && typeof o.away === 'number') {
+    return { tally: raw as VoteTally };
+  }
+  return { tally: empty };
+}
+
+function predictionDisplayName(username: string): string {
+  const t = username.trim();
+  if (!t) return 'Someone';
+  return t.length > 22 ? `${t.slice(0, 20)}…` : t;
+}
+
+/** Short, matchday-style copy for vote toasts */
+function formatPredictionToast(
+  vote: VoteChoice,
+  m: Match,
+  opts: { self: true } | { self: false; username: string }
+): string {
+  const home = m.homeTeam.shortName;
+  const away = m.awayTeam.shortName;
+  if (opts.self) {
+    if (vote === 'home') return `You're backing ${home}.`;
+    if (vote === 'away') return `You're backing ${away}.`;
+    return `You're backing the draw.`;
+  }
+  const who = predictionDisplayName(opts.username);
+  if (vote === 'home') return `${who} backs ${home}.`;
+  if (vote === 'away') return `${who} backs ${away}.`;
+  return `${who} backs the draw.`;
 }
 
 const TAB_IDS: TabId[] = ['predictions', 'teamsheet', 'banter'];
@@ -92,11 +204,32 @@ function parseIncomingMessage(raw: unknown): Message | null {
 
 export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
   const [activeTab, setActiveTab] = useState<TabId>('predictions');
+  const [menuOpen, setMenuOpen] = useState(false);
   const [messages, setMessages] = useState<MessagesByTab>({ predictions: [], teamsheet: [], banter: [] });
   const [votes, setVotes] = useState<VoteTally>({ home: 0, draw: 0, away: 0 });
+  const [voteByChoice, setVoteByChoice] = useState<Record<VoteChoice, VoteVoter[]>>(emptyVoteByChoice);
+  const [voteHistory, setVoteHistory] = useState<VoteHistoryPoint[]>([]);
   const [userVote, setUserVote] = useState<VoteChoice | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isDesktop, setIsDesktop] = useState(false);
   const pusherRef = useRef<Pusher | null>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const matchRef = useRef(match);
+  const userRef = useRef(user);
+  matchRef.current = match;
+  userRef.current = user;
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
+  useEffect(() => {
+    if (isDesktop) setMenuOpen(false);
+  }, [isDesktop]);
 
   const upsertMessage = useCallback((msg: Message) => {
     if (!isTabId(msg.tab)) return;
@@ -109,6 +242,12 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
     });
   }, []);
 
+  const addNotification = useCallback((text: string, kind?: 'prediction') => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+    setNotifications(n => [...n, { id, text, kind }]);
+    setTimeout(() => setNotifications(n => n.filter(x => x.id !== id)), 4200);
+  }, []);
+
   // Fetch initial data
   useEffect(() => {
     async function init() {
@@ -119,11 +258,28 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
           fetch(`/api/messages?matchId=${match.id}&tab=banter`),
           fetch(`/api/vote?matchId=${match.id}`),
         ]);
-        const [predictions, teamsheet, banter, tally]: [Message[], Message[], Message[], VoteTally] = await Promise.all([
-          pRes.json(), tRes.json(), bRes.json(), vRes.json(),
-        ]);
+        const [predictions, teamsheet, banter, votePayload]: [
+          Message[],
+          Message[],
+          Message[],
+          | VoteTally
+          | { tally: VoteTally; byChoice: Record<VoteChoice, VoteVoter[]>; history?: VoteHistoryPoint[] },
+        ] = await Promise.all([pRes.json(), tRes.json(), bRes.json(), vRes.json()]);
         setMessages({ predictions, teamsheet, banter });
-        setVotes(tally);
+        if (votePayload && typeof votePayload === 'object' && 'byChoice' in votePayload && 'tally' in votePayload) {
+          const snap = votePayload as {
+            tally: VoteTally;
+            byChoice: Record<VoteChoice, VoteVoter[]>;
+            history?: VoteHistoryPoint[];
+          };
+          setVotes(snap.tally);
+          setVoteByChoice(snap.byChoice);
+          setVoteHistory(Array.isArray(snap.history) ? snap.history : []);
+        } else {
+          setVotes(votePayload as VoteTally);
+          setVoteByChoice(emptyVoteByChoice());
+          setVoteHistory([]);
+        }
       } catch (err) {
         console.error('Failed to load room data', err);
       }
@@ -145,7 +301,21 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
       if (msg) upsertMessage(msg);
     });
 
-    channel.bind('vote-updated', (tally: VoteTally) => setVotes(tally));
+    channel.bind('vote-updated', (raw: unknown) => {
+      const { tally, byChoice, history, meta } = parseVoteUpdated(raw);
+      setVotes(tally);
+      if (byChoice) setVoteByChoice(byChoice);
+      if (history) setVoteHistory(history);
+      if (meta) {
+        const m = matchRef.current;
+        const u = userRef.current;
+        const line =
+          meta.userId === u.userId
+            ? formatPredictionToast(meta.vote, m, { self: true })
+            : formatPredictionToast(meta.vote, m, { self: false, username: meta.username });
+        addNotification(line, 'prediction');
+      }
+    });
 
     channel.bind('reaction-updated', ({ messageId, reactions }: { messageId: string; reactions: Reactions }) => {
       setMessages(prev => {
@@ -166,13 +336,7 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
       pusherRef.current?.unsubscribe(`match-${match.id}`);
       pusherRef.current?.disconnect();
     };
-  }, [match.id, upsertMessage]);
-
-  function addNotification(text: string): void {
-    const id = Date.now();
-    setNotifications(n => [...n, { id, text }]);
-    setTimeout(() => setNotifications(n => n.filter(x => x.id !== id)), 3500);
-  }
+  }, [match.id, upsertMessage, addNotification]);
 
   const sendMessage = useCallback(async (text: string): Promise<void> => {
     if (!text.trim()) return;
@@ -225,26 +389,76 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
       const res = await fetch('/api/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchId: match.id, userId: user.userId, vote }),
+        body: JSON.stringify({
+          matchId: match.id,
+          userId: user.userId,
+          vote,
+          username: user.username?.trim() || 'Fan',
+          image: user.image,
+          fanTeamId: user.fanTeamId,
+        }),
       });
-      const tally: VoteTally = await res.json();
-      setVotes(tally);
+      const data = await res.json();
+      if (data && typeof data === 'object' && 'byChoice' in data && data.tally) {
+        const snap = data as {
+          tally: VoteTally;
+          byChoice: Record<VoteChoice, VoteVoter[]>;
+          history?: VoteHistoryPoint[];
+        };
+        setVotes(snap.tally);
+        setVoteByChoice(snap.byChoice);
+        if (Array.isArray(snap.history)) setVoteHistory(snap.history);
+      } else {
+        setVotes(data as VoteTally);
+      }
       setUserVote(vote);
+      if (!process.env.NEXT_PUBLIC_PUSHER_KEY) {
+        addNotification(formatPredictionToast(vote, match, { self: true }), 'prediction');
+      }
     } catch (err) {
       console.error('Vote failed', err);
     }
-  }, [match.id, user.userId]);
+  }, [match.id, user.userId, user.username, match, addNotification]);
 
   const isLive = match.status === 'live';
   const kickoff = new Date(match.kickoff);
   const kickoffStr = kickoff.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+  const selectTab = useCallback((id: TabId) => {
+    setActiveTab(id);
+    setMenuOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const id = requestAnimationFrame(() => {
+      drawerRef.current?.querySelector<HTMLElement>('.mr-drawer-close')?.focus();
+    });
+    return () => {
+      cancelAnimationFrame(id);
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [menuOpen]);
 
   return (
     <div className="mr-room">
       {/* Notifications */}
       <div className="mr-toasts">
         {notifications.map(n => (
-          <div key={n.id} className="mr-toast">{n.text}</div>
+          <div
+            key={n.id}
+            className={`mr-toast ${n.kind === 'prediction' ? 'mr-toast--prediction' : ''}`}
+            role="status"
+          >
+            {n.text}
+          </div>
         ))}
       </div>
 
@@ -275,44 +489,160 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
           </div>
           <span className="mr-strip-badge">{match.awayTeam.badge}</span>
         </div>
+
+        <button
+          type="button"
+          className="mr-menu"
+          onClick={() => setMenuOpen(true)}
+          aria-expanded={menuOpen}
+          aria-haspopup="dialog"
+          aria-label="Open room menu"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="4" y1="6" x2="20" y2="6" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="18" x2="20" y2="18" />
+          </svg>
+        </button>
       </div>
 
-      {/* Tab bar - iOS style segmented control */}
-      <div className="mr-tabs">
-        <div className="mr-tabs-inner">
+      {/* Desktop: visible tabs (mobile uses drawer) */}
+      <nav className="mr-desktop-tabs" aria-label="Room sections">
+        <div className="mr-desktop-tabs-inner">
           {TABS.map(tab => {
             const count = messages[tab.id]?.length || 0;
+            const active = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
-                className={`mr-tab ${activeTab === tab.id ? 'active' : ''}`}
+                type="button"
+                className={`mr-dtab ${active ? 'active' : ''}`}
                 onClick={() => setActiveTab(tab.id)}
+                aria-current={active ? 'page' : undefined}
               >
-                <TabIcon type={tab.icon} active={activeTab === tab.id} />
-                <span className="mr-tab-label">{tab.label}</span>
+                <span className="mr-dtab-icon" aria-hidden>
+                  <TabIcon type={tab.icon} active={active} />
+                </span>
+                <span className="mr-dtab-label">{tab.label}</span>
                 {count > 0 && (
-                  <span className="mr-tab-badge">{count > 99 ? '99+' : count}</span>
+                  <span className="mr-dtab-badge">{count > 99 ? '99+' : count}</span>
                 )}
               </button>
             );
           })}
         </div>
-      </div>
+      </nav>
+
+      {/* Drawer: mobile room menu */}
+      {menuOpen && !isDesktop && (
+        <div
+          ref={drawerRef}
+          id="mr-room-drawer"
+          className="mr-drawer-root"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Room menu"
+        >
+          <div
+            className="mr-drawer-backdrop"
+            role="presentation"
+            onClick={() => setMenuOpen(false)}
+          />
+          <nav className="mr-drawer-panel" aria-label="Room sections">
+            <div className="mr-drawer-head">
+              <span className="mr-drawer-title">Room</span>
+              <button
+                type="button"
+                className="mr-drawer-close"
+                onClick={() => setMenuOpen(false)}
+                aria-label="Close menu"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <p className="mr-drawer-match">
+              {match.homeTeam.shortName} vs {match.awayTeam.shortName}
+            </p>
+            <div className="mr-drawer-body">
+              {(!isDesktop || activeTab !== 'predictions') && (
+                <VotePicker
+                  match={match}
+                  votes={votes}
+                  votersByChoice={voteByChoice}
+                  voteHistory={voteHistory}
+                  userVote={userVote}
+                  onVote={castVote}
+                />
+              )}
+              <p className="mr-drawer-section-label">Chats</p>
+              <ul className="mr-drawer-list">
+                {TABS.map(tab => {
+                  const count = messages[tab.id]?.length || 0;
+                  const active = activeTab === tab.id;
+                  return (
+                    <li key={tab.id}>
+                      <button
+                        type="button"
+                        className={`mr-drawer-item ${active ? 'active' : ''}`}
+                        onClick={() => selectTab(tab.id)}
+                        aria-current={active ? 'page' : undefined}
+                      >
+                        <span className="mr-drawer-item-icon" aria-hidden>
+                          <TabIcon type={tab.icon} active={active} />
+                        </span>
+                        <span className="mr-drawer-item-label">{tab.label}</span>
+                        {count > 0 && (
+                          <span className="mr-drawer-item-badge">{count > 99 ? '99+' : count}</span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </nav>
+        </div>
+      )}
 
       {/* Content */}
       <div className="mr-content">
-        {activeTab === 'predictions' && (
-          <Predictions
-            match={match}
-            votes={votes}
-            userVote={userVote}
-            onVote={castVote}
-            messages={messages.predictions}
-            user={user}
-            onSendMessage={sendMessage}
-            onReact={(id: string, emoji: string) => reactToMessage(id, 'predictions', emoji)}
-          />
-        )}
+        {activeTab === 'predictions' &&
+          (isDesktop ? (
+            <div className="mr-predict-desktop">
+              <aside className="mr-predict-sidebar" aria-label="Who wins">
+                <VotePicker
+                  match={match}
+                  votes={votes}
+                  votersByChoice={voteByChoice}
+                  voteHistory={voteHistory}
+                  userVote={userVote}
+                  onVote={castVote}
+                />
+              </aside>
+              <div className="mr-predict-chat">
+                <ChatPanel
+                  messages={messages.predictions}
+                  user={user}
+                  onSendMessage={sendMessage}
+                  onReact={(id: string, emoji: string) => reactToMessage(id, 'predictions', emoji)}
+                  placeholder="Your prediction…"
+                  compact
+                />
+              </div>
+            </div>
+          ) : (
+            <ChatPanel
+              messages={messages.predictions}
+              user={user}
+              onSendMessage={sendMessage}
+              onReact={(id: string, emoji: string) => reactToMessage(id, 'predictions', emoji)}
+              placeholder="Your prediction…"
+              compact
+            />
+          ))}
         {activeTab === 'teamsheet' && (
           <div className="mr-teamsheet-layout">
             <TeamSheet match={match} />
@@ -321,7 +651,8 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
               user={user}
               onSendMessage={sendMessage}
               onReact={(id: string, emoji: string) => reactToMessage(id, 'teamsheet', emoji)}
-              placeholder="React to the lineup..."
+              placeholder="React to the lineup…"
+              compact
             />
           </div>
         )}
@@ -331,8 +662,8 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
             user={user}
             onSendMessage={sendMessage}
             onReact={(id: string, emoji: string) => reactToMessage(id, 'banter', emoji)}
-            placeholder="Talk your talk..."
-            fullHeight
+            placeholder="Talk your talk…"
+            compact
           />
         )}
       </div>

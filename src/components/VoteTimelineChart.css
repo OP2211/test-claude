@@ -1,0 +1,104 @@
+.vtc {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.vtc--empty {
+  padding: 10px 4px 4px;
+}
+
+.vtc-title {
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin: 0 0 6px;
+}
+
+.vtc-empty-text {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  text-align: center;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.vtc-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: 140px;
+}
+
+.vtc-grid {
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 1;
+}
+
+.vtc-ytick {
+  fill: rgba(255, 255, 255, 0.32);
+  font-size: 8px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.vtc-line {
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.vtc-line--home {
+  stroke: #4d8dff;
+  filter: drop-shadow(0 0 4px rgba(77, 141, 255, 0.35));
+}
+
+.vtc-line--draw {
+  stroke: #ffca28;
+  filter: drop-shadow(0 0 4px rgba(255, 202, 40, 0.25));
+}
+
+.vtc-line--away {
+  stroke: #ff6090;
+  filter: drop-shadow(0 0 4px rgba(255, 96, 144, 0.3));
+}
+
+.vtc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 6px;
+  justify-content: center;
+}
+
+.vtc-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vtc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.vtc-dot--home {
+  background: #4d8dff;
+}
+
+.vtc-dot--draw {
+  background: #ffca28;
+}
+
+.vtc-dot--away {
+  background: #ff6090;
+}

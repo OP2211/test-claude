@@ -11,6 +11,105 @@
   height: calc(100dvh - var(--header-h) - 56px - 52px - 10px - 12px);
 }
 
+/* ── Compact (room chats — more messages per screen) ──────────── */
+.cp-compact .cp-messages {
+  padding: 6px 8px;
+  gap: 4px;
+}
+.cp-compact .cp-msg {
+  gap: 5px;
+}
+.cp-compact .cp-msg-avatar {
+  width: 24px;
+  height: 24px;
+  font-size: 0.58rem;
+  margin-top: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+.cp-compact .cp-msg-body {
+  max-width: 88%;
+  gap: 0;
+}
+.cp-compact .cp-msg-meta {
+  gap: 4px;
+  margin-bottom: 1px;
+}
+.cp-compact .cp-msg-name,
+.cp-compact .cp-msg-time {
+  font-size: 0.62rem;
+}
+.cp-compact .cp-bubble-wrap {
+  gap: 4px;
+}
+.cp-compact .cp-bubble {
+  padding: 5px 10px;
+  font-size: 0.8125rem;
+  line-height: 1.32;
+  border-radius: 8px 14px 14px 14px;
+}
+.cp-compact .cp-bubble-own {
+  border-radius: 14px 8px 14px 14px;
+}
+.cp-compact .own-t {
+  font-size: 0.58rem;
+  margin-top: 0;
+}
+.cp-compact .cp-reactions {
+  gap: 2px;
+  margin-top: 1px;
+}
+.cp-compact .cp-react-chip {
+  padding: 1px 5px;
+  min-height: 20px;
+  font-size: 0.65rem;
+}
+.cp-compact .cp-react-count {
+  font-size: 0.55rem;
+}
+.cp-compact .cp-react-add {
+  min-height: 20px;
+}
+.cp-compact .cp-input-bar {
+  padding: 6px;
+  padding-bottom: calc(6px + var(--safe-bottom));
+}
+.cp-compact .cp-input-wrap {
+  padding: 2px 2px 2px 5px;
+  border-radius: var(--radius-lg);
+}
+.cp-compact .cp-input-avatar {
+  width: 22px;
+  height: 22px;
+  font-size: 0.55rem;
+}
+.cp-compact .cp-input {
+  font-size: 0.8125rem;
+  padding: 5px 0;
+}
+.cp-compact .cp-send {
+  width: 30px;
+  height: 30px;
+}
+.cp-compact .cp-send svg {
+  width: 16px;
+  height: 16px;
+}
+.cp-compact .cp-empty {
+  padding: 20px 16px;
+  gap: 6px;
+}
+.cp-compact .cp-empty-icon {
+  width: 40px;
+  height: 40px;
+}
+.cp-compact .cp-empty-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.cp-compact .cp-empty-text {
+  font-size: 0.75rem;
+}
+
 /* ── Messages ─────────────────────────────────────────────────── */
 .cp-messages {
   flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
@@ -156,4 +255,8 @@
   .cp-msg-avatar { width: 32px; height: 32px; font-size: var(--text-xs); }
   .cp-bubble { padding: 10px 14px; }
   .cp-input-bar { padding: 10px; }
+  .cp-compact .cp-messages { padding: 10px 12px; gap: 6px; }
+  .cp-compact .cp-msg-avatar { width: 26px; height: 26px; font-size: 0.65rem; }
+  .cp-compact .cp-bubble { padding: 6px 12px; font-size: var(--text-sm); }
+  .cp-compact .cp-input-bar { padding: 8px; padding-bottom: calc(8px + var(--safe-bottom)); }
 }

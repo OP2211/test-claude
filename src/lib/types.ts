@@ -42,6 +42,26 @@ export interface VoteTally {
   away: number;
 }
 
+/** Voter shown on result rows (avatar + %) */
+export interface VoteVoter {
+  userId: string;
+  username: string;
+  image?: string;
+  fanTeamId: TeamId | null;
+}
+
+/** One point after a vote changes the tally (for time-series chart). */
+export interface VoteHistoryPoint {
+  at: string;
+  tally: VoteTally;
+}
+
+export interface VoteSnapshot {
+  tally: VoteTally;
+  byChoice: Record<VoteChoice, VoteVoter[]>;
+  history: VoteHistoryPoint[];
+}
+
 export interface Reactions {
   [emoji: string]: string[];
 }
