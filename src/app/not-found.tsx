@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Logo from '@/components/Logo';
 import SiteFooter from '@/components/SiteFooter';
 import './not-found.css';
 
@@ -8,27 +9,12 @@ export const metadata: Metadata = {
   description: 'This page has been sent off. Head back to the match.',
 };
 
-function BallIcon() {
-  return (
-    <svg className="nf-icon-ball" width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden>
-      <circle cx="24" cy="24" r="20" stroke="rgba(34,197,94,0.5)" strokeWidth="1.5" fill="none" />
-      <circle cx="24" cy="22" r="12" fill="url(#nf-ball-grad)" opacity="0.9" />
-      <defs>
-        <linearGradient id="nf-ball-grad" x1="12" y1="10" x2="36" y2="34" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#22C55E" />
-          <stop offset="1" stopColor="#3B82F6" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
-
 export default function NotFound() {
   return (
     <div className="nf-page app">
       <header className="nf-header">
         <Link href="/" className="nf-logo-link">
-          <BallIcon />
+          <Logo size={28} className="nf-logo-mark" />
           FanGround
         </Link>
       </header>

@@ -34,8 +34,9 @@ export const metadata: Metadata = {
     title: 'FanGround',
   },
   icons: {
-    icon: '/icons/icon-96.svg',
-    apple: '/icons/icon-192.svg',
+    icon: [{ url: '/logo/fanground-256.png', sizes: '256x256', type: 'image/png' }],
+    apple: [{ url: '/logo/fanground-256.png', sizes: '256x256', type: 'image/png' }],
+    shortcut: '/logo/fanground-256.png',
   },
 };
 

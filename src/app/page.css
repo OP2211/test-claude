@@ -345,6 +345,10 @@
   width: 100%;
 }
 
+.landing-match-section {
+  scroll-margin-top: calc(var(--header-h) + 12px);
+}
+
 @media (min-width: 768px) {
   .app-header-inner { padding: 0 24px; }
   .app-main { padding: 0 24px; }

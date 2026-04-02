@@ -1,0 +1,296 @@
+'use client';
+
+import './LandingHome.css';
+
+interface LandingHomeProps {
+  onEnterFanGround: () => void;
+  onSeeLiveRooms: () => void;
+}
+
+export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: LandingHomeProps) {
+  return (
+    <div className="landing">
+      {/* 1. Hero */}
+      <section className="landing-hero" aria-labelledby="landing-hero-title">
+        <div className="landing-hero-grid">
+          <div className="landing-hero-copy">
+            <p className="landing-live-pill" role="status">
+              <span className="landing-live-dot" aria-hidden="true" />
+              Built for live matches
+            </p>
+            <h1 id="landing-hero-title" className="landing-hero-title">
+              Stop Watching Matches Alone.
+            </h1>
+            <p className="landing-hero-sub">This is where fans come to feel the game.</p>
+            <p className="landing-hero-support">
+              Live banter. Rival fans. Real-time reactions.
+            </p>
+            <div className="landing-hero-cta">
+              <button type="button" className="landing-btn landing-btn--primary" onClick={onEnterFanGround}>
+                Enter FanGround
+              </button>
+              <button type="button" className="landing-btn landing-btn--secondary" onClick={onSeeLiveRooms}>
+                See Live Match Rooms
+              </button>
+            </div>
+          </div>
+          <div className="landing-hero-visual" aria-hidden="true">
+            <div className="landing-stadium-glow" />
+            <div className="landing-chat-mock">
+              <div className="landing-chat-header">
+                <span className="landing-chat-live">
+                  <span className="landing-live-dot" /> LIVE
+                </span>
+                <span className="landing-chat-title">Match room</span>
+              </div>
+              <div className="landing-chat-stream">
+                <div className="landing-msg landing-msg--blue">What a strike 🔥</div>
+                <div className="landing-msg landing-msg--red">VAR checking…</div>
+                <div className="landing-msg landing-msg--yellow">Called it!</div>
+                <div className="landing-msg landing-msg--blue">Room is LOUD</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 2. Social proof */}
+      <section className="landing-strip" aria-label="Fan behavior stats">
+        <div className="landing-strip-inner">
+          <div className="landing-stat">
+            <span className="landing-stat-icon" aria-hidden="true">📱</span>
+            <span>90%+ fans use second screen</span>
+          </div>
+          <div className="landing-stat">
+            <span className="landing-stat-icon" aria-hidden="true">💬</span>
+            <span>79% discuss matches live</span>
+          </div>
+          <div className="landing-stat">
+            <span className="landing-stat-icon" aria-hidden="true">🏟️</span>
+            <span>Now there&apos;s a place built for it</span>
+          </div>
+        </div>
+      </section>
+
+      <div className="landing-cta-band">
+        <button type="button" className="landing-btn landing-btn--primary landing-btn--compact" onClick={onSeeLiveRooms}>
+          Join a match room
+        </button>
+      </div>
+
+      {/* 3. Problem */}
+      <section className="landing-section" aria-labelledby="landing-problem-title">
+        <h2 id="landing-problem-title" className="landing-section-title">
+          Sound familiar?
+        </h2>
+        <div className="landing-problem-grid">
+          <article className="landing-card landing-card--problem">
+            <h3 className="landing-card-label">Twitter</h3>
+            <p className="landing-card-body">
+              Your feed is everyone’s hot take — not a single crowd for{' '}
+              <em>this</em> game.
+            </p>
+          </article>
+          <article className="landing-card landing-card--problem">
+            <h3 className="landing-card-label">WhatsApp</h3>
+            <p className="landing-card-body">
+              Same friends, same groups. Rival fans aren’t in the room to banter.
+            </p>
+          </article>
+          <article className="landing-card landing-card--problem">
+            <h3 className="landing-card-label">Reddit</h3>
+            <p className="landing-card-body">
+              Match threads move at forum speed — the live moment is already gone.
+            </p>
+          </article>
+          <article className="landing-card landing-card--problem">
+            <h3 className="landing-card-label">Solo viewing</h3>
+            <p className="landing-card-body">
+              You feel the goal — but there’s no crowd next to you to feel it with.
+            </p>
+          </article>
+        </div>
+        <p className="landing-closing-line">
+          You&apos;re reacting… but no one&apos;s reacting with you.
+        </p>
+      </section>
+
+      {/* 4. Solution */}
+      <section className="landing-section landing-section--glow" aria-labelledby="landing-solution-title">
+        <h2 id="landing-solution-title" className="landing-section-title">
+          FanGround is the crowd
+        </h2>
+        <ul className="landing-bullet-list">
+          <li>Live match rooms</li>
+          <li>Fans from both teams</li>
+          <li>Color-coded messages</li>
+          <li>Real-time reactions</li>
+        </ul>
+        <p className="landing-highlight">
+          When a goal happens — the room explodes.
+        </p>
+      </section>
+
+      <div className="landing-cta-band">
+        <button type="button" className="landing-btn landing-btn--primary landing-btn--compact" onClick={onEnterFanGround}>
+          Feel the next match
+        </button>
+      </div>
+
+      {/* 5. Core features */}
+      <section className="landing-section" aria-labelledby="landing-features-title">
+        <h2 id="landing-features-title" className="landing-section-title">
+          The experience
+        </h2>
+        <div className="landing-features">
+          <article className="landing-feature">
+            <h3 className="landing-feature-title">Fan identity</h3>
+            <ul className="landing-feature-list">
+              <li>Pick your team once</li>
+              <li>Permanent identity</li>
+              <li>Color-coded messages</li>
+            </ul>
+            <p className="landing-feature-line">You&apos;re not anonymous. You represent your team.</p>
+          </article>
+          <article className="landing-feature">
+            <h3 className="landing-feature-title">Match rooms</h3>
+            <ul className="landing-feature-list">
+              <li>Pre-match → live → post-match</li>
+              <li>Real-time chat</li>
+              <li>Active fan count</li>
+            </ul>
+            <p className="landing-feature-line">This isn&apos;t a feed. It&apos;s a crowd.</p>
+          </article>
+          <article className="landing-feature">
+            <h3 className="landing-feature-title">Predictions</h3>
+            <ul className="landing-feature-list">
+              <li>Match outcome</li>
+              <li>Scoreline</li>
+              <li>First scorer</li>
+            </ul>
+            <p className="landing-feature-line">Prove you knew it.</p>
+          </article>
+        </div>
+      </section>
+
+      {/* 6. Emotional */}
+      <section className="landing-section landing-emotional" aria-labelledby="landing-moment-title">
+        <h2 id="landing-moment-title" className="landing-section-title">
+          Inside the moment
+        </h2>
+        <p className="landing-emotional-lead">
+          300 fans. Last minute. Last over. A goal. A wicket.
+        </p>
+        <p className="landing-emotional-boom">The room explodes.</p>
+        <p className="landing-emotional-close">
+          You&apos;re not watching anymore.
+          <br />
+          You&apos;re inside the moment.
+        </p>
+      </section>
+
+      <div className="landing-cta-band">
+        <button type="button" className="landing-btn landing-btn--secondary landing-btn--compact" onClick={onSeeLiveRooms}>
+          See live match rooms
+        </button>
+      </div>
+
+      {/* 7. Comparison */}
+      <section className="landing-section" aria-labelledby="landing-compare-title">
+        <h2 id="landing-compare-title" className="landing-section-title">
+          Why it&apos;s different
+        </h2>
+        <div className="landing-table-wrap">
+          <table className="landing-table">
+            <thead>
+              <tr>
+                <th scope="col">Others</th>
+                <th scope="col">FanGround</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Passive</td>
+                <td>Active</td>
+              </tr>
+              <tr>
+                <td>No identity</td>
+                <td>Team identity</td>
+              </tr>
+              <tr>
+                <td>Fragmented</td>
+                <td>Match-based</td>
+              </tr>
+              <tr>
+                <td>Slow</td>
+                <td>Real-time</td>
+              </tr>
+              <tr>
+                <td>Alone</td>
+                <td>Together</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* 8. Audience */}
+      <section className="landing-section landing-audience" aria-labelledby="landing-audience-title">
+        <h2 id="landing-audience-title" className="landing-section-title">
+          For real fans only
+        </h2>
+        <div className="landing-audience-cols">
+          <div>
+            <h3 className="landing-audience-sub">This is for you if</h3>
+            <ul className="landing-audience-list landing-audience-list--in">
+              <li>IPL / EPL fans</li>
+              <li>You argue, react, and predict</li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="landing-audience-sub">Not for</h3>
+            <ul className="landing-audience-list landing-audience-list--out">
+              <li>Casual viewers</li>
+              <li>News readers</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* 9. What it&apos;s not */}
+      <section className="landing-section" aria-labelledby="landing-not-title">
+        <h2 id="landing-not-title" className="landing-section-title">
+          What it&apos;s not
+        </h2>
+        <ul className="landing-not-list">
+          <li>Not a scores app</li>
+          <li>Not a news app</li>
+          <li>Not a fantasy app</li>
+        </ul>
+      </section>
+
+      {/* 10. Final CTA */}
+      <section className="landing-final" aria-labelledby="landing-final-title">
+        <h2 id="landing-final-title" className="landing-final-title">
+          The next match is coming.
+        </h2>
+        <p className="landing-final-sub">Don&apos;t watch it alone.</p>
+        <div className="landing-final-cta">
+          <button type="button" className="landing-btn landing-btn--primary" onClick={onSeeLiveRooms}>
+            Join the Next Match Room
+          </button>
+          <button type="button" className="landing-btn landing-btn--secondary" onClick={onEnterFanGround}>
+            Start Your Fan Identity
+          </button>
+        </div>
+        <p className="landing-tagline">FanGround — Where Fans Feel the Match</p>
+      </section>
+
+      <div className="landing-sticky">
+        <button type="button" className="landing-btn landing-btn--primary" onClick={onSeeLiveRooms}>
+          Join the next match room
+        </button>
+      </div>
+    </div>
+  );
+}

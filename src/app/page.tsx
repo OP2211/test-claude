@@ -8,6 +8,7 @@ import MatchRoom from '@/components/MatchRoom';
 import OnboardingModal from '@/components/OnboardingModal';
 import AppHeader from '@/components/AppHeader';
 import SiteFooter from '@/components/SiteFooter';
+import LandingHome from '@/components/LandingHome';
 import type { Match, User, TeamId } from '@/lib/types';
 import './page.css';
 
@@ -110,6 +111,10 @@ export default function Home() {
     fetchMatches();
   };
 
+  const scrollToMatchRooms = useCallback(() => {
+    document.getElementById('match-rooms')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
   const isInRoom = activeMatch && user;
 
   const handleSignOut = () => {
@@ -139,12 +144,17 @@ export default function Home() {
         {isInRoom ? (
           <MatchRoom match={activeMatch!} user={user!} onBack={handleBack} />
         ) : (
-          <MatchList
-            matches={matches}
-            user={user}
-            onSelectMatch={handleSelectMatch}
-            isLoading={isLoading}
-          />
+          <>
+            <LandingHome onEnterFanGround={scrollToMatchRooms} onSeeLiveRooms={scrollToMatchRooms} />
+            <section id="match-rooms" className="landing-match-section">
+              <MatchList
+                matches={matches}
+                user={user}
+                onSelectMatch={handleSelectMatch}
+                isLoading={isLoading}
+              />
+            </section>
+          </>
         )}
       </main>
 
