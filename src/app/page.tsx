@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import Link from 'next/link';
+import Image from 'next/image';
 import MatchList from '@/components/MatchList';
 import MatchRoom from '@/components/MatchRoom';
 import OnboardingModal from '@/components/OnboardingModal';
 import Logo from '@/components/Logo';
-import type { Match, User } from '@/lib/types';
+import type { Match, User, TeamId } from '@/lib/types';
 import './page.css';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -18,6 +21,7 @@ function generateUserId(): string {
 }
 
 export default function Home() {
+  const { data: session } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [activeMatch, setActiveMatch] = useState<Match | null>(null);
@@ -27,11 +31,28 @@ export default function Home() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('ffc_user');
-    if (saved) {
-      try { setUser(JSON.parse(saved)); } catch {}
+    if (session?.user) {
+      const { name, email, image } = session.user;
+      const saved = localStorage.getItem('ffc_user');
+      if (saved) {
+        try {
+          const existingUser = JSON.parse(saved);
+          const newUser = { ...existingUser, username: name, email, image };
+          localStorage.setItem('ffc_user', JSON.stringify(newUser));
+          setUser(newUser);
+        } catch {}
+      } else {
+        const newUser: User = { userId: generateUserId(), username: name ?? '', email: email ?? '', image: image ?? '', fanTeamId: null };
+        localStorage.setItem('ffc_user', JSON.stringify(newUser));
+        setUser(newUser);
+      }
+    } else {
+      const saved = localStorage.getItem('ffc_user');
+      if (saved) {
+        try { setUser(JSON.parse(saved)); } catch {}
+      }
     }
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e as BeforeInstallPromptEvent); };
@@ -73,8 +94,8 @@ export default function Home() {
     setActiveMatch(match);
   };
 
-  const handleOnboardingComplete = (userData: Omit<User, 'userId'>) => {
-    const newUser: User = { userId: generateUserId(), ...userData };
+  const handleOnboardingComplete = (fanTeamId: TeamId) => {
+    const newUser: User = { userId: generateUserId(), username: session?.user?.name ?? '', email: session?.user?.email ?? '', image: session?.user?.image ?? '', fanTeamId };
     localStorage.setItem('ffc_user', JSON.stringify(newUser));
     setUser(newUser);
     setShowOnboarding(false);
@@ -97,7 +118,7 @@ export default function Home() {
         <div className="app-header-inner">
           <button className="logo-btn" onClick={handleBack}>
             <Logo size={30} />
-            <span className="logo-text">MatchDay</span>
+            <span className="logo-text">FanGround</span>
           </button>
           <div className="header-right">
             {installPrompt && (
@@ -107,13 +128,29 @@ export default function Home() {
               </button>
             )}
             {user && (
-              <button
-                className="user-avatar-btn"
-                onClick={() => { localStorage.removeItem('ffc_user'); setUser(null); setActiveMatch(null); }}
-                title="Switch fan profile"
-              >
-                <span className="user-avatar-letter">{user.username?.[0]?.toUpperCase()}</span>
-              </button>
+              <>
+                <Link href="/profile">
+                  <button className="user-avatar-btn" aria-label="Open profile">
+                    {user.image ? (
+                      <Image src={user.image} alt="Profile picture" width={32} height={32} />
+                    ) : (
+                      <span className="user-avatar-letter">{user.username?.[0]?.toUpperCase()}</span>
+                    )}
+                  </button>
+                </Link>
+                <button
+                  className="logout-btn"
+                  onClick={() => {
+                    localStorage.removeItem('ffc_user');
+                    setUser(null);
+                    setActiveMatch(null);
+                    signOut();
+                  }}
+                  aria-label="Log out"
+                >
+                  Log out
+                </button>
+              </>
             )}
           </div>
         </div>

@@ -69,6 +69,15 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const pusherRef = useRef<Pusher | null>(null);
 
+  const upsertMessage = useCallback((msg: Message) => {
+    setMessages(prev => {
+      const tab = msg.tab as keyof MessagesByTab;
+      const existing = prev[tab] || [];
+      if (existing.some(m => m.id === msg.id)) return prev;
+      return { ...prev, [tab]: [...existing, msg] };
+    });
+  }, []);
+
   // Fetch initial data
   useEffect(() => {
     async function init() {
@@ -101,10 +110,7 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
     const channel = pusherRef.current.subscribe(`match-${match.id}`);
 
     channel.bind('new-message', (msg: Message) => {
-      setMessages(prev => ({
-        ...prev,
-        [msg.tab]: [...(prev[msg.tab] || []), msg],
-      }));
+      upsertMessage(msg);
     });
 
     channel.bind('vote-updated', (tally: VoteTally) => setVotes(tally));
@@ -128,7 +134,7 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
       pusherRef.current?.unsubscribe(`match-${match.id}`);
       pusherRef.current?.disconnect();
     };
-  }, [match.id]);
+  }, [match.id, upsertMessage]);
 
   function addNotification(text: string): void {
     const id = Date.now();
@@ -139,7 +145,7 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
   const sendMessage = useCallback(async (text: string): Promise<void> => {
     if (!text.trim()) return;
     try {
-      await fetch('/api/message', {
+      const res = await fetch('/api/message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -148,13 +154,21 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
           userId: user.userId,
           username: user.username,
           fanTeamId: user.fanTeamId,
+          image: user.image,
           text,
         }),
       });
+      if (!res.ok) {
+        console.error('Send failed', await res.text());
+        return;
+      }
+      const msg: Message = await res.json();
+      // Ensure the sender sees their message even if realtime is misconfigured.
+      upsertMessage(msg);
     } catch (err) {
       console.error('Send failed', err);
     }
-  }, [match.id, activeTab, user]);
+  }, [match.id, activeTab, user, upsertMessage]);
 
   const reactToMessage = useCallback(async (messageId: string, tab: TabId, emoji: string): Promise<void> => {
     try {

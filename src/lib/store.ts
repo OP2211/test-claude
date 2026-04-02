@@ -23,17 +23,19 @@ interface AddMessageParams {
   tab: TabId;
   userId: string;
   username: string;
-  fanTeamId: string;
+  fanTeamId: string | null;
+  image?: string;
   text: string;
 }
 
-export function addMessage(matchId: string, { tab, userId, username, fanTeamId, text }: AddMessageParams): Message {
+export function addMessage(matchId: string, { tab, userId, username, fanTeamId, image, text }: AddMessageParams): Message {
   const room = getRoom(matchId);
   const msg: Message = {
     id: uuidv4(),
     userId,
     username,
     fanTeamId,
+    image: image || undefined,
     tab,
     text: (text || '').trim().slice(0, 500),
     timestamp: new Date().toISOString(),

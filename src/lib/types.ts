@@ -50,7 +50,8 @@ export interface Message {
   id: string;
   userId: string;
   username: string;
-  fanTeamId: string;
+  fanTeamId: TeamId | null;
+  image?: string;
   tab: TabId;
   text: string;
   timestamp: string;
@@ -60,5 +61,7 @@ export interface Message {
 export interface User {
   userId: string;
   username: string;
-  fanTeamId: TeamId;
+  fanTeamId: TeamId | null;
+  email?: string;
+  image?: string;
 }

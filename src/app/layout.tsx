@@ -24,13 +24,13 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: 'MatchDay - Live Football Fan Hub',
+  title: 'FanGround - Live Football Fan Hub',
   description: 'The ultimate live matchday experience. Predictions, team sheets & real-time banter with fans worldwide.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'MatchDay',
+    title: 'FanGround',
   },
   icons: {
     icon: '/icons/icon-96.svg',
@@ -47,6 +47,8 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
+import AuthContext from './AuthContext';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${instrumentSans.variable} ${instrumentSerif.variable}`}>
@@ -55,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body>
-        {children}
+        <AuthContext>{children}</AuthContext>
         <script
           dangerouslySetInnerHTML={{
             __html: `

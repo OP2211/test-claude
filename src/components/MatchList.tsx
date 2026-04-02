@@ -162,7 +162,7 @@ export default function MatchList({ matches, user, onSelectMatch, isLoading }: M
       {/* Hero */}
       <div className="ml-hero">
         <Logo size={48} animate />
-        <h1 className="ml-hero-title">MatchDay</h1>
+        <h1 className="ml-hero-title">FanGround</h1>
         <p className="ml-hero-sub">Predictions, lineups & live banter with fans worldwide</p>
         {!user && (
           <div className="ml-hero-hint">

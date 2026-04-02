@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import type { Message, User } from '@/lib/types';
 import './ChatPanel.css';
 
@@ -45,7 +46,7 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
     inputRef.current?.focus();
   };
 
-  const teamColor = (fanTeamId: string): string => TEAM_COLORS[fanTeamId] || '#6060aa';
+  const teamColor = (fanTeamId: string | null): string => fanTeamId ? TEAM_COLORS[fanTeamId] || '#6060aa' : '#6060aa';
 
   const formatTime = (ts: string): string => {
     const d = new Date(ts);
@@ -76,7 +77,11 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
             <div key={msg.id} className={`cp-msg ${isOwn ? 'own' : ''}`}>
               {!isOwn && (
                 <div className="cp-msg-avatar" style={{ background: color }}>
-                  {msg.username?.[0]?.toUpperCase()}
+                  {msg.image ? (
+                    <Image src={msg.image} alt="Profile picture" width={32} height={32} />
+                  ) : (
+                    msg.username?.[0]?.toUpperCase()
+                  )}
                 </div>
               )}
 
@@ -142,7 +147,11 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
       <div className="cp-input-bar">
         <div className="cp-input-wrap">
           <div className="cp-input-avatar" style={{ background: teamColor(user.fanTeamId) }}>
-            {user.username?.[0]?.toUpperCase()}
+            {user.image ? (
+              <Image src={user.image} alt="Profile picture" width={26} height={26} />
+            ) : (
+              user.username?.[0]?.toUpperCase()
+            )}
           </div>
           <input
             ref={inputRef}

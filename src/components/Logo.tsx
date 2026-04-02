@@ -1,10 +1,12 @@
+import { useId } from 'react';
+
 interface LogoProps {
   size?: number;
   animate?: boolean;
 }
 
 export default function Logo({ size = 36, animate = false }: LogoProps) {
-  const id = `logo-${Math.random().toString(36).slice(2, 6)}`;
+  const id = useId();
   return (
     <svg
       width={size}
@@ -12,7 +14,7 @@ export default function Logo({ size = 36, animate = false }: LogoProps) {
       viewBox="0 0 48 48"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="MatchDay logo"
+      aria-label="FanGround logo"
       style={animate ? { animation: 'float 3s ease-in-out infinite' } : undefined}
     >
       <defs>

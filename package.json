@@ -1,7 +1,7 @@
 {
   "name": "matchday-chat",
   "version": "2.0.0",
-  "description": "MatchDay - Live Football Fan Hub",
+  "description": "FanGround - Live Football Fan Hub",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "next": "^14.2.0",
+    "next-auth": "^4.24.13",
     "pusher": "^5.2.0",
     "pusher-js": "^8.3.0",
     "react": "^18.2.0",
