@@ -108,6 +108,40 @@
   gap: 10px;
 }
 
+.landing-hero-tertiary {
+  margin-top: 14px;
+  font-size: var(--text-xs);
+  font-weight: 650;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.landing-hero-waitlist-link {
+  color: rgba(253, 224, 71, 0.92);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(245, 158, 11, 0.45);
+  transition: color var(--duration-fast), text-decoration-color var(--duration-fast);
+}
+
+.landing-hero-waitlist-link:hover {
+  color: rgba(254, 240, 138, 0.98);
+  text-decoration-color: rgba(253, 224, 71, 0.65);
+}
+
+.landing-hero-tertiary-sep {
+  color: var(--text-dim);
+  user-select: none;
+}
+
+.landing-hero-tertiary-hint {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
 @media (min-width: 420px) {
   .landing-hero-cta {
     flex-direction: row;
@@ -647,6 +681,13 @@
   left: 0;
   color: rgba(248, 113, 113, 0.85);
   font-weight: 900;
+}
+
+/* Waitlist block — bridge before final CTA */
+.landing-waitlist-wrap {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 8px 0 12px;
 }
 
 .landing-final {

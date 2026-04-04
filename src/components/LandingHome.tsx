@@ -1,5 +1,6 @@
 'use client';
 
+import WaitlistSection from '@/components/WaitlistSection';
 import './LandingHome.css';
 
 interface LandingHomeProps {
@@ -33,6 +34,15 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
                 See Live Match Rooms
               </button>
             </div>
+            <p className="landing-hero-tertiary">
+              <a href="#waitlist" className="landing-hero-waitlist-link">
+                Get launch & feature updates
+              </a>
+              <span className="landing-hero-tertiary-sep" aria-hidden="true">
+                ·
+              </span>
+              <span className="landing-hero-tertiary-hint">No spam</span>
+            </p>
           </div>
           <div className="landing-hero-visual" aria-hidden="true">
             <div className="landing-stadium-glow" />
@@ -268,6 +278,11 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
           <li>Not a fantasy app</li>
         </ul>
       </section>
+
+      {/* Waitlist — after full story; captures scanners who aren’t ready to jump in */}
+      <div className="landing-waitlist-wrap">
+        <WaitlistSection className="wl--landing" />
+      </div>
 
       {/* 10. Final CTA */}
       <section className="landing-final" aria-labelledby="landing-final-title">
