@@ -223,11 +223,11 @@ export default function WaitlistSection({ className }: WaitlistSectionProps) {
             )}
           </button>
 
-          <p className="wl-footnote">
+          {/* <p className="wl-footnote">
             {useWeb3FormsSubmit
               ? 'Web3Forms: mail goes to the inbox tied to your access key; allow this domain in the Web3Forms dashboard.'
               : 'Uses FormSubmit: set WAITLIST_NOTIFICATION_EMAIL, activate the link in that inbox once, and set NEXTAUTH_URL or NEXT_PUBLIC_APP_URL (e.g. http://localhost:3000).'}
-          </p>
+          </p> */}
         </form>
       </div>
     </section>
