@@ -1,18 +1,25 @@
-'use client';
+"use client";
 
-import WaitlistSection from '@/components/WaitlistSection';
-import './LandingHome.css';
+import WaitlistSection from "@/components/WaitlistSection";
+import "./LandingHome.css";
 
 interface LandingHomeProps {
   onEnterFanGround: () => void;
   onSeeLiveRooms: () => void;
 }
 
-export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: LandingHomeProps) {
+export default function LandingHome({
+  onEnterFanGround,
+  onSeeLiveRooms,
+}: LandingHomeProps) {
   return (
     <div className="landing">
       {/* 1. Hero */}
       <section className="landing-hero" aria-labelledby="landing-hero-title">
+        {/* Waitlist — after full story; captures scanners who aren’t ready to jump in */}
+        <div className="landing-waitlist-wrap">
+          <WaitlistSection className="wl--landing" />
+        </div>
         <div className="landing-hero-grid">
           <div className="landing-hero-copy">
             <p className="landing-live-pill" role="status">
@@ -22,15 +29,25 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
             <h1 id="landing-hero-title" className="landing-hero-title">
               Stop Watching Matches Alone.
             </h1>
-            <p className="landing-hero-sub">This is where fans come to feel the game.</p>
+            <p className="landing-hero-sub">
+              This is where fans come to feel the game.
+            </p>
             <p className="landing-hero-support">
               Live banter. Rival fans. Real-time reactions.
             </p>
             <div className="landing-hero-cta">
-              <button type="button" className="landing-btn landing-btn--primary" onClick={onEnterFanGround}>
+              <button
+                type="button"
+                className="landing-btn landing-btn--primary"
+                onClick={onEnterFanGround}
+              >
                 Enter FanGround
               </button>
-              <button type="button" className="landing-btn landing-btn--secondary" onClick={onSeeLiveRooms}>
+              <button
+                type="button"
+                className="landing-btn landing-btn--secondary"
+                onClick={onSeeLiveRooms}
+              >
                 See Live Match Rooms
               </button>
             </div>
@@ -54,10 +71,18 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
                 <span className="landing-chat-title">Match room</span>
               </div>
               <div className="landing-chat-stream">
-                <div className="landing-msg landing-msg--blue">What a strike 🔥</div>
-                <div className="landing-msg landing-msg--red">VAR checking…</div>
-                <div className="landing-msg landing-msg--yellow">Called it!</div>
-                <div className="landing-msg landing-msg--blue">Room is LOUD</div>
+                <div className="landing-msg landing-msg--blue">
+                  What a strike 🔥
+                </div>
+                <div className="landing-msg landing-msg--red">
+                  VAR checking…
+                </div>
+                <div className="landing-msg landing-msg--yellow">
+                  Called it!
+                </div>
+                <div className="landing-msg landing-msg--blue">
+                  Room is LOUD
+                </div>
               </div>
             </div>
           </div>
@@ -68,28 +93,41 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
       <section className="landing-strip" aria-label="Fan behavior stats">
         <div className="landing-strip-inner">
           <div className="landing-stat">
-            <span className="landing-stat-icon" aria-hidden="true">📱</span>
+            <span className="landing-stat-icon" aria-hidden="true">
+              📱
+            </span>
             <span>90%+ fans use second screen</span>
           </div>
           <div className="landing-stat">
-            <span className="landing-stat-icon" aria-hidden="true">💬</span>
+            <span className="landing-stat-icon" aria-hidden="true">
+              💬
+            </span>
             <span>79% discuss matches live</span>
           </div>
           <div className="landing-stat">
-            <span className="landing-stat-icon" aria-hidden="true">🏟️</span>
+            <span className="landing-stat-icon" aria-hidden="true">
+              🏟️
+            </span>
             <span>Now there&apos;s a place built for it</span>
           </div>
         </div>
       </section>
 
       <div className="landing-cta-band">
-        <button type="button" className="landing-btn landing-btn--primary landing-btn--compact" onClick={onSeeLiveRooms}>
+        <button
+          type="button"
+          className="landing-btn landing-btn--primary landing-btn--compact"
+          onClick={onSeeLiveRooms}
+        >
           Join a match room
         </button>
       </div>
 
       {/* 3. Problem */}
-      <section className="landing-section" aria-labelledby="landing-problem-title">
+      <section
+        className="landing-section"
+        aria-labelledby="landing-problem-title"
+      >
         <h2 id="landing-problem-title" className="landing-section-title">
           Sound familiar?
         </h2>
@@ -97,26 +135,29 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
           <article className="landing-card landing-card--problem">
             <h3 className="landing-card-label">Twitter</h3>
             <p className="landing-card-body">
-              Your feed is everyone’s hot take — not a single crowd for{' '}
+              Your feed is everyone’s hot take — not a single crowd for{" "}
               <em>this</em> game.
             </p>
           </article>
           <article className="landing-card landing-card--problem">
             <h3 className="landing-card-label">WhatsApp</h3>
             <p className="landing-card-body">
-              Same friends, same groups. Rival fans aren’t in the room to banter.
+              Same friends, same groups. Rival fans aren’t in the room to
+              banter.
             </p>
           </article>
           <article className="landing-card landing-card--problem">
             <h3 className="landing-card-label">Reddit</h3>
             <p className="landing-card-body">
-              Match threads move at forum speed — the live moment is already gone.
+              Match threads move at forum speed — the live moment is already
+              gone.
             </p>
           </article>
           <article className="landing-card landing-card--problem">
             <h3 className="landing-card-label">Solo viewing</h3>
             <p className="landing-card-body">
-              You feel the goal — but there’s no crowd next to you to feel it with.
+              You feel the goal — but there’s no crowd next to you to feel it
+              with.
             </p>
           </article>
         </div>
@@ -126,7 +167,10 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
       </section>
 
       {/* 4. Solution */}
-      <section className="landing-section landing-section--glow" aria-labelledby="landing-solution-title">
+      <section
+        className="landing-section landing-section--glow"
+        aria-labelledby="landing-solution-title"
+      >
         <h2 id="landing-solution-title" className="landing-section-title">
           FanGround is the crowd
         </h2>
@@ -142,13 +186,20 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
       </section>
 
       <div className="landing-cta-band">
-        <button type="button" className="landing-btn landing-btn--primary landing-btn--compact" onClick={onEnterFanGround}>
+        <button
+          type="button"
+          className="landing-btn landing-btn--primary landing-btn--compact"
+          onClick={onEnterFanGround}
+        >
           Feel the next match
         </button>
       </div>
 
       {/* 5. Core features */}
-      <section className="landing-section" aria-labelledby="landing-features-title">
+      <section
+        className="landing-section"
+        aria-labelledby="landing-features-title"
+      >
         <h2 id="landing-features-title" className="landing-section-title">
           The experience
         </h2>
@@ -160,7 +211,9 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
               <li>Permanent identity</li>
               <li>Color-coded messages</li>
             </ul>
-            <p className="landing-feature-line">You&apos;re not anonymous. You represent your team.</p>
+            <p className="landing-feature-line">
+              You&apos;re not anonymous. You represent your team.
+            </p>
           </article>
           <article className="landing-feature">
             <h3 className="landing-feature-title">Match rooms</h3>
@@ -169,7 +222,9 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
               <li>Real-time chat</li>
               <li>Active fan count</li>
             </ul>
-            <p className="landing-feature-line">This isn&apos;t a feed. It&apos;s a crowd.</p>
+            <p className="landing-feature-line">
+              This isn&apos;t a feed. It&apos;s a crowd.
+            </p>
           </article>
           <article className="landing-feature">
             <h3 className="landing-feature-title">Predictions</h3>
@@ -184,7 +239,10 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
       </section>
 
       {/* 6. Emotional */}
-      <section className="landing-section landing-emotional" aria-labelledby="landing-moment-title">
+      <section
+        className="landing-section landing-emotional"
+        aria-labelledby="landing-moment-title"
+      >
         <h2 id="landing-moment-title" className="landing-section-title">
           Inside the moment
         </h2>
@@ -200,13 +258,20 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
       </section>
 
       <div className="landing-cta-band">
-        <button type="button" className="landing-btn landing-btn--secondary landing-btn--compact" onClick={onSeeLiveRooms}>
+        <button
+          type="button"
+          className="landing-btn landing-btn--secondary landing-btn--compact"
+          onClick={onSeeLiveRooms}
+        >
           See live match rooms
         </button>
       </div>
 
       {/* 7. Comparison */}
-      <section className="landing-section" aria-labelledby="landing-compare-title">
+      <section
+        className="landing-section"
+        aria-labelledby="landing-compare-title"
+      >
         <h2 id="landing-compare-title" className="landing-section-title">
           Why it&apos;s different
         </h2>
@@ -245,7 +310,10 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
       </section>
 
       {/* 8. Audience */}
-      <section className="landing-section landing-audience" aria-labelledby="landing-audience-title">
+      <section
+        className="landing-section landing-audience"
+        aria-labelledby="landing-audience-title"
+      >
         <h2 id="landing-audience-title" className="landing-section-title">
           For real fans only
         </h2>
@@ -279,11 +347,6 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
         </ul>
       </section>
 
-      {/* Waitlist — after full story; captures scanners who aren’t ready to jump in */}
-      <div className="landing-waitlist-wrap">
-        <WaitlistSection className="wl--landing" />
-      </div>
-
       {/* 10. Final CTA */}
       <section className="landing-final" aria-labelledby="landing-final-title">
         <h2 id="landing-final-title" className="landing-final-title">
@@ -291,10 +354,18 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
         </h2>
         <p className="landing-final-sub">Don&apos;t watch it alone.</p>
         <div className="landing-final-cta">
-          <button type="button" className="landing-btn landing-btn--primary" onClick={onSeeLiveRooms}>
+          <button
+            type="button"
+            className="landing-btn landing-btn--primary"
+            onClick={onSeeLiveRooms}
+          >
             Join the Next Match Room
           </button>
-          <button type="button" className="landing-btn landing-btn--secondary" onClick={onEnterFanGround}>
+          <button
+            type="button"
+            className="landing-btn landing-btn--secondary"
+            onClick={onEnterFanGround}
+          >
             Start Your Fan Identity
           </button>
         </div>
@@ -302,7 +373,11 @@ export default function LandingHome({ onEnterFanGround, onSeeLiveRooms }: Landin
       </section>
 
       <div className="landing-sticky">
-        <button type="button" className="landing-btn landing-btn--primary" onClick={onSeeLiveRooms}>
+        <button
+          type="button"
+          className="landing-btn landing-btn--primary"
+          onClick={onSeeLiveRooms}
+        >
           Join the next match room
         </button>
       </div>
