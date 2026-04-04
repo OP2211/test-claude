@@ -17,9 +17,7 @@ export default function LandingHome({
       {/* 1. Hero */}
       <section className="landing-hero" aria-labelledby="landing-hero-title">
         {/* Waitlist — after full story; captures scanners who aren’t ready to jump in */}
-        <div className="landing-waitlist-wrap">
-          <WaitlistSection className="wl--landing" />
-        </div>
+       
         <div className="landing-hero-grid">
           <div className="landing-hero-copy">
             <p className="landing-live-pill" role="status">
@@ -122,7 +120,10 @@ export default function LandingHome({
           Join a match room
         </button>
       </div>
-
+      
+       <div className="landing-waitlist-wrap">
+          <WaitlistSection className="wl--landing" />
+        </div>
       {/* 3. Problem */}
       <section
         className="landing-section"
@@ -381,6 +382,9 @@ export default function LandingHome({
           Join the next match room
         </button>
       </div>
+       <div className="landing-waitlist-wrap">
+          <WaitlistSection className="wl--landing" />
+        </div>
     </div>
   );
 }
