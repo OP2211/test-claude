@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const SUBJECT = 'FanGround waitlist signup';
+const WAITLIST_RECIPIENT_EMAIL = 'opdpro@gmail.com';
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 });
     }
 
-    const notifyEmail = (process.env.WAITLIST_NOTIFICATION_EMAIL ?? 'opdpro@gmail.com').trim();
+    const notifyEmail = WAITLIST_RECIPIENT_EMAIL;
 
     const details = [
       name && `Name: ${name}`,

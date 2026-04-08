@@ -3,36 +3,12 @@
 import { useState, useRef, FormEvent } from 'react';
 import './WaitlistSection.css';
 
-const WAITLIST_SUBJECT = 'FanGround waitlist signup';
-
-function web3formsErrorMessage(json: unknown): string | undefined {
-  if (typeof json !== 'object' || json === null) return undefined;
-  const j = json as Record<string, unknown>;
-  if (typeof j.message === 'string') return j.message;
-  const body = j.body;
-  if (typeof body === 'object' && body !== null && 'message' in body) {
-    const m = (body as { message?: unknown }).message;
-    if (typeof m === 'string') return m;
-  }
-  return undefined;
-}
-
-function web3formsOk(json: unknown): boolean {
-  return typeof json === 'object' && json !== null && (json as { success?: unknown }).success === true;
-}
-
 interface WaitlistSectionProps {
   /** e.g. `wl--landing` for full-width marketing embed */
   className?: string;
 }
 
 export default function WaitlistSection({ className }: WaitlistSectionProps) {
-  const web3Key = process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY?.trim();
-  const web3OptIn =
-    process.env.NEXT_PUBLIC_WAITLIST_USE_WEB3FORMS === 'true' ||
-    process.env.NEXT_PUBLIC_WAITLIST_USE_WEB3FORMS === '1';
-  const useWeb3FormsSubmit = Boolean(web3Key && web3OptIn);
-
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [club, setClub] = useState('');
@@ -55,46 +31,6 @@ export default function WaitlistSection({ className }: WaitlistSectionProps) {
     }
 
     try {
-      if (useWeb3FormsSubmit && web3Key) {
-        const details = [
-          name && `Name: ${name}`,
-          `Email: ${email}`,
-          club && `Club / note: ${club}`,
-          `Time (UTC): ${new Date().toISOString()}`,
-        ]
-          .filter(Boolean)
-          .join('\n');
-
-        const res = await fetch('https://api.web3forms.com/submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({
-            access_key: web3Key,
-            subject: WAITLIST_SUBJECT,
-            from_name: name || 'FanGround waitlist',
-            email,
-            replyto: email,
-            message: details,
-          }),
-        });
-
-        const data: unknown = await res.json().catch(() => null);
-        if (!web3formsOk(data)) {
-          setStatus('error');
-          const msg =
-            web3formsErrorMessage(data) ??
-            'Could not send. In Web3Forms, allow this domain (e.g. localhost, your Vercel URL) and confirm the inbox tied to your access key.';
-          setErrorMessage(msg);
-          return;
-        }
-
-        setStatus('success');
-        setEmail('');
-        setName('');
-        setClub('');
-        return;
-      }
-
       const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -223,11 +159,7 @@ export default function WaitlistSection({ className }: WaitlistSectionProps) {
             )}
           </button>
 
-          {/* <p className="wl-footnote">
-            {useWeb3FormsSubmit
-              ? 'Web3Forms: mail goes to the inbox tied to your access key; allow this domain in the Web3Forms dashboard.'
-              : 'Uses FormSubmit: set WAITLIST_NOTIFICATION_EMAIL, activate the link in that inbox once, and set NEXTAUTH_URL or NEXT_PUBLIC_APP_URL (e.g. http://localhost:3000).'}
-          </p> */}
+          {/* <p className="wl-footnote">Uses FormSubmit through /api/waitlist.</p> */}
         </form>
       </div>
     </section>
