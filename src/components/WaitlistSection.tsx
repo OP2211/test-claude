@@ -3,6 +3,15 @@
 import { useState, useRef, FormEvent } from 'react';
 import './WaitlistSection.css';
 
+const WAITLIST_RECIPIENT_EMAIL = 'opdpro@gmail.com';
+const WAITLIST_SUBJECT = 'FanGround waitlist signup';
+
+function isFormSubmitOk(data: unknown): boolean {
+  if (!data || typeof data !== 'object') return false;
+  const v = (data as { success?: unknown }).success;
+  return v === true || v === 'true';
+}
+
 interface WaitlistSectionProps {
   /** e.g. `wl--landing` for full-width marketing embed */
   className?: string;
@@ -31,6 +40,38 @@ export default function WaitlistSection({ className }: WaitlistSectionProps) {
     }
 
     try {
+      const details = [
+        name && `Name: ${name}`,
+        `Email: ${email}`,
+        club && `Club / note: ${club}`,
+        `Time (UTC): ${new Date().toISOString()}`,
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      // Browser-origin request often succeeds where server-to-server is blocked.
+      const directRes = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(WAITLIST_RECIPIENT_EMAIL)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          _subject: WAITLIST_SUBJECT,
+          _template: 'table',
+          _captcha: 'false',
+          name: name || '—',
+          email,
+          club: club || '—',
+          details,
+        }),
+      });
+      const directPayload: unknown = await directRes.json().catch(() => null);
+      if (directRes.ok && isFormSubmitOk(directPayload)) {
+        setStatus('success');
+        setEmail('');
+        setName('');
+        setClub('');
+        return;
+      }
+
       const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
