@@ -7,17 +7,42 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-/** FormSubmit rejects server-side fetch without a browser-like Referer (misleading error or silent failure). */
-function getSiteOrigin(): string {
+/** Prefer request domain so FormSubmit sees the real site origin. */
+function getSiteOrigin(req: NextRequest): string {
+  const requestOrigin = req.headers.get('origin')?.trim();
+  if (requestOrigin) return requestOrigin.replace(/\/$/, '');
+
+  const xfh = req.headers.get('x-forwarded-host')?.trim();
+  if (xfh) {
+    const xfp = req.headers.get('x-forwarded-proto')?.trim() || 'https';
+    return `${xfp}://${xfh}`.replace(/\/$/, '');
+  }
+
+  const host = req.headers.get('host')?.trim();
+  if (host) {
+    const proto = host.includes('localhost') ? 'http' : 'https';
+    return `${proto}://${host}`.replace(/\/$/, '');
+  }
+
   const u = process.env.NEXTAUTH_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (u) return u.replace(/\/$/, '');
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL.replace(/^https?:\/\//, '')}`;
-  return 'http://localhost:3000';
+  return 'https://fanground.online/';
 }
 
 function formsubmitSuccess(data: { success?: string | boolean }): boolean {
   const s = data.success;
   return s === true || s === 'true';
+}
+
+function browserLikeHeaders(origin: string): Record<string, string> {
+  return {
+    Accept: 'application/json, text/plain, */*',
+    Referer: `${origin}/`,
+    Origin: origin,
+    'User-Agent':
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  };
 }
 
 /** Shown to visitors; details only in server logs (e.g. Vercel → Functions → waitlist). */
@@ -50,15 +75,13 @@ export async function POST(req: NextRequest) {
       .filter(Boolean)
       .join('\n');
 
-    const origin = getSiteOrigin();
+    const origin = getSiteOrigin(req);
     const fsUrl = `https://formsubmit.co/ajax/${encodeURIComponent(notifyEmail)}`;
     const res = await fetch(fsUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Accept: 'application/json',
-        Referer: `${origin}/`,
-        Origin: origin,
+        ...browserLikeHeaders(origin),
       },
       body: JSON.stringify({
         _subject: SUBJECT,
@@ -76,7 +99,40 @@ export async function POST(req: NextRequest) {
     try {
       data = JSON.parse(raw) as { success?: string | boolean; message?: string };
     } catch {
+      const cloudflareChallenge = /just a moment|cf-challenge|cloudflare/i.test(raw);
       console.error('[waitlist] FormSubmit non-JSON', { httpStatus: res.status, snippet: raw.slice(0, 400) });
+
+      if (!cloudflareChallenge) {
+        return NextResponse.json({ error: WAITLIST_FORM_UNAVAILABLE }, { status: 502 });
+      }
+
+      // Fallback for Cloudflare bot challenge on /ajax endpoint.
+      const fallback = await fetch(`https://formsubmit.co/${encodeURIComponent(notifyEmail)}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+          ...browserLikeHeaders(origin),
+        },
+        redirect: 'manual',
+        body: new URLSearchParams({
+          _subject: SUBJECT,
+          _template: 'table',
+          _captcha: 'false',
+          name: name || '—',
+          email,
+          club: club || '—',
+          details,
+        }).toString(),
+      });
+
+      // FormSubmit non-AJAX flow usually redirects (302) when accepted.
+      if (fallback.ok || (fallback.status >= 300 && fallback.status < 400)) {
+        return NextResponse.json({ ok: true });
+      }
+
+      console.error('[waitlist] FormSubmit fallback failed', {
+        httpStatus: fallback.status,
+      });
       return NextResponse.json({ error: WAITLIST_FORM_UNAVAILABLE }, { status: 502 });
     }
 
