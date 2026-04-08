@@ -205,6 +205,7 @@ function parseIncomingMessage(raw: unknown): Message | null {
 export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
   const [activeTab, setActiveTab] = useState<TabId>('predictions');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [didInitViewportMenuState, setDidInitViewportMenuState] = useState(false);
   const [messages, setMessages] = useState<MessagesByTab>({ predictions: [], teamsheet: [], banter: [] });
   const [votes, setVotes] = useState<VoteTally>({ home: 0, draw: 0, away: 0 });
   const [voteByChoice, setVoteByChoice] = useState<Record<VoteChoice, VoteVoter[]>>(emptyVoteByChoice);
@@ -228,8 +229,15 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
   }, []);
 
   useEffect(() => {
-    if (isDesktop) setMenuOpen(false);
-  }, [isDesktop]);
+    if (isDesktop) {
+      setMenuOpen(false);
+      return;
+    }
+    if (!didInitViewportMenuState) {
+      setMenuOpen(true);
+      setDidInitViewportMenuState(true);
+    }
+  }, [isDesktop, didInitViewportMenuState]);
 
   const upsertMessage = useCallback((msg: Message) => {
     if (!isTabId(msg.tab)) return;

@@ -224,7 +224,8 @@
 
 .vp-score-card {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -244,6 +245,7 @@
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
+  text-align: center;
 }
 
 .vp-score-hint {
@@ -251,6 +253,17 @@
   color: var(--text-dim);
   line-height: 1.25;
   margin-top: 2px;
+  text-align: center;
+}
+
+.vp-score-value {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 @media (min-width: 768px) {

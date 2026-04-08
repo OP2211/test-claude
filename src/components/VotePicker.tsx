@@ -177,8 +177,9 @@ export default function VotePicker({ match, votes, votersByChoice, voteHistory, 
           </svg>
         </div>
         <div>
-          <h4 className="vp-score-title">Exact score</h4>
-          <p className="vp-score-hint">Post your scoreline in Predict chat</p>
+          <h4 className="vp-score-title">Current Score</h4>
+          <p className="vp-score-hint">{match.homeTeam.shortName} vs {match.awayTeam.shortName}</p>
+          <p className="vp-score-value">0-0</p>
         </div>
       </div>
     </div>
