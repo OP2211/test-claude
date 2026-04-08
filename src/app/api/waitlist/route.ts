@@ -9,6 +9,9 @@ function isValidEmail(email: string): boolean {
 
 /** Prefer request domain so FormSubmit sees the real site origin. */
 function getSiteOrigin(req: NextRequest): string {
+  const nextUrlOrigin = req.nextUrl?.origin?.trim();
+  if (nextUrlOrigin) return nextUrlOrigin.replace(/\/$/, '');
+
   const requestOrigin = req.headers.get('origin')?.trim();
   if (requestOrigin) return requestOrigin.replace(/\/$/, '');
 
@@ -27,7 +30,7 @@ function getSiteOrigin(req: NextRequest): string {
   const u = process.env.NEXTAUTH_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (u) return u.replace(/\/$/, '');
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL.replace(/^https?:\/\//, '')}`;
-  return 'https://fanground.online/';
+  return 'https://fanground.online';
 }
 
 function formsubmitSuccess(data: { success?: string | boolean }): boolean {
