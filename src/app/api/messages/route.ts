@@ -8,5 +8,5 @@ export async function GET(request: NextRequest) {
   if (!matchId || !tab) {
     return NextResponse.json({ error: 'matchId and tab are required' }, { status: 400 });
   }
-  return NextResponse.json(getMessages(matchId, tab));
+  return NextResponse.json(await getMessages(matchId, tab));
 }

@@ -95,8 +95,8 @@ export default function Home() {
     setActiveMatch(match);
   };
 
-  const handleOnboardingComplete = (fanTeamId: TeamId) => {
-    const newUser: User = { userId: generateUserId(), username: session?.user?.name ?? '', email: session?.user?.email ?? '', image: session?.user?.image ?? '', fanTeamId };
+  const handleOnboardingComplete = (fanTeamId: TeamId, devUsername?: string) => {
+    const newUser: User = { userId: generateUserId(), username: devUsername || session?.user?.name || '', email: session?.user?.email ?? '', image: session?.user?.image ?? '', fanTeamId };
     localStorage.setItem('ffc_user', JSON.stringify(newUser));
     setUser(newUser);
     setShowOnboarding(false);

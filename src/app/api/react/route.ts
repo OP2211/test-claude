@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   if (!matchId || !tab || !messageId || !emoji || !userId) {
     return NextResponse.json({ error: 'matchId, tab, messageId, emoji, and userId are required' }, { status: 400 });
   }
-  const reactions = toggleReaction(matchId, tab, messageId, emoji, userId);
+  const reactions = await toggleReaction(matchId, tab, messageId, emoji, userId);
   if (!reactions) return NextResponse.json({ error: 'Message not found' }, { status: 404 });
   await trigger(matchId, 'reaction-updated', { messageId, reactions });
   return NextResponse.json({ messageId, reactions });

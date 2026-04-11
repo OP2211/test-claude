@@ -69,6 +69,7 @@
 .mr-back:active { transform: scale(0.96); background: rgba(255,255,255,0.08); }
 .mr-match-strip { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 .mr-strip-badge { font-size: 1.2rem; flex-shrink: 0; }
+.mr-strip-logo { width: 24px; height: 24px; object-fit: contain; flex-shrink: 0; }
 .mr-strip-info { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; text-align: center; }
 .mr-strip-teams { font-size: var(--text-sm); font-weight: 760; color: rgba(255,255,255,0.92); letter-spacing: -0.25px; }
 .mr-strip-meta { font-size: var(--text-xs); color: var(--text-dim); font-weight: 600; }

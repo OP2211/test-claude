@@ -17,16 +17,17 @@ const _voteHistory: Record<string, VoteHistoryPoint[]> = {};
 
 const MAX_VOTE_HISTORY = 200;
 
-function getRoom(matchId: string): Room {
+async function getRoom(matchId: string): Promise<Room> {
   if (!_messages[matchId]) {
     _messages[matchId] = { predictions: [], teamsheet: [], banter: [] };
-    seedMessages(matchId);
+    await seedMessages(matchId);
   }
   return _messages[matchId];
 }
 
-export function getMessages(matchId: string, tab: TabId): Message[] {
-  return getRoom(matchId)[tab] || [];
+export async function getMessages(matchId: string, tab: TabId): Promise<Message[]> {
+  const room = await getRoom(matchId);
+  return room[tab] || [];
 }
 
 interface AddMessageParams {
@@ -38,8 +39,8 @@ interface AddMessageParams {
   text: string;
 }
 
-export function addMessage(matchId: string, { tab, userId, username, fanTeamId, image, text }: AddMessageParams): Message {
-  const room = getRoom(matchId);
+export async function addMessage(matchId: string, { tab, userId, username, fanTeamId, image, text }: AddMessageParams): Promise<Message> {
+  const room = await getRoom(matchId);
   const msg: Message = {
     id: uuidv4(),
     userId,
@@ -57,8 +58,8 @@ export function addMessage(matchId: string, { tab, userId, username, fanTeamId, 
   return msg;
 }
 
-export function toggleReaction(matchId: string, tab: TabId, messageId: string, emoji: string, userId: string): Reactions | null {
-  const room = getRoom(matchId);
+export async function toggleReaction(matchId: string, tab: TabId, messageId: string, emoji: string, userId: string): Promise<Reactions | null> {
+  const room = await getRoom(matchId);
   const msg = (room[tab] || []).find(m => m.id === messageId);
   if (!msg) return null;
   if (!msg.reactions[emoji]) msg.reactions[emoji] = [];
@@ -133,8 +134,8 @@ export function getVoteTally(matchId: string): VoteTally {
   return getVoteSnapshot(matchId).tally;
 }
 
-function seedMessages(matchId: string): void {
-  const match = getMatch(matchId);
+async function seedMessages(matchId: string): Promise<void> {
+  const match = await getMatch(matchId);
   if (!match) return;
 
   const h = match.homeTeam.shortName;

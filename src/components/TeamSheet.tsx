@@ -21,13 +21,83 @@ const FORMATION_ROWS: Record<string, FormationRow[]> = {
     { pos: ['RM', 'CM', 'CM', 'LM'] },
     { pos: ['ST', 'ST'] },
   ],
+  '4-2-3-1': [
+    { pos: ['GK'] },
+    { pos: ['RB', 'CB', 'CB', 'LB'] },
+    { pos: ['CDM', 'CDM'] },
+    { pos: ['RW', 'AM', 'LW'] },
+    { pos: ['ST'] },
+  ],
+  '4-1-4-1': [
+    { pos: ['GK'] },
+    { pos: ['RB', 'CB', 'CB', 'LB'] },
+    { pos: ['CDM'] },
+    { pos: ['RM', 'CM', 'CM', 'LM'] },
+    { pos: ['ST'] },
+  ],
+  '3-4-3': [
+    { pos: ['GK'] },
+    { pos: ['CB', 'CB', 'CB'] },
+    { pos: ['RM', 'CM', 'CM', 'LM'] },
+    { pos: ['RW', 'ST', 'LW'] },
+  ],
   '3-5-2': [
     { pos: ['GK'] },
     { pos: ['CB', 'CB', 'CB'] },
     { pos: ['RM', 'CM', 'CM', 'CM', 'LM'] },
     { pos: ['ST', 'ST'] },
   ],
+  '5-3-2': [
+    { pos: ['GK'] },
+    { pos: ['RWB', 'CB', 'CB', 'CB', 'LWB'] },
+    { pos: ['CM', 'CM', 'CM'] },
+    { pos: ['ST', 'ST'] },
+  ],
+  '5-4-1': [
+    { pos: ['GK'] },
+    { pos: ['RWB', 'CB', 'CB', 'CB', 'LWB'] },
+    { pos: ['RM', 'CM', 'CM', 'LM'] },
+    { pos: ['ST'] },
+  ],
+  '4-4-1-1': [
+    { pos: ['GK'] },
+    { pos: ['RB', 'CB', 'CB', 'LB'] },
+    { pos: ['RM', 'CM', 'CM', 'LM'] },
+    { pos: ['AM'] },
+    { pos: ['ST'] },
+  ],
+  '4-3-2-1': [
+    { pos: ['GK'] },
+    { pos: ['RB', 'CB', 'CB', 'LB'] },
+    { pos: ['CM', 'CM', 'CM'] },
+    { pos: ['AM', 'AM'] },
+    { pos: ['ST'] },
+  ],
+  '3-4-2-1': [
+    { pos: ['GK'] },
+    { pos: ['CB', 'CB', 'CB'] },
+    { pos: ['RM', 'CM', 'CM', 'LM'] },
+    { pos: ['AM', 'AM'] },
+    { pos: ['ST'] },
+  ],
 };
+
+/** Dynamically build formation rows from a formation string like "4-2-3-1". */
+function parseFormation(formation: string): FormationRow[] {
+  const known = FORMATION_ROWS[formation];
+  if (known) return known;
+
+  const parts = formation.split('-').map(Number).filter(n => n > 0);
+  if (parts.length < 2) return FORMATION_ROWS['4-3-3'];
+
+  const rows: FormationRow[] = [{ pos: ['GK'] }];
+  const posLabels = ['CB', 'CM', 'AM', 'ST'];
+  parts.forEach((count, i) => {
+    const label = posLabels[Math.min(i, posLabels.length - 1)];
+    rows.push({ pos: Array(count).fill(label) });
+  });
+  return rows;
+}
 
 interface PitchViewProps {
   team: Team;
@@ -36,8 +106,16 @@ interface PitchViewProps {
 }
 
 function PitchView({ team, players, formation }: PitchViewProps) {
-  const rows = FORMATION_ROWS[formation] || FORMATION_ROWS['4-3-3'];
+  const rows = parseFormation(formation);
+
+  // Assign players to rows. Players array is ordered GK → DEF → MID → FWD.
   let playerIdx = 0;
+  const assignedRows = rows.map(row => {
+    return row.pos.map(pos => {
+      const player = players[playerIdx++] || '?';
+      return { player, pos };
+    });
+  });
 
   return (
     <div className="ts-pitch">
@@ -48,19 +126,18 @@ function PitchView({ team, players, formation }: PitchViewProps) {
         <div className="ts-pitch-box top" />
         <div className="ts-pitch-box bottom" />
 
-        {/* Players - reversed so GK at bottom, attackers at top */}
-        {[...rows].reverse().map((row, ri) => (
+        {/* Render rows top-to-bottom: attackers first, GK last */}
+        {[...assignedRows].reverse().map((row, ri) => (
           <div key={ri} className="ts-pitch-row">
-            {row.pos.map((pos, pi) => {
-              const player = players[playerIdx++] || '?';
-              const surname = player.split(' ').pop();
+            {row.map((slot, pi) => {
+              const surname = slot.player.split(' ').pop();
               return (
                 <div key={pi} className="ts-player">
                   <div className="ts-player-dot" style={{ background: team.color, boxShadow: `0 2px 10px ${team.color}60` }}>
-                    <span className="ts-player-initial">{player[0]}</span>
+                    <span className="ts-player-initial">{slot.player[0] === '?' ? '?' : slot.player[0]}</span>
                   </div>
                   <span className="ts-player-name">{surname}</span>
-                  <span className="ts-player-pos">{pos}</span>
+                  <span className="ts-player-pos">{slot.pos}</span>
                 </div>
               );
             })}
@@ -88,14 +165,22 @@ export default function TeamSheet({ match }: TeamSheetProps) {
           className={`ts-sw-btn ${view === 'home' ? 'active' : ''}`}
           onClick={() => setView('home')}
         >
-          <span className="ts-sw-badge">{match.homeTeam.badge}</span>
+          {match.homeTeam.logo ? (
+            <img src={match.homeTeam.logo} alt="" className="ts-sw-logo" />
+          ) : (
+            <span className="ts-sw-badge">{match.homeTeam.badge}</span>
+          )}
           <span className="ts-sw-name">{match.homeTeam.shortName}</span>
         </button>
         <button
           className={`ts-sw-btn ${view === 'away' ? 'active' : ''}`}
           onClick={() => setView('away')}
         >
-          <span className="ts-sw-badge">{match.awayTeam.badge}</span>
+          {match.awayTeam.logo ? (
+            <img src={match.awayTeam.logo} alt="" className="ts-sw-logo" />
+          ) : (
+            <span className="ts-sw-badge">{match.awayTeam.badge}</span>
+          )}
           <span className="ts-sw-name">{match.awayTeam.shortName}</span>
         </button>
       </div>
