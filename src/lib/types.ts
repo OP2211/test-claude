@@ -1,13 +1,11 @@
-export type TeamId =
-  | 'manchester-united' | 'liverpool' | 'arsenal' | 'chelsea'
-  | 'manchester-city' | 'tottenham' | 'barcelona' | 'real-madrid'
-  | 'bayern-munich' | 'juventus';
+export type TeamId = string;
 
 export interface Team {
   name: string;
   shortName: string;
   badge: string;
   color: string;
+  logo?: string;
 }
 
 export interface TeamSheet {
@@ -26,9 +24,18 @@ export interface Match {
   status: 'upcoming' | 'live' | 'finished';
   homeTeam: Team;
   awayTeam: Team;
+  homeScore?: number;
+  awayScore?: number;
+  clock?: string;
   teamSheet: {
     home: TeamSheet;
     away: TeamSheet;
+  };
+  /** ESPN internal metadata - used to fetch rosters on demand */
+  _espn?: {
+    homeTeamId: string;
+    awayTeamId: string;
+    leagueSlug: string;
   };
 }
 

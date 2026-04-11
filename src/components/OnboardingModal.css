@@ -98,6 +98,19 @@
   animation: scaleIn 0.2s var(--ease-spring);
 }
 
+/* ── Dev Name Input ──────────────────────────────────────────── */
+.ob-dev-input {
+  width: 100%; background: var(--bg-primary);
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--text-base); font-weight: 600;
+  padding: 14px 16px;
+  min-height: 52px; transition: border-color 0.2s;
+}
+.ob-dev-input:focus { border-color: var(--accent-blue); outline: none; }
+.ob-dev-input::placeholder { color: var(--text-dim); font-weight: 400; }
+
 /* ── Google Button ────────────────────────────────────────────── */
 .ob-google-btn {
   display: flex;

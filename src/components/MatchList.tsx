@@ -21,6 +21,7 @@ function getMatchStatus(match: Match): MatchStatus {
   const kickoff = new Date(match.kickoff);
   const minsToKickoff = (kickoff.getTime() - now.getTime()) / 60000;
   if (match.status === 'live') return { label: 'LIVE', type: 'live' };
+  if (match.status === 'finished' || minsToKickoff < -120) return { label: 'FT', type: 'finished' };
   if (minsToKickoff < 0) return { label: 'FT', type: 'finished' };
   if (minsToKickoff <= 120) return { label: 'OPEN', type: 'open' };
   return { label: 'SOON', type: 'upcoming' };
@@ -111,7 +112,11 @@ export default function MatchList({ matches, user, onSelectMatch, isLoading }: M
         {/* Teams */}
         <div className="ml-teams">
           <div className="ml-team">
-            <span className="ml-badge" aria-hidden="true">{match.homeTeam.badge}</span>
+            {match.homeTeam.logo ? (
+              <img src={match.homeTeam.logo} alt="" className="ml-team-logo" aria-hidden="true" />
+            ) : (
+              <span className="ml-badge" aria-hidden="true">{match.homeTeam.badge}</span>
+            )}
             <div className="ml-team-text">
               <span className="ml-team-name">{match.homeTeam.name}</span>
               <span className="ml-team-short">{match.homeTeam.shortName}</span>
@@ -120,8 +125,18 @@ export default function MatchList({ matches, user, onSelectMatch, isLoading }: M
 
           <div className="ml-center">
             {status.type === 'live' ? (
-              <div className="ml-live-indicator">
-                <span className="ml-live-text">LIVE</span>
+              <div className="ml-score-block">
+                <span className="ml-score">
+                  {match.homeScore ?? 0} - {match.awayScore ?? 0}
+                </span>
+                <span className="ml-clock">{match.clock || 'LIVE'}</span>
+              </div>
+            ) : status.type === 'finished' ? (
+              <div className="ml-score-block">
+                <span className="ml-score">
+                  {match.homeScore ?? 0} - {match.awayScore ?? 0}
+                </span>
+                <span className="ml-clock-ft">FT</span>
               </div>
             ) : (
               <div className="ml-time-block">
@@ -135,7 +150,11 @@ export default function MatchList({ matches, user, onSelectMatch, isLoading }: M
               <span className="ml-team-name">{match.awayTeam.name}</span>
               <span className="ml-team-short">{match.awayTeam.shortName}</span>
             </div>
-            <span className="ml-badge" aria-hidden="true">{match.awayTeam.badge}</span>
+            {match.awayTeam.logo ? (
+              <img src={match.awayTeam.logo} alt="" className="ml-team-logo" aria-hidden="true" />
+            ) : (
+              <span className="ml-badge" aria-hidden="true">{match.awayTeam.badge}</span>
+            )}
           </div>
         </div>
 

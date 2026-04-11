@@ -17,6 +17,7 @@
 .ts-sw-btn.active { background: var(--bg-elevated); color: var(--text-primary); box-shadow: var(--shadow-1); }
 .ts-sw-btn:active:not(.active) { background: rgba(255,255,255,0.03); }
 .ts-sw-badge { font-size: var(--text-base); }
+.ts-sw-logo { width: 20px; height: 20px; object-fit: contain; }
 
 /* ── Status ───────────────────────────────────────────────────── */
 .ts-status { display: flex; justify-content: space-between; align-items: center; }

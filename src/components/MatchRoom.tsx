@@ -202,7 +202,8 @@ function parseIncomingMessage(raw: unknown): Message | null {
   }
 }
 
-export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
+export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRoomProps) {
+  const [match, setMatch] = useState<Match>(initialMatch);
   const [activeTab, setActiveTab] = useState<TabId>('predictions');
   const [menuOpen, setMenuOpen] = useState(false);
   const [didInitViewportMenuState, setDidInitViewportMenuState] = useState(false);
@@ -260,11 +261,12 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
   useEffect(() => {
     async function init() {
       try {
-        const [pRes, tRes, bRes, vRes] = await Promise.all([
+        const [pRes, tRes, bRes, vRes, mRes] = await Promise.all([
           fetch(`/api/messages?matchId=${match.id}&tab=predictions`),
           fetch(`/api/messages?matchId=${match.id}&tab=teamsheet`),
           fetch(`/api/messages?matchId=${match.id}&tab=banter`),
           fetch(`/api/vote?matchId=${match.id}`),
+          fetch(`/api/match?id=${match.id}`),
         ]);
         const [predictions, teamsheet, banter, votePayload]: [
           Message[],
@@ -273,6 +275,11 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
           | VoteTally
           | { tally: VoteTally; byChoice: Record<VoteChoice, VoteVoter[]>; history?: VoteHistoryPoint[] },
         ] = await Promise.all([pRes.json(), tRes.json(), bRes.json(), vRes.json()]);
+        // Update match with enriched data (rosters, latest score)
+        if (mRes.ok) {
+          const enriched: Match = await mRes.json();
+          setMatch(enriched);
+        }
         setMessages({ predictions, teamsheet, banter });
         if (votePayload && typeof votePayload === 'object' && 'byChoice' in votePayload && 'tally' in votePayload) {
           const snap = votePayload as {
@@ -479,23 +486,37 @@ export default function MatchRoom({ match, user, onBack }: MatchRoomProps) {
         </button>
 
         <div className="mr-match-strip">
-          <span className="mr-strip-badge">{match.homeTeam.badge}</span>
+          {match.homeTeam.logo ? (
+            <img src={match.homeTeam.logo} alt="" className="mr-strip-logo" />
+          ) : (
+            <span className="mr-strip-badge">{match.homeTeam.badge}</span>
+          )}
           <div className="mr-strip-info">
             <span className="mr-strip-teams">
-              {match.homeTeam.shortName} vs {match.awayTeam.shortName}
+              {match.homeTeam.shortName}
+              {(isLive || match.status === 'finished') && match.homeScore != null
+                ? ` ${match.homeScore} - ${match.awayScore} `
+                : ' vs '}
+              {match.awayTeam.shortName}
             </span>
             <span className="mr-strip-meta">
               {isLive ? (
                 <span className="mr-strip-live">
                   <span className="mr-strip-live-dot" />
-                  LIVE
+                  {match.clock || 'LIVE'}
                 </span>
+              ) : match.status === 'finished' ? (
+                <>FT &middot; {match.competition}</>
               ) : (
                 <>{match.competition} &middot; {kickoffStr}</>
               )}
             </span>
           </div>
-          <span className="mr-strip-badge">{match.awayTeam.badge}</span>
+          {match.awayTeam.logo ? (
+            <img src={match.awayTeam.logo} alt="" className="mr-strip-logo" />
+          ) : (
+            <span className="mr-strip-badge">{match.awayTeam.badge}</span>
+          )}
         </div>
 
         <button

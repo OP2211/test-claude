@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   if (!matchId || !tab || !text?.trim()) {
     return NextResponse.json({ error: 'matchId, tab, and text are required' }, { status: 400 });
   }
-  const msg = addMessage(matchId, { tab, userId, username, fanTeamId, image, text });
+  const msg = await addMessage(matchId, { tab, userId, username, fanTeamId, image, text });
   await trigger(matchId, 'new-message', msg);
   return NextResponse.json(msg, { status: 201 });
 }
