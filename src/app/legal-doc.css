@@ -57,7 +57,7 @@
 }
 
 .legal-doc strong {
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(var(--neutral-rgb), 0.88);
   font-weight: 700;
 }
 
@@ -65,7 +65,7 @@
   margin-top: 20px;
   margin-bottom: 28px;
   padding: 16px 18px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--neutral-rgb), 0.03);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-2);
@@ -87,5 +87,5 @@
 }
 
 .legal-doc .legal-links a:hover {
-  color: #60a5fa;
+  color: var(--color-info);
 }

@@ -15,7 +15,7 @@
   font-size: clamp(2.2rem, 5.5vw, 3.1rem);
   font-weight: 400;
   letter-spacing: -0.6px;
-  color: rgba(255,255,255,0.94);
+  color: rgba(var(--neutral-rgb),0.94);
   line-height: 1.05;
 }
 .ml-hero-sub {
@@ -26,21 +26,21 @@
 }
 .ml-hero-hint {
   display: flex; align-items: center; gap: 6px; margin-top: 8px;
-  font-size: var(--text-xs); font-weight: 650; color: rgba(255,255,255,0.86);
-  background: rgba(59,130,246,0.10); border: 1px solid rgba(59,130,246,0.20);
+  font-size: var(--text-xs); font-weight: 650; color: rgba(var(--neutral-rgb),0.86);
+  background: color-mix(in srgb, var(--accent-yellow) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent-yellow) 22%, transparent);
   border-radius: 999px; padding: 7px 14px;
 }
-.ml-hint-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.18); }
+.ml-hint-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-yellow) 20%, transparent); }
 
 /* ── Section ─────────────────────────────────────────────────── */
 .ml-section { margin-bottom: 22px; }
 .ml-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .ml-section-left { display: flex; align-items: center; gap: 8px; }
 .ml-section-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
-.ml-section-dot.active { background: var(--color-success); box-shadow: 0 0 0 4px rgba(34,197,94,0.14); }
+.ml-section-dot.active { background: var(--color-success); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-green) 16%, transparent); }
 .ml-section-title { font-size: var(--text-xs); font-weight: 750; text-transform: uppercase; letter-spacing: 1.1px; color: var(--text-muted); }
 .ml-section-count { font-size: var(--text-xs); font-weight: 600; color: var(--text-dim); }
-.ml-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent); margin: 10px 12px 22px; }
+.ml-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(var(--neutral-rgb),0.14), transparent); margin: 10px 12px 22px; }
 
 /* ── Grid ────────────────────────────────────────────────────── */
 .ml-grid { display: flex; flex-direction: column; gap: 12px; }
@@ -48,7 +48,7 @@
 /* ── Card ────────────────────────────────────────────────────── */
 .ml-card {
   position: relative; overflow: hidden;
-  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)) , var(--bg-card);
+  background: linear-gradient(180deg, rgba(var(--neutral-rgb),0.03), rgba(var(--neutral-rgb),0.015)) , var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 16px 16px;
   text-align: left; width: 100%; color: inherit; font: inherit;
@@ -56,10 +56,10 @@
   animation: fadeInUp var(--duration-slow) var(--ease-out) backwards;
   box-shadow: var(--shadow-1);
 }
-.ml-card.open { cursor: pointer; border-color: rgba(255,255,255,0.12); }
+.ml-card.open { cursor: pointer; border-color: rgba(var(--neutral-rgb),0.12); }
 .ml-card.open:active { transform: scale(0.98); }
 .ml-card.locked { opacity: 0.45; cursor: default; }
-.ml-card.live { border-color: rgba(239,68,68,0.28); box-shadow: var(--shadow-live); }
+.ml-card.live { border-color: color-mix(in srgb, var(--accent-red) 32%, transparent); box-shadow: var(--shadow-live); }
 
 .ml-card-glow { position: absolute; inset: 0; pointer-events: none; background: var(--gradient-glow); opacity: 0.8; }
 .ml-card.live .ml-card-glow { background: var(--gradient-live); }
@@ -68,8 +68,8 @@
 .ml-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .ml-comp { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.9px; color: var(--text-dim); }
 .ml-status { display: flex; align-items: center; gap: 5px; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 10px; border-radius: 50px; }
-.ml-status-live { background: rgba(239,68,68,0.15); color: var(--color-live); border: 1px solid rgba(239,68,68,0.4); }
-.ml-status-open { background: rgba(34,197,94,0.10); color: var(--color-success); border: 1px solid rgba(34,197,94,0.32); }
+.ml-status-live { background: color-mix(in srgb, var(--accent-red) 18%, transparent); color: var(--color-live); border: 1px solid color-mix(in srgb, var(--accent-red) 45%, transparent); }
+.ml-status-open { background: color-mix(in srgb, var(--accent-green) 12%, transparent); color: var(--color-success); border: 1px solid color-mix(in srgb, var(--accent-green) 38%, transparent); }
 .ml-status-upcoming, .ml-status-finished { background: var(--bg-surface); color: var(--text-dim); border: 1px solid var(--border); }
 .ml-live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-live); animation: livePulse 1.5s infinite; }
 
@@ -81,25 +81,25 @@
 .ml-team-logo { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
 .ml-team-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .ml-team-text.right { align-items: flex-end; }
-.ml-team-name { font-size: var(--text-sm); font-weight: 720; color: rgba(255,255,255,0.92); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ml-team-name { font-size: var(--text-sm); font-weight: 720; color: rgba(var(--neutral-rgb),0.92); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ml-team-short { font-size: var(--text-xs); font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
 
 /* Center */
 .ml-center { flex-shrink: 0; text-align: center; min-width: 56px; }
 .ml-time-block { display: flex; flex-direction: column; align-items: center; }
-.ml-time { font-size: var(--text-md); font-weight: 800; color: rgba(255,255,255,0.92); letter-spacing: -0.5px; }
-.ml-live-indicator { background: rgba(239,68,68,0.15); border-radius: var(--radius-sm); padding: 4px 12px; animation: livePulse 2s infinite; }
+.ml-time { font-size: var(--text-md); font-weight: 800; color: rgba(var(--neutral-rgb),0.92); letter-spacing: -0.5px; }
+.ml-live-indicator { background: color-mix(in srgb, var(--accent-red) 18%, transparent); border-radius: var(--radius-sm); padding: 4px 12px; animation: livePulse 2s infinite; }
 .ml-live-text { font-size: 0.7rem; font-weight: 900; color: var(--color-live); letter-spacing: 1.5px; }
 .ml-score-block { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.ml-score { font-size: 1.3rem; font-weight: 900; color: rgba(255,255,255,0.95); letter-spacing: 1px; }
+.ml-score { font-size: 1.3rem; font-weight: 900; color: rgba(var(--neutral-rgb),0.95); letter-spacing: 1px; }
 .ml-clock { font-size: 0.62rem; font-weight: 800; color: var(--color-live); letter-spacing: 0.5px; animation: livePulse 2s infinite; }
 .ml-clock-ft { font-size: 0.62rem; font-weight: 800; color: var(--text-dim); letter-spacing: 0.5px; }
 
 /* Card bottom */
 .ml-card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
 .ml-venue { font-size: 0.68rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ml-join-cta { display: flex; align-items: center; gap: 4px; font-size: var(--text-xs); font-weight: 750; color: rgba(255,255,255,0.90); white-space: nowrap; flex-shrink: 0; }
-.ml-card.open .ml-join-cta { color: rgba(255,255,255,0.92); }
+.ml-join-cta { display: flex; align-items: center; gap: 4px; font-size: var(--text-xs); font-weight: 750; color: rgba(var(--neutral-rgb),0.90); white-space: nowrap; flex-shrink: 0; }
+.ml-card.open .ml-join-cta { color: rgba(var(--neutral-rgb),0.92); }
 .ml-locked-info { font-size: 0.7rem; color: var(--text-dim); white-space: nowrap; flex-shrink: 0; }
 .ml-countdown { font-weight: 700; color: var(--text-secondary); }
 
@@ -115,10 +115,10 @@
 /* ── Empty / Error ───────────────────────────────────────────── */
 .ml-empty { text-align: center; padding: 56px 24px; animation: fadeIn 0.5s ease; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .ml-empty-icon-wrap { width: 64px; height: 64px; border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-dim); margin-bottom: 8px; }
-.ml-empty-icon-wrap.error { color: var(--color-live); border-color: rgba(239,68,68,0.2); }
+.ml-empty-icon-wrap.error { color: var(--color-live); border-color: color-mix(in srgb, var(--accent-red) 24%, transparent); }
 .ml-empty-text { font-size: var(--text-base); font-weight: 700; color: var(--text-secondary); }
 .ml-empty-sub { font-size: var(--text-sm); color: var(--text-dim); }
-.ml-retry-btn { display: flex; align-items: center; gap: 6px; margin-top: 12px; background: var(--bg-card); color: var(--accent-blue); font-size: var(--text-sm); font-weight: 700; padding: 10px 20px; border-radius: 50px; border: 1px solid rgba(77,141,255,0.2); transition: all var(--duration-fast); }
+.ml-retry-btn { display: flex; align-items: center; gap: 6px; margin-top: 12px; background: var(--bg-card); color: var(--accent-blue); font-size: var(--text-sm); font-weight: 700; padding: 10px 20px; border-radius: 50px; border: 1px solid color-mix(in srgb, var(--accent-yellow) 24%, transparent); transition: all var(--duration-fast); }
 .ml-retry-btn:active { transform: scale(0.96); }
 
 /* ── Desktop ─────────────────────────────────────────────────── */
@@ -127,7 +127,7 @@
   .ml-hero { padding: 46px 0 34px; }
   .ml-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 12px; }
   .ml-card { padding: 18px 20px; }
-  .ml-card.open:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow); border-color: rgba(255,255,255,0.16); }
+  .ml-card.open:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow); border-color: rgba(var(--neutral-rgb),0.16); }
   .ml-badge { font-size: 1.9rem; }
   .ml-team-logo { width: 42px; height: 42px; }
 }

@@ -1,7 +1,7 @@
 .vtc {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(var(--neutral-rgb), 0.06);
 }
 
 .vtc--empty {
@@ -33,12 +33,12 @@
 }
 
 .vtc-grid {
-  stroke: rgba(255, 255, 255, 0.06);
+  stroke: rgba(var(--neutral-rgb), 0.06);
   stroke-width: 1;
 }
 
 .vtc-ytick {
-  fill: rgba(255, 255, 255, 0.32);
+  fill: rgba(var(--neutral-rgb), 0.32);
   font-size: 8px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -51,17 +51,17 @@
 }
 
 .vtc-line--home {
-  stroke: #4d8dff;
-  filter: drop-shadow(0 0 4px rgba(77, 141, 255, 0.35));
+  stroke: var(--accent-yellow);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent-yellow) 44%, transparent));
 }
 
 .vtc-line--draw {
-  stroke: #ffca28;
+  stroke: var(--accent-green);
   filter: drop-shadow(0 0 4px rgba(255, 202, 40, 0.25));
 }
 
 .vtc-line--away {
-  stroke: #ff6090;
+  stroke: var(--accent-red);
   filter: drop-shadow(0 0 4px rgba(255, 96, 144, 0.3));
 }
 
@@ -92,13 +92,13 @@
 }
 
 .vtc-dot--home {
-  background: #4d8dff;
+  background: var(--accent-yellow);
 }
 
 .vtc-dot--draw {
-  background: #ffca28;
+  background: var(--accent-green);
 }
 
 .vtc-dot--away {
-  background: #ff6090;
+  background: var(--accent-red);
 }

@@ -47,7 +47,8 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
     inputRef.current?.focus();
   };
 
-  const teamColor = (fanTeamId: string | null): string => fanTeamId ? TEAM_COLORS[fanTeamId] || '#6060aa' : '#6060aa';
+  const teamColor = (fanTeamId: string | null): string =>
+    fanTeamId ? TEAM_COLORS[fanTeamId] || 'var(--accent-blue)' : 'var(--accent-blue)';
 
   const formatTime = (ts: string): string => {
     const d = new Date(ts);

@@ -41,7 +41,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0a0a1a',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f3f6fb' },
+    { media: '(prefers-color-scheme: dark)', color: '#070a12' },
+  ],
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -57,6 +60,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const pref = localStorage.getItem('fg-theme-preference');
+                if (pref === 'light' || pref === 'dark') {
+                  document.documentElement.setAttribute('data-theme', pref);
+                } else {
+                  document.documentElement.removeAttribute('data-theme');
+                }
+              } catch {}
+            `,
+          }}
+        />
       </head>
       <body>
         {process.env.NEXT_PUBLIC_GTM_ID ? (

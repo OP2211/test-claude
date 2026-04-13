@@ -17,7 +17,7 @@ const TEAM_COLORS: Record<string, string> = {
 };
 
 function teamColor(fanTeamId: TeamId | null): string {
-  return fanTeamId && TEAM_COLORS[fanTeamId] ? TEAM_COLORS[fanTeamId] : '#6060aa';
+  return fanTeamId && TEAM_COLORS[fanTeamId] ? TEAM_COLORS[fanTeamId] : 'var(--accent-blue)';
 }
 
 export interface VotePickerProps {
@@ -60,9 +60,9 @@ export default function VotePicker({ match, votes, votersByChoice, voteHistory, 
   const awayPct = pct(votes.away);
 
   const options: VoteOption[] = [
-    { key: 'home', label: match.homeTeam.shortName, badge: match.homeTeam.badge, color: '#4d8dff', pct: homePct, count: votes.home },
-    { key: 'draw', label: 'Draw', badge: '🤝', color: '#ffca28', pct: drawPct, count: votes.draw },
-    { key: 'away', label: match.awayTeam.shortName, badge: match.awayTeam.badge, color: '#ff6090', pct: awayPct, count: votes.away },
+    { key: 'home', label: match.homeTeam.shortName, badge: match.homeTeam.badge, color: 'var(--accent-yellow)', pct: homePct, count: votes.home },
+    { key: 'draw', label: 'Draw', badge: '🤝', color: 'var(--accent-green)', pct: drawPct, count: votes.draw },
+    { key: 'away', label: match.awayTeam.shortName, badge: match.awayTeam.badge, color: 'var(--accent-red)', pct: awayPct, count: votes.away },
   ];
 
   return (

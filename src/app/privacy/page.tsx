@@ -72,6 +72,15 @@ export default function PrivacyPage() {
           </section>
 
           <section>
+            <h2>Team logos and third-party marks</h2>
+            <p>
+              Team names, logos, badges, and other trademarks displayed in the Service remain the property of their
+              respective owners. Their display is for identification and fan experience purposes and does not imply
+              ownership, endorsement, or sponsorship by those rights holders.
+            </p>
+          </section>
+
+          <section>
             <h2>Retention</h2>
             <p>
               We retain information as long as needed to provide the Service and for legitimate business purposes such

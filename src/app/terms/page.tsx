@@ -68,6 +68,15 @@ export default function TermsPage() {
           </section>
 
           <section>
+            <h2>Third-party team names, logos, and marks</h2>
+            <p>
+              Team names, logos, badges, and related marks shown in the Service are the property of their respective
+              owners. They are used for identification and fan discussion purposes only. FanGround is not affiliated
+              with, endorsed by, or sponsored by any team, league, or rights holder unless explicitly stated.
+            </p>
+          </section>
+
+          <section>
             <h2>Termination</h2>
             <p>
               We may suspend or terminate access if you violate these Terms or if we need to protect the Service or
