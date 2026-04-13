@@ -94,9 +94,14 @@ export async function getMatches(): Promise<Match[]> {
   return fallback;
 }
 
-// Lineup cache: matchId -> { home, away } (short TTL for live matches)
-const _lineupCache: Record<string, { home: { formation: string; players: string[] }; away: { formation: string; players: string[] }; fetchedAt: number }> = {};
-const LINEUP_TTL = 120_000; // 2 min (lineups can change with subs)
+// Lineup cache: matchId -> { home, away } (short TTL for live matches, longer for finished)
+const _lineupCache: Record<string, { home: { formation: string; players: string[]; confirmed: boolean }; away: { formation: string; players: string[]; confirmed: boolean }; fetchedAt: number; status: Match['status'] }> = {};
+
+function lineupTtl(status: Match['status']): number {
+  if (status === 'live') return 20_000;        // 20s while live (subs, formation changes)
+  if (status === 'finished') return 3_600_000; // 1h after FT (won't change)
+  return 60_000;                               // 1m before kickoff (lineups get announced)
+}
 
 // Squad roster cache: espnTeamId -> player names (long TTL)
 const _rosterCache: Record<string, { players: string[]; fetchedAt: number }> = {};
@@ -107,23 +112,26 @@ async function ensureRoster(match: Match): Promise<void> {
   const { homeTeamId, awayTeamId, leagueSlug } = match._espn;
   const espnEventId = extractEspnId(match.id);
 
-  // 1) Try actual match-day lineups from the summary endpoint (live/finished)
-  if (espnEventId && (match.status === 'live' || match.status === 'finished')) {
+  // 1) Always try the summary endpoint first - ESPN has predicted XI for upcoming matches too,
+  //    actual XI once announced (~1hr before kickoff), and live updates for sub changes.
+  if (espnEventId) {
     const cached = _lineupCache[match.id];
-    if (cached && Date.now() - cached.fetchedAt < LINEUP_TTL) {
-      match.teamSheet.home = { formation: cached.home.formation, players: cached.home.players, confirmed: true };
-      match.teamSheet.away = { formation: cached.away.formation, players: cached.away.players, confirmed: true };
+    const ttl = lineupTtl(match.status);
+    if (cached && cached.status === match.status && Date.now() - cached.fetchedAt < ttl) {
+      match.teamSheet.home = { ...cached.home };
+      match.teamSheet.away = { ...cached.away };
       return;
     }
 
-    const lineups = await fetchMatchLineups(espnEventId, leagueSlug);
+    const lineups = await fetchMatchLineups(espnEventId, leagueSlug, match.status);
     if (lineups) {
       match.teamSheet.home = lineups.home;
       match.teamSheet.away = lineups.away;
       _lineupCache[match.id] = {
-        home: { formation: lineups.home.formation, players: lineups.home.players },
-        away: { formation: lineups.away.formation, players: lineups.away.players },
+        home: { ...lineups.home },
+        away: { ...lineups.away },
         fetchedAt: Date.now(),
+        status: match.status,
       };
       return;
     }
