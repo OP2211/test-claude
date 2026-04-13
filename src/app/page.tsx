@@ -87,6 +87,14 @@ export default function Home() {
   }, [fetchMatches]);
 
   const handleSelectMatch = (match: Match) => {
+    if (sessionStatus === 'loading') return;
+
+    if (!session?.user) {
+      setPendingMatch(match);
+      void openGoogleSignInPopup(() => updateSession());
+      return;
+    }
+
     if (!user) {
       setPendingMatch(match);
       setShowOnboarding(true);
@@ -94,6 +102,16 @@ export default function Home() {
     }
     setActiveMatch(match);
   };
+
+  useEffect(() => {
+    if (!pendingMatch || !session?.user) return;
+    if (!user) {
+      setShowOnboarding(true);
+      return;
+    }
+    setActiveMatch(pendingMatch);
+    setPendingMatch(null);
+  }, [pendingMatch, session, user]);
 
   const handleOnboardingComplete = (fanTeamId: TeamId, devUsername?: string) => {
     const newUser: User = { userId: generateUserId(), username: devUsername || session?.user?.name || '', email: session?.user?.email ?? '', image: session?.user?.image ?? '', fanTeamId };

@@ -78,7 +78,7 @@
 .ml-team { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 .ml-team-away { justify-content: flex-end; }
 .ml-badge { font-size: 1.7rem; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-.ml-team-logo { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+.ml-team-logo { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; filter: none; box-shadow: none; }
 .ml-team-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .ml-team-text.right { align-items: flex-end; }
 .ml-team-name { font-size: var(--text-sm); font-weight: 720; color: rgba(var(--neutral-rgb),0.92); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

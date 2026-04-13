@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { GoogleTagManager } from '@next/third-parties/google';
 import { Inter, Instrument_Sans, Instrument_Serif } from 'next/font/google';
-import Script from 'next/script';
 import './globals.css';
 
 const inter = Inter({
@@ -54,6 +53,7 @@ export const viewport: Viewport = {
 };
 
 import AuthContext from './AuthContext';
+import ClientBoot from './ClientBoot';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -61,33 +61,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <Script id="theme-preference" strategy="beforeInteractive">
-          {`
-            try {
-              const pref = localStorage.getItem('fg-theme-preference');
-              if (pref === 'light' || pref === 'dark') {
-                document.documentElement.setAttribute('data-theme', pref);
-              } else {
-                document.documentElement.removeAttribute('data-theme');
-              }
-            } catch {}
-          `}
-        </Script>
       </head>
       <body>
         {process.env.NEXT_PUBLIC_GTM_ID ? (
           <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID} />
         ) : null}
+        <ClientBoot />
         <AuthContext>{children}</AuthContext>
-        <Script id="service-worker-register" strategy="afterInteractive">
-          {`
-            if ('serviceWorker' in navigator) {
-              window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(() => {});
-              });
-            }
-          `}
-        </Script>
       </body>
     </html>
   );
