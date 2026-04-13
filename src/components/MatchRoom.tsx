@@ -300,7 +300,24 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
       }
     }
     init();
-  }, [match.id]);
+
+    // Re-fetch match data periodically so live scores and lineup updates flow in.
+    // Faster cadence while live, slower otherwise.
+    const refreshMs = match.status === 'live' ? 30_000 : match.status === 'upcoming' ? 120_000 : 0;
+    if (refreshMs === 0) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/match?id=${match.id}`);
+        if (res.ok) {
+          const enriched: Match = await res.json();
+          setMatch(enriched);
+        }
+      } catch {
+        /* ignore transient errors */
+      }
+    }, refreshMs);
+    return () => clearInterval(interval);
+  }, [match.id, match.status]);
 
   // Pusher subscription
   useEffect(() => {

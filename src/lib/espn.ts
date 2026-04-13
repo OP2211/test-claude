@@ -253,6 +253,21 @@ export interface MatchLineup {
 }
 
 /**
+ * Extract a display surname from a full name. Handles edge cases:
+ * - Single-name players like "Casemiro", "Amad", "Vinicius Jr" → returns full name
+ * - Trailing whitespace from ESPN data
+ * - Multi-part surnames like "Mac Allister", "Van Dijk" → keeps the surname only
+ */
+function surnameOf(displayName: string): string {
+  const cleaned = displayName.trim();
+  if (!cleaned) return '';
+  const parts = cleaned.split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  // Use the last word as the surname (works for most cases)
+  return parts[parts.length - 1];
+}
+
+/**
  * Categorize an ESPN position abbreviation into a row group.
  * Lower number = closer to own goal (GK=0, DEF=1, MID=2-3, FWD=4).
  */
@@ -277,11 +292,14 @@ function positionGroup(posAbbr: string): number {
  */
 export async function fetchMatchLineups(
   espnEventId: string,
-  leagueSlug: string
+  leagueSlug: string,
+  matchStatus: Match['status'] = 'upcoming'
 ): Promise<{ home: MatchLineup; away: MatchLineup } | null> {
   const url = `${ESPN_BASE}/${leagueSlug}/summary?event=${espnEventId}`;
   try {
-    const res = await fetch(url, { next: { revalidate: 60 } });
+    // Tighter revalidate for live matches so subs propagate quickly
+    const revalidate = matchStatus === 'live' ? 20 : matchStatus === 'finished' ? 3600 : 60;
+    const res = await fetch(url, { next: { revalidate } });
     if (!res.ok) return null;
     const data = await res.json();
     const rosters = data.rosters;
@@ -324,12 +342,10 @@ export async function fetchMatchLineups(
 
       return {
         formation,
-        players: ordered.map(p => {
-          const name = p.athlete.displayName;
-          const parts = name.split(' ');
-          return parts.length > 1 ? parts.slice(1).join(' ') : name;
-        }),
-        confirmed: true,
+        players: ordered.map(p => surnameOf(p.athlete.displayName)),
+        // Confirmed only once teams are out (live/finished). Pre-match data is
+        // ESPN's predicted/announced XI which may change.
+        confirmed: matchStatus !== 'upcoming',
       };
     }
 
@@ -357,10 +373,7 @@ export async function fetchTeamRoster(espnTeamId: string, leagueSlug: string): P
       const pb = posOrder[b.position?.abbreviation || 'M'] ?? 2;
       return pa - pb;
     });
-    return players.slice(0, 11).map(p => {
-      const parts = p.displayName.split(' ');
-      return parts.length > 1 ? parts.slice(1).join(' ') : p.displayName;
-    });
+    return players.slice(0, 11).map(p => surnameOf(p.displayName));
   } catch {
     return [];
   }
