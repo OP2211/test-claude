@@ -367,28 +367,29 @@ export default function LandingHome({
             </thead>
             <tbody>
               <tr>
-                <td>Passive</td>
-                <td>Active</td>
+                <td><span className="landing-table-row-label">Passive</span></td>
+                <td><span className="landing-table-win">Active</span></td>
               </tr>
               <tr>
-                <td>No identity</td>
-                <td>Team identity</td>
+                <td><span className="landing-table-row-label">No identity</span></td>
+                <td><span className="landing-table-win">Team identity</span></td>
               </tr>
               <tr>
-                <td>Fragmented</td>
-                <td>Match-based</td>
+                <td><span className="landing-table-row-label">Fragmented</span></td>
+                <td><span className="landing-table-win">Match-based</span></td>
               </tr>
               <tr>
-                <td>Slow</td>
-                <td>Real-time</td>
+                <td><span className="landing-table-row-label">Slow</span></td>
+                <td><span className="landing-table-win">Real-time</span></td>
               </tr>
               <tr>
-                <td>Alone</td>
-                <td>Together</td>
+                <td><span className="landing-table-row-label">Alone</span></td>
+                <td><span className="landing-table-win">Together</span></td>
               </tr>
             </tbody>
           </table>
         </div>
+        <p className="landing-table-note">Same match. More energy. Better banter.</p>
       </section>
 
       {/* 8. Audience */}

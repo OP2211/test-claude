@@ -189,8 +189,10 @@ export default function AppHeader({
 }: AppHeaderProps) {
   const logoLabel = onLogoClick ? 'Back to matches' : 'FanGround home';
   const [themePref, setThemePref] = useState<ThemePreference>('system');
+  const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
+    setHasMounted(true);
     const saved = localStorage.getItem('fg-theme-preference') as ThemePreference | null;
     const pref: ThemePreference = saved === 'light' || saved === 'dark' || saved === 'system' ? saved : 'system';
     setThemePref(pref);
@@ -222,18 +224,20 @@ export default function AppHeader({
         )}
 
         <div className="header-right">
-          <button
-            type="button"
-            className="theme-toggle-btn"
-            onClick={cycleTheme}
-            aria-label={`Theme: ${THEME_LABELS[themePref]}. Click to switch theme.`}
-            title={`Theme: ${THEME_LABELS[themePref]}`}
-          >
-            <span className="theme-toggle-icon" aria-hidden>
-              {themePref === 'light' ? '☀️' : themePref === 'dark' ? '🌙' : '🖥️'}
-            </span>
-            <span className="theme-toggle-text">{THEME_LABELS[themePref]}</span>
-          </button>
+          {hasMounted && (
+            <button
+              type="button"
+              className="theme-toggle-btn"
+              onClick={cycleTheme}
+              aria-label={`Theme: ${THEME_LABELS[themePref]}. Click to switch theme.`}
+              title={`Theme: ${THEME_LABELS[themePref]}`}
+            >
+              <span className="theme-toggle-icon" aria-hidden>
+                {themePref === 'light' ? '☀️' : themePref === 'dark' ? '🌙' : '🖥️'}
+              </span>
+              <span className="theme-toggle-text">{THEME_LABELS[themePref]}</span>
+            </button>
+          )}
 
           {variant === 'home' && homeActions && (
             <>
