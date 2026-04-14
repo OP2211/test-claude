@@ -293,6 +293,8 @@ export async function fetchMatch(espnEventId: string): Promise<Match | null> {
 export interface MatchLineup {
   formation: string;
   players: string[];
+  positions: string[];
+  subs: string[];
   confirmed: boolean;
 }
 
@@ -302,6 +304,31 @@ export interface MatchLineup {
  * - Trailing whitespace from ESPN data
  * - Multi-part surnames like "Mac Allister", "Van Dijk" → keeps the surname only
  */
+/** Map ESPN's verbose position abbreviation to a clean short label. */
+function displayPos(abbr: string): string {
+  const p = abbr.toUpperCase();
+  if (p === 'G') return 'GK';
+  if (p === 'LB' || p === 'RB' || p === 'LWB' || p === 'RWB' || p === 'SW') return p;
+  if (p.startsWith('CD')) return p.includes('L') ? 'LCB' : p.includes('R') ? 'RCB' : 'CB';
+  if (p === 'CB') return 'CB';
+  if (p === 'CDM' || p === 'DM') return 'CDM';
+  if (p === 'CM') return 'CM';
+  if (p.startsWith('CM')) return p.includes('L') ? 'LCM' : p.includes('R') ? 'RCM' : 'CM';
+  if (p === 'LM') return 'LM';
+  if (p === 'RM') return 'RM';
+  if (p === 'AM') return 'AM';
+  if (p.startsWith('AM')) return p.includes('L') ? 'LAM' : p.includes('R') ? 'RAM' : 'AM';
+  if (p === 'CAM') return 'CAM';
+  if (p === 'LW') return 'LW';
+  if (p === 'RW') return 'RW';
+  if (p === 'LF') return 'LF';
+  if (p === 'RF') return 'RF';
+  if (p.startsWith('CF')) return p.includes('L') ? 'LCF' : p.includes('R') ? 'RCF' : 'CF';
+  if (p === 'F' || p === 'FW' || p === 'ST') return 'ST';
+  if (p === 'SS') return 'SS';
+  return abbr;
+}
+
 function surnameOf(displayName: string): string {
   const cleaned = displayName.trim();
   if (!cleaned) return '';
@@ -337,12 +364,12 @@ function positionGroup(posAbbr: string): number {
  */
 function horizontalRank(posAbbr: string): number {
   const p = posAbbr.toUpperCase();
-  // Right-flank players (appear leftmost in ESPN-style view)
-  if (p === 'RB' || p === 'RWB' || p === 'RM' || p === 'RW' || p === 'RF') return 0;
-  if (/-R$/.test(p)) return 1;
-  // Left-flank players (appear rightmost)
-  if (p === 'LB' || p === 'LWB' || p === 'LM' || p === 'LW' || p === 'LF') return 4;
-  if (/-L$/.test(p)) return 3;
+  // Fan's perspective: left-flank players on the viewer's left, right-flank on the right
+  if (p === 'LB' || p === 'LWB' || p === 'LM' || p === 'LW' || p === 'LF') return 0;
+  if (/-L$/.test(p)) return 1;
+  // Right-flank players on the viewer's right
+  if (p === 'RB' || p === 'RWB' || p === 'RM' || p === 'RW' || p === 'RF') return 4;
+  if (/-R$/.test(p)) return 3;
   // Centre / no flank designation
   return 2;
 }
@@ -424,9 +451,13 @@ export async function fetchMatchLineups(
         idx += size;
       }
 
+      const subs = roster.filter(p => !p.starter).map(p => surnameOf(p.athlete.displayName));
+
       return {
         formation,
         players: ordered.map(p => surnameOf(p.athlete.displayName)),
+        positions: ordered.map(p => displayPos(p.position?.abbreviation || '')),
+        subs,
         // Confirmed only once teams are out (live/finished). Pre-match data is
         // ESPN's predicted/announced XI which may change.
         confirmed: matchStatus !== 'upcoming',
