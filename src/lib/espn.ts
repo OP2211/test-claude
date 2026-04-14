@@ -10,7 +10,6 @@ export interface LeagueConfig {
 export const LEAGUES: LeagueConfig[] = [
   { slug: 'eng.1', name: 'Premier League' },
   { slug: 'eng.fa', name: 'FA Cup' },
-  { slug: 'uefa.champions', name: 'Champions League' },
 ];
 
 /** Map ESPN team IDs to our app's team slugs for known teams. */
@@ -142,7 +141,7 @@ function mapEvent(event: EspnEvent, leagueName: string, leagueSlug: string): Mat
     awayTeamId: toTeamId(away.team),
     kickoff: event.date,
     competition: leagueName,
-    venue: comp.venue?.displayName || 'TBD',
+    venue: comp.venue?.displayName || '',
     status,
     homeTeam: espnTeamToTeam(home.team),
     awayTeam: espnTeamToTeam(away.team),
@@ -164,8 +163,15 @@ function mapEvent(event: EspnEvent, leagueName: string, leagueSlug: string): Mat
 // ---------- Public API ----------
 
 /** Fetch today's matches from a single league. */
-async function fetchLeagueMatches(league: LeagueConfig): Promise<Match[]> {
-  const url = `${ESPN_BASE}/${league.slug}/scoreboard`;
+/** Format date as YYYYMMDD for ESPN API. */
+function espnDate(d: Date): string {
+  return d.toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+/** Fetch matches for a league within a date range. */
+async function fetchLeagueMatches(league: LeagueConfig, dateRange?: string): Promise<Match[]> {
+  const params = dateRange ? `?dates=${dateRange}` : '';
+  const url = `${ESPN_BASE}/${league.slug}/scoreboard${params}`;
   const res = await fetch(url, { next: { revalidate: 60 } });
   if (!res.ok) return [];
   const data: EspnScoreboard = await res.json();
@@ -174,10 +180,14 @@ async function fetchLeagueMatches(league: LeagueConfig): Promise<Match[]> {
     .filter((m): m is Match => m !== null);
 }
 
-/** Fetch today's matches across all configured leagues. */
+/** Fetch matches across all configured leagues for today + upcoming 7 days. */
 export async function fetchAllMatches(): Promise<Match[]> {
+  const now = new Date();
+  const end = new Date(now.getTime() + 7 * 24 * 3600_000);
+  const dateRange = `${espnDate(now)}-${espnDate(end)}`;
+
   const results = await Promise.allSettled(
-    LEAGUES.map(l => fetchLeagueMatches(l))
+    LEAGUES.map(l => fetchLeagueMatches(l, dateRange))
   );
 
   const matches: Match[] = [];
@@ -187,14 +197,49 @@ export async function fetchAllMatches(): Promise<Match[]> {
     }
   }
 
-  // Sort: live first, then by kickoff time ascending
-  matches.sort((a, b) => {
-    if (a.status === 'live' && b.status !== 'live') return -1;
-    if (b.status === 'live' && a.status !== 'live') return 1;
+  // Filter out matches that finished more than 3 hours ago (no longer joinable)
+  const cutoff = now.getTime() - 3 * 3600_000;
+  const filtered = matches.filter(m => {
+    if (m.status === 'finished') {
+      return new Date(m.kickoff).getTime() > cutoff;
+    }
+    return true;
+  });
+
+  // Sort: live first, then upcoming by kickoff, then recently finished last
+  filtered.sort((a, b) => {
+    const order = (s: Match['status']) => s === 'live' ? 0 : s === 'upcoming' ? 1 : 2;
+    const oa = order(a.status);
+    const ob = order(b.status);
+    if (oa !== ob) return oa - ob;
     return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime();
   });
 
-  return matches;
+  return filtered;
+}
+
+/** Fetch past week's results (finished matches only). */
+export async function fetchRecentResults(): Promise<Match[]> {
+  const now = new Date();
+  const start = new Date(now.getTime() - 7 * 24 * 3600_000);
+  const yesterday = new Date(now.getTime() - 24 * 3600_000);
+  const dateRange = `${espnDate(start)}-${espnDate(yesterday)}`;
+
+  const results = await Promise.allSettled(
+    LEAGUES.map(l => fetchLeagueMatches(l, dateRange))
+  );
+
+  const matches: Match[] = [];
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
+      matches.push(...result.value);
+    }
+  }
+
+  // Only keep finished matches, sorted most recent first
+  return matches
+    .filter(m => m.status === 'finished')
+    .sort((a, b) => new Date(b.kickoff).getTime() - new Date(a.kickoff).getTime());
 }
 
 /** Fetch a single match by ESPN event ID. */
@@ -223,7 +268,7 @@ export async function fetchMatch(espnEventId: string): Promise<Match | null> {
           awayTeamId: toTeamId(away.team),
           kickoff: comp.date || comp.startDate || new Date().toISOString(),
           competition: league.name,
-          venue: data.gameInfo?.venue?.displayName || 'TBD',
+          venue: data.gameInfo?.venue?.displayName || '',
           status,
           homeTeam: espnTeamToTeam(home.team),
           awayTeam: espnTeamToTeam(away.team),
@@ -421,4 +466,279 @@ export async function fetchTeamRoster(espnTeamId: string, leagueSlug: string): P
 export function extractEspnId(matchId: string): string | null {
   if (matchId.startsWith('espn-')) return matchId.slice(5);
   return null;
+}
+
+// ---------- Standings ----------
+
+export interface StandingEntry {
+  position: number;
+  teamId: string;
+  teamName: string;
+  teamShortName: string;
+  teamAbbr: string;
+  logo: string;
+  played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
+  form: string;
+  note?: { description: string; color: string };
+  nextMatch?: {
+    opponent: string;
+    opponentLogo: string;
+    date: string;
+    venue: string;
+    isHome: boolean;
+  };
+}
+
+function statVal(stats: Array<{ name: string; value: number; displayValue: string }>, name: string): number {
+  return stats.find(s => s.name === name)?.value ?? 0;
+}
+
+export async function fetchStandings(leagueSlug: string = 'eng.1'): Promise<StandingEntry[]> {
+  const url = `https://site.api.espn.com/apis/v2/sports/soccer/${leagueSlug}/standings`;
+  try {
+    const res = await fetch(url, { next: { revalidate: 300 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const entries = data.children?.[0]?.standings?.entries;
+    if (!Array.isArray(entries)) return [];
+
+    return entries.map((e: {
+      team: { id: string; displayName: string; shortDisplayName: string; abbreviation: string; logos?: Array<{ href: string }> };
+      stats: Array<{ name: string; value: number; displayValue: string }>;
+      note?: { description: string; color: string };
+    }) => ({
+      position: statVal(e.stats, 'rank'),
+      teamId: e.team.id,
+      teamName: e.team.displayName,
+      teamShortName: e.team.shortDisplayName,
+      teamAbbr: e.team.abbreviation,
+      logo: e.team.logos?.[0]?.href || `https://a.espncdn.com/i/teamlogos/soccer/500/${e.team.id}.png`,
+      played: statVal(e.stats, 'gamesPlayed'),
+      wins: statVal(e.stats, 'wins'),
+      draws: statVal(e.stats, 'ties'),
+      losses: statVal(e.stats, 'losses'),
+      goalsFor: statVal(e.stats, 'pointsFor'),
+      goalsAgainst: statVal(e.stats, 'pointsAgainst'),
+      goalDifference: statVal(e.stats, 'pointDifferential'),
+      points: statVal(e.stats, 'points'),
+      form: e.stats.find(s => s.name === 'overall')?.displayValue || '',
+      note: e.note ? { description: e.note.description, color: e.note.color } : undefined,
+    })).sort((a: StandingEntry, b: StandingEntry) => a.position - b.position);
+  } catch {
+    return [];
+  }
+}
+
+// ---------- Top Scorers ----------
+
+export interface TopScorer {
+  rank: number;
+  playerName: string;
+  playerId: string;
+  teamName: string;
+  teamAbbr: string;
+  teamLogo: string;
+  goals: number;
+  assists: number;
+  appearances: number;
+}
+
+export async function fetchTopScorers(leagueSlug: string = 'eng.1'): Promise<TopScorer[]> {
+  const url = `${ESPN_BASE}/${leagueSlug}/statistics`;
+  try {
+    const res = await fetch(url, { next: { revalidate: 600 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const leaders = data.stats?.[0]?.leaders;
+    if (!Array.isArray(leaders)) return [];
+
+    return leaders.slice(0, 10).map((l: {
+      value: number;
+      athlete: {
+        id: string;
+        displayName: string;
+        team: { displayName: string; abbreviation: string; logos?: Array<{ href: string }> };
+        statistics?: Array<{ name: string; value: number }>;
+      };
+    }, i: number) => {
+      const stats = l.athlete.statistics || [];
+      return {
+        rank: i + 1,
+        playerName: l.athlete.displayName,
+        playerId: l.athlete.id,
+        teamName: l.athlete.team.displayName,
+        teamAbbr: l.athlete.team.abbreviation,
+        teamLogo: l.athlete.team.logos?.[0]?.href || '',
+        goals: l.value,
+        assists: stats.find(s => s.name === 'goalAssists')?.value ?? 0,
+        appearances: stats.find(s => s.name === 'appearances')?.value ?? 0,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+/** Fetch top players sorted by assists (uses assistsLeaders from statistics endpoint). */
+export async function fetchTopAssists(leagueSlug: string = 'eng.1'): Promise<TopScorer[]> {
+  const url = `${ESPN_BASE}/${leagueSlug}/statistics`;
+  try {
+    const res = await fetch(url, { next: { revalidate: 600 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    // Find the assistsLeaders category (index 1 typically)
+    const assistsCat = (data.stats || []).find((s: { name: string }) => s.name === 'assistsLeaders');
+    const leaders = assistsCat?.leaders;
+    if (!Array.isArray(leaders)) return [];
+
+    return leaders.slice(0, 10).map((l: {
+      value: number;
+      athlete: {
+        id: string;
+        displayName: string;
+        team: { displayName: string; abbreviation: string; logos?: Array<{ href: string }> };
+        statistics?: Array<{ name: string; value: number }>;
+      };
+    }, i: number) => {
+      const stats = l.athlete.statistics || [];
+      return {
+        rank: i + 1,
+        playerName: l.athlete.displayName,
+        playerId: l.athlete.id,
+        teamName: l.athlete.team.displayName,
+        teamAbbr: l.athlete.team.abbreviation,
+        teamLogo: l.athlete.team.logos?.[0]?.href || '',
+        goals: stats.find(s => s.name === 'totalGoals')?.value ?? 0,
+        assists: l.value,
+        appearances: stats.find(s => s.name === 'appearances')?.value ?? 0,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+/** Top contributor = goals + assists combined, merged from both stat categories. */
+export interface TopContributor {
+  rank: number;
+  playerName: string;
+  playerId: string;
+  teamName: string;
+  teamAbbr: string;
+  teamLogo: string;
+  goals: number;
+  assists: number;
+  contributions: number;
+  appearances: number;
+}
+
+export async function fetchTopContributors(leagueSlug: string = 'eng.1'): Promise<TopContributor[]> {
+  const url = `${ESPN_BASE}/${leagueSlug}/statistics`;
+  try {
+    const res = await fetch(url, { next: { revalidate: 600 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+
+    // Merge players from all stat categories (goals + assists)
+    const players = new Map<string, TopContributor>();
+    for (const cat of data.stats || []) {
+      for (const l of (cat.leaders || []) as Array<{
+        value: number;
+        athlete: {
+          id: string;
+          displayName: string;
+          team: { displayName: string; abbreviation: string; logos?: Array<{ href: string }> };
+          statistics?: Array<{ name: string; value: number }>;
+        };
+      }>) {
+        const id = l.athlete.id;
+        const stats = l.athlete.statistics || [];
+        const goals = stats.find(s => s.name === 'totalGoals')?.value ?? 0;
+        const assists = stats.find(s => s.name === 'goalAssists')?.value ?? 0;
+        const appearances = stats.find(s => s.name === 'appearances')?.value ?? 0;
+
+        if (!players.has(id)) {
+          players.set(id, {
+            rank: 0,
+            playerName: l.athlete.displayName,
+            playerId: id,
+            teamName: l.athlete.team.displayName,
+            teamAbbr: l.athlete.team.abbreviation,
+            teamLogo: l.athlete.team.logos?.[0]?.href || '',
+            goals,
+            assists,
+            contributions: goals + assists,
+            appearances,
+          });
+        } else {
+          // Take higher values (same player may appear in both categories)
+          const p = players.get(id)!;
+          p.goals = Math.max(p.goals, goals);
+          p.assists = Math.max(p.assists, assists);
+          p.appearances = Math.max(p.appearances, appearances);
+          p.contributions = p.goals + p.assists;
+        }
+      }
+    }
+
+    const sorted = [...players.values()].sort((a, b) => b.contributions - a.contributions || b.goals - a.goals);
+    return sorted.slice(0, 10).map((p, i) => ({ ...p, rank: i + 1 }));
+  } catch {
+    return [];
+  }
+}
+
+// ---------- Next match per team ----------
+
+export async function fetchTeamNextMatch(espnTeamId: string, leagueSlug: string = 'eng.1'): Promise<StandingEntry['nextMatch'] | null> {
+  const url = `${ESPN_BASE}/${leagueSlug}/teams/${espnTeamId}`;
+  try {
+    const res = await fetch(url, { next: { revalidate: 600 } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const evt = data.team?.nextEvent?.[0] || data.nextEvent?.[0];
+    if (!evt) return null;
+    const comp = evt.competitions?.[0];
+    if (!comp) return null;
+    const competitors = comp.competitors || [];
+    const us = competitors.find((c: { id: string }) => c.id === espnTeamId);
+    const them = competitors.find((c: { id: string }) => c.id !== espnTeamId);
+    if (!them) return null;
+    return {
+      opponent: them.team?.displayName || them.team?.shortDisplayName || '?',
+      opponentLogo: them.team?.logos?.[0]?.href || `https://a.espncdn.com/i/teamlogos/soccer/500/${them.id}.png`,
+      date: evt.date || comp.date || '',
+      venue: comp.venue?.fullName || '',
+      isHome: us?.homeAway === 'home',
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Fetch standings with next-match info for each team (batched). */
+export async function fetchStandingsWithNextMatch(leagueSlug: string = 'eng.1'): Promise<StandingEntry[]> {
+  const standings = await fetchStandings(leagueSlug);
+  if (standings.length === 0) return standings;
+
+  // Fetch next matches in parallel for all teams
+  const nextMatches = await Promise.allSettled(
+    standings.map(s => fetchTeamNextMatch(s.teamId, leagueSlug))
+  );
+
+  for (let i = 0; i < standings.length; i++) {
+    const result = nextMatches[i];
+    if (result.status === 'fulfilled' && result.value) {
+      standings[i].nextMatch = result.value;
+    }
+  }
+
+  return standings;
 }

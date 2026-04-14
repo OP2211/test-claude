@@ -10,19 +10,31 @@ interface MatchStatus {
   type: 'live' | 'finished' | 'open' | 'upcoming';
 }
 
+/** Chat room is open from 2 hours before kickoff until 3 hours after. */
 function isChatOpen(match: Match): boolean {
-  const now = new Date();
-  const kickoff = new Date(match.kickoff);
-  return match.status === 'live' || (kickoff.getTime() - now.getTime()) / 60000 <= 120;
+  const now = Date.now();
+  const kickoff = new Date(match.kickoff).getTime();
+  const minsToKickoff = (kickoff - now) / 60_000;
+  if (match.status === 'live') return true;
+  // Open 2hrs before kickoff
+  if (minsToKickoff <= 120 && minsToKickoff > 0) return true;
+  // Stay open 3hrs after kickoff for finished matches (roughly ~90min match + 90min post-match)
+  if (match.status === 'finished' && minsToKickoff > -180) return true;
+  return false;
 }
 
 function getMatchStatus(match: Match): MatchStatus {
-  const now = new Date();
-  const kickoff = new Date(match.kickoff);
-  const minsToKickoff = (kickoff.getTime() - now.getTime()) / 60000;
+  const now = Date.now();
+  const kickoff = new Date(match.kickoff).getTime();
+  const minsToKickoff = (kickoff - now) / 60_000;
   if (match.status === 'live') return { label: 'LIVE', type: 'live' };
-  if (match.status === 'finished' || minsToKickoff < -120) return { label: 'FT', type: 'finished' };
-  if (minsToKickoff < 0) return { label: 'FT', type: 'finished' };
+  if (match.status === 'finished') {
+    // Recently finished — still accessible
+    if (minsToKickoff > -180) return { label: 'FT', type: 'finished' };
+    // Old finished match — disabled
+    return { label: 'FT', type: 'finished' };
+  }
+  if (minsToKickoff <= 0) return { label: 'FT', type: 'finished' };
   if (minsToKickoff <= 120) return { label: 'OPEN', type: 'open' };
   return { label: 'SOON', type: 'upcoming' };
 }
@@ -37,10 +49,17 @@ function Countdown({ kickoff }: CountdownProps) {
     function update() {
       const diff = new Date(kickoff).getTime() - new Date().getTime();
       if (diff <= 0) { setTimeStr('Now'); return; }
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setTimeStr(h > 0 ? `${h}h ${m}m` : `${m}m ${s}s`);
+      const d = Math.floor(diff / 86_400_000);
+      const h = Math.floor((diff % 86_400_000) / 3_600_000);
+      const m = Math.floor((diff % 3_600_000) / 60_000);
+      const s = Math.floor((diff % 60_000) / 1000);
+      if (d > 0) {
+        setTimeStr(`${d}d ${h}h ${m}m`);
+      } else if (h > 0) {
+        setTimeStr(`${h}h ${m}m`);
+      } else {
+        setTimeStr(`${m}m ${s}s`);
+      }
     }
     update();
     const t = setInterval(update, 1000);
@@ -70,10 +89,153 @@ interface MatchListProps {
   isLoading: boolean;
 }
 
+function formatGroupDate(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const matchDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diff = (matchDay.getTime() - today.getTime()) / 86_400_000;
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function groupByDate(matches: Match[]): Array<{ label: string; matches: Match[] }> {
+  const map = new Map<string, Match[]>();
+  for (const m of matches) {
+    const key = new Date(m.kickoff).toISOString().slice(0, 10);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(m);
+  }
+  return Array.from(map.entries()).map(([, ms]) => ({
+    label: formatGroupDate(ms[0].kickoff),
+    matches: ms,
+  }));
+}
+
+function formatResultDate(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const matchDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diff = (today.getTime() - matchDay.getTime()) / 86_400_000;
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function renderResultCard(match: Match, index: number) {
+  const kickoff = new Date(match.kickoff);
+  const dateStr = kickoff.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  const timeStr = kickoff.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+  return (
+    <div
+      key={match.id}
+      className="ml-card ml-card-result"
+      style={{ animationDelay: `${index * 70}ms` }}
+      aria-label={`${match.homeTeam.name} ${match.homeScore ?? 0} - ${match.awayScore ?? 0} ${match.awayTeam.name}, FT`}
+    >
+      {/* Header row */}
+      <div className="ml-card-top">
+        <span className="ml-comp">{match.competition}</span>
+        <span className="ml-status ml-status-finished">FT</span>
+      </div>
+
+      {/* Teams */}
+      <div className="ml-teams">
+        <div className="ml-team">
+          {match.homeTeam.logo ? (
+            <img src={match.homeTeam.logo} alt="" className="ml-team-logo" aria-hidden="true" />
+          ) : (
+            <span className="ml-badge" aria-hidden="true">{match.homeTeam.badge}</span>
+          )}
+          <div className="ml-team-text">
+            <span className="ml-team-name">{match.homeTeam.name}</span>
+            <span className="ml-team-short">{match.homeTeam.shortName}</span>
+          </div>
+        </div>
+
+        <div className="ml-center">
+          <div className="ml-score-block">
+            <span className="ml-score">{match.homeScore ?? 0} - {match.awayScore ?? 0}</span>
+            <span className="ml-clock-ft">FT</span>
+          </div>
+        </div>
+
+        <div className="ml-team ml-team-away">
+          <div className="ml-team-text right">
+            <span className="ml-team-name">{match.awayTeam.name}</span>
+            <span className="ml-team-short">{match.awayTeam.shortName}</span>
+          </div>
+          {match.awayTeam.logo ? (
+            <img src={match.awayTeam.logo} alt="" className="ml-team-logo" aria-hidden="true" />
+          ) : (
+            <span className="ml-badge" aria-hidden="true">{match.awayTeam.badge}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="ml-card-bottom">
+        <span className="ml-venue">{match.venue}</span>
+        <span className="ml-locked-info">{dateStr} &middot; {timeStr}</span>
+      </div>
+    </div>
+  );
+}
+
+function RecentResults() {
+  const [results, setResults] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/results')
+      .then(r => r.json())
+      .then(data => setResults(data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading || results.length === 0) return null;
+
+  // Group by date (most recent first)
+  const groups = groupByDate(results);
+  // Relabel with past-relative dates
+  for (const g of groups) {
+    g.label = formatResultDate(g.matches[0].kickoff);
+  }
+
+  return (
+    <section className="ml-results-wrap">
+      <div className="ml-results-divider">
+        <span className="ml-results-divider-line" />
+        <span className="ml-results-divider-label">Recent Results</span>
+        <span className="ml-results-divider-line" />
+      </div>
+      <div className="ml-section-header">
+        {/* <div className="ml-section-left">
+          <h2 className="ml-section-title">Recent Results</h2>
+        </div> */}
+        <span className="ml-section-count">{results.length} match{results.length !== 1 ? 'es' : ''}</span>
+      </div>
+      {groups.map(group => (
+        <div key={group.label} className="ml-results-group">
+          <p className="ml-results-date">{group.label}</p>
+          <div className="ml-grid">
+            {group.matches.map((m, i) => renderResultCard(m, i))}
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 export default function MatchList({ matches, user, onSelectMatch, isLoading }: MatchListProps) {
   const [fetchError, setFetchError] = useState<boolean>(false);
   const openMatches = matches.filter(isChatOpen);
   const closedMatches = matches.filter(m => !isChatOpen(m));
+  const upcomingGroups = groupByDate(closedMatches);
 
   useEffect(() => {
     if (!isLoading && matches.length === 0) {
@@ -163,12 +325,12 @@ export default function MatchList({ matches, user, onSelectMatch, isLoading }: M
           <span className="ml-venue">{match.venue}</span>
           {open ? (
             <span className="ml-join-cta">
-              {status.type === 'live' ? 'Join Live' : 'Enter Room'}
+              {status.type === 'live' ? 'Join Live' : status.type === 'finished' ? 'Post-Match' : 'Enter Room'}
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </span>
           ) : (
             <span className="ml-locked-info">
-              Opens in <Countdown kickoff={new Date(kickoff.getTime() - 2 * 3600000)} />
+              {status.type === 'finished' ? 'Ended' : <>Opens in <Countdown kickoff={new Date(kickoff.getTime() - 2 * 3600000)} /></>}
             </span>
           )}
         </div>
@@ -221,21 +383,24 @@ export default function MatchList({ matches, user, onSelectMatch, isLoading }: M
         <div className="ml-divider" />
       )}
 
-      {/* Upcoming */}
-      {closedMatches.length > 0 && (
-        <section className="ml-section" aria-label="Upcoming matches">
+      {/* Upcoming — grouped by date */}
+      {upcomingGroups.map(group => (
+        <section key={group.label} className="ml-section" aria-label={`${group.label} matches`}>
           <div className="ml-section-header">
             <div className="ml-section-left">
               <span className="ml-section-dot" />
-              <h2 className="ml-section-title">Coming Up</h2>
+              <h2 className="ml-section-title">{group.label}</h2>
             </div>
-            <span className="ml-section-count">{closedMatches.length} match{closedMatches.length !== 1 ? 'es' : ''}</span>
+            <span className="ml-section-count">{group.matches.length} match{group.matches.length !== 1 ? 'es' : ''}</span>
           </div>
           <div className="ml-grid">
-            {closedMatches.map((m, i) => renderCard(m, i))}
+            {group.matches.map((m, i) => renderCard(m, i))}
           </div>
         </section>
-      )}
+      ))}
+
+      {/* Recent results */}
+      {!isLoading && <RecentResults />}
 
       {/* Empty state */}
       {!isLoading && matches.length === 0 && (

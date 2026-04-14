@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { openGoogleSignInPopup } from '@/lib/google-signin-popup';
 import MatchList from '@/components/MatchList';
 import MatchRoom from '@/components/MatchRoom';
@@ -9,6 +10,7 @@ import OnboardingModal from '@/components/OnboardingModal';
 import AppHeader from '@/components/AppHeader';
 import SiteFooter from '@/components/SiteFooter';
 import LandingHome from '@/components/LandingHome';
+
 import type { Match, User, TeamId } from '@/lib/types';
 import './page.css';
 
@@ -84,14 +86,17 @@ export default function Home() {
     }
   }, []);
 
+  const router = useRouter();
+
   useEffect(() => {
     if (session?.user) {
-      void loadProfile();
+      // Logged-in users go to the matches page
+      router.replace('/matches');
       return;
     }
     setUser(null);
     setShowOnboarding(false);
-  }, [session, loadProfile]);
+  }, [session, loadProfile, router]);
 
   useEffect(() => {
     const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e as BeforeInstallPromptEvent); };

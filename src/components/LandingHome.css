@@ -462,6 +462,10 @@
   transform: translateY(-1px) scale(1.08) rotate(-6deg);
   color: color-mix(in srgb, var(--accent-red) 66%, black);
 }
+.landing-stat-emoji {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
 
 /* Mid CTAs */
 .landing-cta-band {

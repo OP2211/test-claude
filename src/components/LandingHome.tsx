@@ -8,36 +8,6 @@ interface LandingHomeProps {
   onSeeLiveRooms: () => void;
 }
 
-function SecondScreenIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="3" width="16" height="18" rx="2" />
-      <line x1="9" y1="17" x2="15" y2="17" />
-      <circle cx="12" cy="7.5" r="1.5" />
-    </svg>
-  );
-}
-
-function MatchChatIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 6h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H11l-4.5 3v-3H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" />
-      <path d="M8 10h8M8 13h5" />
-    </svg>
-  );
-}
-
-function CrowdIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="7" cy="8" r="2" />
-      <circle cx="17" cy="8" r="2" />
-      <circle cx="12" cy="12" r="2.5" />
-      <path d="M3.5 18c.3-2 2-3.5 4-3.5h.5M20.5 18c-.3-2-2-3.5-4-3.5H16M7.5 18c.4-2.4 2.3-4 4.5-4s4.1 1.6 4.5 4" />
-    </svg>
-  );
-}
-
 function ArrowRushIcon() {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -83,19 +53,17 @@ export default function LandingHome({
     <div className="landing">
       {/* 1. Hero */}
       <section className="landing-hero" aria-labelledby="landing-hero-title">
-        {/* Waitlist — after full story; captures scanners who aren’t ready to jump in */}
-       
         <div className="landing-hero-grid">
           <div className="landing-hero-copy">
             <p className="landing-live-pill" role="status">
               <span className="landing-live-dot" aria-hidden="true" />
-              Built for live matches
+              Live every matchday
             </p>
             <h1 id="landing-hero-title" className="landing-hero-title">
               Stop Watching Matches Alone.
             </h1>
             <p className="landing-hero-sub">
-              This is where fans come to feel the game.
+              Real-time banter, predictions & lineup reactions with football fans worldwide.
             </p>
             <p className="landing-hero-support">
               Live banter. Rival fans. Real-time reactions.
@@ -115,18 +83,9 @@ export default function LandingHome({
                 onClick={onSeeLiveRooms}
               >
                 <span className="landing-btn-icon" aria-hidden="true"><StadiumIcon /></span>
-                See Live Match Rooms
+                See Live Rooms
               </button>
             </div>
-            <p className="landing-hero-tertiary">
-              <a href="#waitlist" className="landing-hero-waitlist-link">
-                Get launch & feature updates
-              </a>
-              <span className="landing-hero-tertiary-sep" aria-hidden="true">
-                ·
-              </span>
-              <span className="landing-hero-tertiary-hint">No spam</span>
-            </p>
           </div>
           <div className="landing-hero-visual" aria-hidden="true">
             <div className="landing-stadium-glow" />
@@ -139,10 +98,10 @@ export default function LandingHome({
               </div>
               <div className="landing-chat-stream">
                 <div className="landing-msg landing-msg--blue">
-                  What a strike 🔥
+                  What a strike &#128293;
                 </div>
                 <div className="landing-msg landing-msg--red">
-                  VAR checking…
+                  VAR checking...
                 </div>
                 <div className="landing-msg landing-msg--yellow">
                   Called it!
@@ -156,26 +115,20 @@ export default function LandingHome({
         </div>
       </section>
 
-      {/* 2. Social proof */}
-      <section className="landing-strip" aria-label="Fan behavior stats">
+      {/* 2. What is FanGround */}
+      <section className="landing-strip" aria-label="Key features">
         <div className="landing-strip-inner">
           <div className="landing-stat">
-            <span className="landing-stat-icon" aria-hidden="true">
-              <SecondScreenIcon />
-            </span>
-            <span>90%+ fans use second screen</span>
+            <span className="landing-stat-emoji" aria-hidden="true">&#9917;</span>
+            <span>Premier League, FA Cup & Champions League</span>
           </div>
           <div className="landing-stat">
-            <span className="landing-stat-icon" aria-hidden="true">
-              <MatchChatIcon />
-            </span>
-            <span>79% discuss matches live</span>
+            <span className="landing-stat-emoji" aria-hidden="true">&#128483;&#65039;</span>
+            <span>Live banter with rival fans</span>
           </div>
           <div className="landing-stat">
-            <span className="landing-stat-icon" aria-hidden="true">
-              <CrowdIcon />
-            </span>
-            <span>Now there&apos;s a place built for it</span>
+            <span className="landing-stat-emoji" aria-hidden="true">&#9889;</span>
+            <span>Predictions that lock before kickoff</span>
           </div>
         </div>
       </section>
@@ -190,69 +143,57 @@ export default function LandingHome({
           Join a match room
         </button>
       </div>
-      
-       <div className="landing-waitlist-wrap">
-          <WaitlistSection className="wl--landing" />
-        </div>
+
       {/* 3. Problem */}
-      <section
-        className="landing-section"
-        aria-labelledby="landing-problem-title"
-      >
+      <section className="landing-section" aria-labelledby="landing-problem-title">
         <h2 id="landing-problem-title" className="landing-section-title">
           Sound familiar?
         </h2>
         <div className="landing-problem-grid">
           <article className="landing-card landing-card--problem">
-            <h3 className="landing-card-label">Twitter</h3>
+            <h3 className="landing-card-label">Twitter / X</h3>
             <p className="landing-card-body">
-              Your feed is everyone’s hot take — not a single crowd for{" "}
-              <em>this</em> game.
+              Everyone has a hot take. No one is watching <em>your</em> match with you.
             </p>
           </article>
           <article className="landing-card landing-card--problem">
             <h3 className="landing-card-label">WhatsApp</h3>
             <p className="landing-card-body">
-              Same friends, same groups. Rival fans aren’t in the room to
-              banter.
+              Same mates, same group. Where are the rival fans to banter with?
             </p>
           </article>
           <article className="landing-card landing-card--problem">
             <h3 className="landing-card-label">Reddit</h3>
             <p className="landing-card-body">
-              Match threads move at forum speed — the live moment is already
-              gone.
+              Match threads are massive walls of text. The live moment is already gone.
             </p>
           </article>
           <article className="landing-card landing-card--problem">
             <h3 className="landing-card-label">Solo viewing</h3>
             <p className="landing-card-body">
-              You feel the goal — but there’s no crowd next to you to feel it
-              with.
+              90th minute equaliser. You jump off the sofa. But there&apos;s no crowd next to you.
             </p>
           </article>
         </div>
         <p className="landing-closing-line">
-          You&apos;re reacting… but no one&apos;s reacting with you.
+          You&apos;re reacting... but no one&apos;s reacting with you.
         </p>
       </section>
 
       {/* 4. Solution */}
-      <section
-        className="landing-section landing-section--glow"
-        aria-labelledby="landing-solution-title"
-      >
+      <section className="landing-section landing-section--glow" aria-labelledby="landing-solution-title">
         <h2 id="landing-solution-title" className="landing-section-title">
           FanGround is the crowd
         </h2>
         <ul className="landing-bullet-list">
-          <li>Live match rooms</li>
-          <li>Fans from both teams</li>
-          <li>Color-coded messages</li>
-          <li>Real-time reactions</li>
+          <li>Live match rooms that open 2 hours before kickoff</li>
+          <li>Home fans vs away fans in the same room</li>
+          <li>Color-coded messages so you know who&apos;s who</li>
+          <li>Predict the score, predict the winner</li>
+          <li>React to lineups, subs, and goals in real time</li>
         </ul>
         <p className="landing-highlight">
-          When a goal happens — the room explodes.
+          When a goal goes in &mdash; the room explodes.
         </p>
       </section>
 
@@ -268,10 +209,7 @@ export default function LandingHome({
       </div>
 
       {/* 5. Core features */}
-      <section
-        className="landing-section"
-        aria-labelledby="landing-features-title"
-      >
+      <section className="landing-section" aria-labelledby="landing-features-title">
         <h2 id="landing-features-title" className="landing-section-title">
           The experience
         </h2>
@@ -282,13 +220,10 @@ export default function LandingHome({
               Fan identity
             </h3>
             <ul className="landing-feature-list">
-              <li>Pick your team once</li>
-              <li>Permanent identity</li>
-              <li>Color-coded messages</li>
+              <li>Pick your Premier League club</li>
+              <li>Your messages carry your team colours</li>
+              <li>Everyone knows whose side you&apos;re on</li>
             </ul>
-            <p className="landing-feature-line">
-              You&apos;re not anonymous. You represent your team.
-            </p>
           </article>
           <article className="landing-feature">
             <h3 className="landing-feature-title">
@@ -296,13 +231,10 @@ export default function LandingHome({
               Match rooms
             </h3>
             <ul className="landing-feature-list">
-              <li>Pre-match → live → post-match</li>
-              <li>Real-time chat</li>
-              <li>Active fan count</li>
+              <li>Pre-match build-up, live chat, post-match analysis</li>
+              <li>Real lineups from ESPN</li>
+              <li>Live scores updating every 30 seconds</li>
             </ul>
-            <p className="landing-feature-line">
-              This isn&apos;t a feed. It&apos;s a crowd.
-            </p>
           </article>
           <article className="landing-feature">
             <h3 className="landing-feature-title">
@@ -310,25 +242,21 @@ export default function LandingHome({
               Predictions
             </h3>
             <ul className="landing-feature-list">
-              <li>Match outcome</li>
-              <li>Scoreline</li>
-              <li>First scorer</li>
+              <li>Pick the winner before kickoff</li>
+              <li>Predict the exact scoreline</li>
+              <li>Locked once confirmed &mdash; no changing your mind</li>
             </ul>
-            <p className="landing-feature-line">Prove you knew it.</p>
           </article>
         </div>
       </section>
 
       {/* 6. Emotional */}
-      <section
-        className="landing-section landing-emotional"
-        aria-labelledby="landing-moment-title"
-      >
+      <section className="landing-section landing-emotional" aria-labelledby="landing-moment-title">
         <h2 id="landing-moment-title" className="landing-section-title">
           Inside the moment
         </h2>
         <p className="landing-emotional-lead">
-          300 fans. Last minute. Last over. A goal. A wicket.
+          300 fans. 89th minute. Corner kick. Header. GOAL.
         </p>
         <p className="landing-emotional-boom">The room explodes.</p>
         <p className="landing-emotional-close">
@@ -350,10 +278,7 @@ export default function LandingHome({
       </div>
 
       {/* 7. Comparison */}
-      <section
-        className="landing-section"
-        aria-labelledby="landing-compare-title"
-      >
+      <section className="landing-section" aria-labelledby="landing-compare-title">
         <h2 id="landing-compare-title" className="landing-section-title">
           Why it&apos;s different
         </h2>
@@ -367,70 +292,55 @@ export default function LandingHome({
             </thead>
             <tbody>
               <tr>
-                <td><span className="landing-table-row-label">Passive</span></td>
-                <td><span className="landing-table-win">Active</span></td>
+                <td><span className="landing-table-row-label">Scroll a feed</span></td>
+                <td><span className="landing-table-win">Live match room</span></td>
               </tr>
               <tr>
-                <td><span className="landing-table-row-label">No identity</span></td>
-                <td><span className="landing-table-win">Team identity</span></td>
+                <td><span className="landing-table-row-label">No team identity</span></td>
+                <td><span className="landing-table-win">Your club, your colours</span></td>
               </tr>
               <tr>
-                <td><span className="landing-table-row-label">Fragmented</span></td>
-                <td><span className="landing-table-win">Match-based</span></td>
+                <td><span className="landing-table-row-label">Delayed threads</span></td>
+                <td><span className="landing-table-win">Real-time reactions</span></td>
               </tr>
               <tr>
-                <td><span className="landing-table-row-label">Slow</span></td>
-                <td><span className="landing-table-win">Real-time</span></td>
+                <td><span className="landing-table-row-label">Echo chamber</span></td>
+                <td><span className="landing-table-win">Rival fans in one room</span></td>
               </tr>
               <tr>
-                <td><span className="landing-table-row-label">Alone</span></td>
-                <td><span className="landing-table-win">Together</span></td>
+                <td><span className="landing-table-row-label">Watching alone</span></td>
+                <td><span className="landing-table-win">Feeling it together</span></td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p className="landing-table-note">Same match. More energy. Better banter.</p>
       </section>
 
       {/* 8. Audience */}
-      <section
-        className="landing-section landing-audience"
-        aria-labelledby="landing-audience-title"
-      >
+      <section className="landing-section landing-audience" aria-labelledby="landing-audience-title">
         <h2 id="landing-audience-title" className="landing-section-title">
-          For real fans only
+          Built for real football fans
         </h2>
         <div className="landing-audience-cols">
           <div>
             <h3 className="landing-audience-sub">This is for you if</h3>
             <ul className="landing-audience-list landing-audience-list--in">
-              <li>IPL / EPL fans</li>
-              <li>You argue, react, and predict</li>
+              <li>You live for matchdays</li>
+              <li>You argue about lineups and formations</li>
+              <li>You need someone to celebrate (or rant) with</li>
             </ul>
           </div>
           <div>
             <h3 className="landing-audience-sub">Not for</h3>
             <ul className="landing-audience-list landing-audience-list--out">
-              <li>Casual viewers</li>
-              <li>News readers</li>
+              <li>Casual viewers who check scores later</li>
+              <li>People looking for a news app</li>
             </ul>
           </div>
         </div>
       </section>
 
-      {/* 9. What it&apos;s not */}
-      <section className="landing-section" aria-labelledby="landing-not-title">
-        <h2 id="landing-not-title" className="landing-section-title">
-          What it&apos;s not
-        </h2>
-        <ul className="landing-not-list">
-          <li>Not a scores app</li>
-          <li>Not a news app</li>
-          <li>Not a fantasy app</li>
-        </ul>
-      </section>
-
-      {/* 10. Final CTA */}
+      {/* 9. Final CTA */}
       <section className="landing-final" aria-labelledby="landing-final-title">
         <h2 id="landing-final-title" className="landing-final-title">
           The next match is coming.
@@ -451,10 +361,10 @@ export default function LandingHome({
             onClick={onEnterFanGround}
           >
             <span className="landing-btn-icon" aria-hidden="true"><FanShieldIcon /></span>
-            Start Your Fan Identity
+            Pick Your Club
           </button>
         </div>
-        <p className="landing-tagline">FanGround — Where Fans Feel the Match</p>
+        <p className="landing-tagline">FanGround &mdash; Where Fans Feel the Match</p>
       </section>
 
       <div className="landing-sticky">
@@ -467,9 +377,6 @@ export default function LandingHome({
           Join the next match room
         </button>
       </div>
-       <div className="landing-waitlist-wrap">
-          <WaitlistSection className="wl--landing" />
-        </div>
     </div>
   );
 }
