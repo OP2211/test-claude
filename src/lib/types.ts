@@ -96,4 +96,8 @@ export interface User {
   fanTeamId: TeamId | null;
   email?: string;
   image?: string;
+  phone?: string;
+  dob?: string | null;
+  city?: string | null;
+  googleSub?: string;
 }

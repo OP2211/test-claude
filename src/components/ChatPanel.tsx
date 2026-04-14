@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { Message, User } from '@/lib/types';
+import { TEAMS } from '@/lib/teams';
 import './ChatPanel.css';
 
 const TEAM_COLORS: Record<string, string> = {
@@ -50,6 +51,13 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
   const teamColor = (fanTeamId: string | null): string =>
     fanTeamId ? TEAM_COLORS[fanTeamId] || 'var(--accent-blue)' : 'var(--accent-blue)';
 
+  const getTeamInfo = (fanTeamId: string | null) => {
+    if (!fanTeamId) return null;
+    const team = TEAMS.find((item) => item.id === fanTeamId);
+    if (!team) return null;
+    return team;
+  };
+
   const formatTime = (ts: string): string => {
     const d = new Date(ts);
     return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -74,6 +82,7 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
         {messages.map((msg) => {
           const isOwn = msg.userId === user.userId;
           const color = teamColor(msg.fanTeamId);
+          const teamInfo = getTeamInfo(msg.fanTeamId);
 
           return (
             <div key={msg.id} className={`cp-msg ${isOwn ? 'own' : ''}`}>
@@ -93,6 +102,15 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
                   <div className="cp-msg-meta">
                     <span className="cp-msg-name" style={{ color }}>{msg.username}</span>
                     <span className="cp-msg-time">{formatTime(msg.timestamp)}</span>
+                  </div>
+                )}
+                {!isOwn && teamInfo && (
+                  <div className="cp-msg-team-row">
+                    <span className="cp-msg-team">
+                      <img src={teamInfo.logo} alt="" className="cp-msg-team-logo" />
+                      <span className="cp-msg-team-name">{teamInfo.name}</span>
+                    </span>
+                    <span className="cp-msg-badge">Supporter</span>
                   </div>
                 )}
 

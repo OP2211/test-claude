@@ -56,6 +56,7 @@
   display: grid;
   place-items: center;
   flex: none;
+  position: relative;
 }
 .profile-avatar img {
   width: 100%;
@@ -78,6 +79,64 @@
   margin-top: 2px;
   color: var(--text-secondary);
   font-size: var(--text-sm);
+}
+
+.profile-team-pill {
+  --team-pill-color: #4caf50;
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 10px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 42px;
+  min-width: 156px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--team-pill-color) 82%, #ffffff 28%);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--team-pill-color) 42%, rgba(13, 20, 36, 0.95)),
+      rgba(13, 20, 36, 0.95)
+    );
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(2px);
+}
+
+.profile-team-pill.is-placeholder {
+  opacity: 0.82;
+}
+
+.profile-team-pill-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--team-pill-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--team-pill-color) 28%, transparent);
+}
+
+.profile-team-pill-logo {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.profile-team-pill-logo-placeholder {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(var(--neutral-rgb), 0.24);
+  flex: 0 0 auto;
+}
+
+.profile-team-pill-text {
+  font-size: var(--text-sm);
+  font-weight: 900;
+  letter-spacing: 0.15px;
+  color: #f8fbff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
 .profile-card-body {
@@ -111,6 +170,18 @@
   font-weight: 650;
   text-align: right;
   word-break: break-word;
+}
+
+.profile-team-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-team-value-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
 }
 
 .profile-footer {

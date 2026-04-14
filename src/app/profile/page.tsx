@@ -1,16 +1,49 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { openGoogleSignInPopup } from '@/lib/google-signin-popup';
 import Image from 'next/image';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import SiteFooter from '@/components/SiteFooter';
+import { TEAMS } from '@/lib/teams';
 import '../page.css';
 import './profile.css';
 
+interface ProfileData {
+  username: string;
+  phone: string;
+  fan_team_id: string;
+  dob: string | null;
+  city: string | null;
+}
+
 export default function Profile() {
   const { data: session, status, update: updateSession } = useSession();
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [profileError, setProfileError] = useState<string>('');
+
+  useEffect(() => {
+    if (!session) return;
+    const fetchProfile = async () => {
+      setProfileError('');
+      try {
+        const res = await fetch('/api/profile/me');
+        const data = await res.json();
+        if (!res.ok) {
+          setProfile(null);
+          setProfileError(data.error ?? 'Failed to load profile details');
+          return;
+        }
+        setProfile(data.profile ?? null);
+      } catch {
+        setProfile(null);
+        setProfileError('Failed to load profile details');
+      }
+    };
+    void fetchProfile();
+  }, [session]);
 
   if (status === 'loading') {
     return (
@@ -71,6 +104,9 @@ export default function Profile() {
   const name = session.user?.name ?? 'Fan';
   const email = session.user?.email ?? '—';
   const image = session.user?.image ?? '';
+  const selectedTeam = profile?.fan_team_id
+    ? (TEAMS.find((team) => team.id === profile.fan_team_id) ?? null)
+    : null;
 
   return (
     <div className="app">
@@ -109,19 +145,65 @@ export default function Profile() {
                   <div>
                     <div className="profile-name">{name}</div>
                     <div className="profile-email">{email}</div>
+                    <div
+                      className={`profile-team-pill ${selectedTeam ? '' : 'is-placeholder'}`}
+                      style={{ '--team-pill-color': selectedTeam?.color ?? '#5d6d85' } as React.CSSProperties}
+                      aria-label={selectedTeam ? `${selectedTeam.name}` : 'Support badge'}
+                    >
+                      <span className="profile-team-pill-dot" />
+                      {selectedTeam?.logo ? (
+                        <img src={selectedTeam.logo} alt="" className="profile-team-pill-logo" />
+                      ) : (
+                        <span className="profile-team-pill-logo-placeholder" aria-hidden />
+                      )}
+                      <span className="profile-team-pill-text">
+                        {selectedTeam ? `${selectedTeam.name}` : ''}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="profile-card-body">
                 <div className="profile-row">
-                  <div className="profile-row-label">Name</div>
-                  <div className="profile-row-value">{name}</div>
+                  <div className="profile-row-label">Username</div>
+                  <div className="profile-row-value">{profile?.username ?? '—'}</div>
                 </div>
                 <div className="profile-row">
                   <div className="profile-row-label">Email</div>
                   <div className="profile-row-value">{email}</div>
                 </div>
+                <div className="profile-row">
+                  <div className="profile-row-label">Phone</div>
+                  <div className="profile-row-value">{profile?.phone ?? '—'}</div>
+                </div>
+                <div className="profile-row">
+                  <div className="profile-row-label">Selected team</div>
+                  <div className="profile-row-value">
+                    {selectedTeam ? (
+                      <span className="profile-team-value">
+                        <img src={selectedTeam.logo} alt={`${selectedTeam.name} logo`} className="profile-team-value-logo" />
+                        <span>{selectedTeam.name}</span>
+                      </span>
+                    ) : (
+                      '—'
+                    )}
+                  </div>
+                </div>
+                <div className="profile-row">
+                  <div className="profile-row-label">Date of birth</div>
+                  <div className="profile-row-value">{profile?.dob ?? '—'}</div>
+                </div>
+                <div className="profile-row">
+                  <div className="profile-row-label">City</div>
+                  <div className="profile-row-value">{profile?.city ?? '—'}</div>
+                </div>
+                {profileError && (
+                  <div className="profile-row">
+                    <div className="profile-row-label">Status</div>
+                    <div className="profile-row-value">{profileError}</div>
+                  </div>
+                )}
               </div>
             </section>
           </div>

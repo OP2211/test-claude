@@ -17,8 +17,40 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-function generateUserId(): string {
-  return 'user-' + Math.random().toString(36).slice(2, 10);
+interface ProfileResponse {
+  profile: {
+    google_sub: string;
+    email: string | null;
+    image: string | null;
+    username: string;
+    phone: string;
+    fan_team_id: TeamId;
+    dob: string | null;
+    city: string | null;
+  } | null;
+  isOnboardingComplete: boolean;
+}
+
+interface OnboardingPayload {
+  username: string;
+  phone: string;
+  fanTeamId: TeamId;
+  dob: string | null;
+  city: string | null;
+}
+
+function mapProfileToUser(profile: NonNullable<ProfileResponse['profile']>): User {
+  return {
+    userId: profile.google_sub,
+    googleSub: profile.google_sub,
+    username: profile.username,
+    email: profile.email ?? undefined,
+    image: profile.image ?? undefined,
+    fanTeamId: profile.fan_team_id,
+    phone: profile.phone,
+    dob: profile.dob,
+    city: profile.city,
+  };
 }
 
 export default function Home() {
@@ -31,29 +63,35 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
+  const loadProfile = useCallback(async () => {
+    try {
+      const res = await fetch('/api/profile/me');
+      if (!res.ok) {
+        setUser(null);
+        return;
+      }
+      const data: ProfileResponse = await res.json();
+      if (data.profile) {
+        setUser(mapProfileToUser(data.profile));
+        setShowOnboarding(!data.isOnboardingComplete);
+      } else {
+        setUser(null);
+        setShowOnboarding(true);
+      }
+    } catch {
+      setUser(null);
+      setShowOnboarding(true);
+    }
+  }, []);
+
   useEffect(() => {
     if (session?.user) {
-      const { name, email, image } = session.user;
-      const saved = localStorage.getItem('ffc_user');
-      if (saved) {
-        try {
-          const existingUser = JSON.parse(saved);
-          const newUser = { ...existingUser, username: name, email, image };
-          localStorage.setItem('ffc_user', JSON.stringify(newUser));
-          setUser(newUser);
-        } catch {}
-      } else {
-        const newUser: User = { userId: generateUserId(), username: name ?? '', email: email ?? '', image: image ?? '', fanTeamId: null };
-        localStorage.setItem('ffc_user', JSON.stringify(newUser));
-        setUser(newUser);
-      }
-    } else {
-      const saved = localStorage.getItem('ffc_user');
-      if (saved) {
-        try { setUser(JSON.parse(saved)); } catch {}
-      }
+      void loadProfile();
+      return;
     }
-  }, [session]);
+    setUser(null);
+    setShowOnboarding(false);
+  }, [session, loadProfile]);
 
   useEffect(() => {
     const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e as BeforeInstallPromptEvent); };
@@ -89,24 +127,22 @@ export default function Home() {
   const handleSelectMatch = (match: Match) => {
     if (sessionStatus === 'loading') return;
 
-    if (!user) {
+    if (!session?.user) {
       setPendingMatch(match);
-      if (process.env.NODE_ENV === 'development' || session?.user) {
-        // In dev: skip Google, go straight to onboarding modal (name input)
-        // In prod with session: go to team selection step
-        setShowOnboarding(true);
-      } else {
-        // In prod without session: trigger Google sign-in first
-        void openGoogleSignInPopup(() => updateSession());
-      }
+      void openGoogleSignInPopup(() => updateSession());
+      return;
+    }
+
+    if (!user || !user.fanTeamId) {
+      setPendingMatch(match);
+      setShowOnboarding(true);
       return;
     }
     setActiveMatch(match);
   };
 
   useEffect(() => {
-    if (!pendingMatch) return;
-    if (process.env.NODE_ENV !== 'development' && !session?.user) return;
+    if (!pendingMatch || !session?.user) return;
     if (!user) {
       setShowOnboarding(true);
       return;
@@ -115,9 +151,17 @@ export default function Home() {
     setPendingMatch(null);
   }, [pendingMatch, session, user]);
 
-  const handleOnboardingComplete = (fanTeamId: TeamId, devUsername?: string) => {
-    const newUser: User = { userId: generateUserId(), username: devUsername || session?.user?.name || '', email: session?.user?.email ?? '', image: session?.user?.image ?? '', fanTeamId };
-    localStorage.setItem('ffc_user', JSON.stringify(newUser));
+  const handleOnboardingComplete = async (payload: OnboardingPayload) => {
+    const res = await fetch('/api/profile/upsert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error ?? 'Failed to save profile');
+    }
+    const newUser = mapProfileToUser(data.profile);
     setUser(newUser);
     setShowOnboarding(false);
     if (pendingMatch) {
@@ -138,7 +182,6 @@ export default function Home() {
   const isInRoom = activeMatch && user;
 
   const handleSignOut = () => {
-    localStorage.removeItem('ffc_user');
     setUser(null);
     setActiveMatch(null);
     signOut();
@@ -155,7 +198,7 @@ export default function Home() {
           onInstall: handleInstall,
           user,
           onSignOut: handleSignOut,
-          showGoogleSignIn: process.env.NODE_ENV !== 'development' && sessionStatus === 'unauthenticated',
+          showGoogleSignIn: sessionStatus === 'unauthenticated',
           onSignInWithGoogle: () => void openGoogleSignInPopup(() => updateSession()),
         }}
       />

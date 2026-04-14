@@ -8,4 +8,18 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
     }),
   ],
+  callbacks: {
+    async jwt({ token, account, profile }) {
+      if (account?.provider === 'google' && profile?.sub) {
+        token.googleSub = profile.sub;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token.googleSub) {
+        session.user.googleSub = token.googleSub;
+      }
+      return session;
+    },
+  },
 };
