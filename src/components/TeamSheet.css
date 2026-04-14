@@ -52,18 +52,18 @@
 .ts-player-dot {
   width: 30px; height: 30px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  border: 2px solid rgba(var(--neutral-rgb),0.3);
+  border: 2px solid rgba(255,255,255,0.35);
   transition: transform var(--duration-fast) var(--ease-spring);
   will-change: transform;
 }
 .ts-player-dot:hover { transform: scale(1.2); }
-.ts-player-initial { font-size: 0.65rem; font-weight: 900; color: rgb(var(--neutral-rgb)); text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.ts-player-initial { font-size: 0.65rem; font-weight: 900; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.4); }
 .ts-player-name {
-  font-size: 0.54rem; font-weight: 700; color: rgba(var(--neutral-rgb),0.85);
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-  white-space: nowrap; max-width: 48px; overflow: hidden; text-overflow: ellipsis; text-align: center;
+  font-size: 0.58rem; font-weight: 800; color: #fff;
+  text-shadow: 0 0 4px rgba(0,0,0,0.9), 0 1px 1px rgba(0,0,0,0.7);
+  white-space: nowrap; max-width: 56px; overflow: hidden; text-overflow: ellipsis; text-align: center;
 }
-.ts-player-pos { font-size: 0.42rem; font-weight: 800; color: rgba(var(--neutral-rgb),0.4); text-transform: uppercase; letter-spacing: 0.5px; }
+.ts-player-pos { font-size: 0.44rem; font-weight: 800; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 0 3px rgba(0,0,0,0.8); }
 
 /* ── Squad ────────────────────────────────────────────────────── */
 .ts-squad { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }

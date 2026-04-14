@@ -89,22 +89,24 @@ export default function Home() {
   const handleSelectMatch = (match: Match) => {
     if (sessionStatus === 'loading') return;
 
-    if (!session?.user) {
-      setPendingMatch(match);
-      void openGoogleSignInPopup(() => updateSession());
-      return;
-    }
-
     if (!user) {
       setPendingMatch(match);
-      setShowOnboarding(true);
+      if (process.env.NODE_ENV === 'development' || session?.user) {
+        // In dev: skip Google, go straight to onboarding modal (name input)
+        // In prod with session: go to team selection step
+        setShowOnboarding(true);
+      } else {
+        // In prod without session: trigger Google sign-in first
+        void openGoogleSignInPopup(() => updateSession());
+      }
       return;
     }
     setActiveMatch(match);
   };
 
   useEffect(() => {
-    if (!pendingMatch || !session?.user) return;
+    if (!pendingMatch) return;
+    if (process.env.NODE_ENV !== 'development' && !session?.user) return;
     if (!user) {
       setShowOnboarding(true);
       return;
@@ -153,7 +155,7 @@ export default function Home() {
           onInstall: handleInstall,
           user,
           onSignOut: handleSignOut,
-          showGoogleSignIn: sessionStatus === 'unauthenticated',
+          showGoogleSignIn: process.env.NODE_ENV !== 'development' && sessionStatus === 'unauthenticated',
           onSignInWithGoogle: () => void openGoogleSignInPopup(() => updateSession()),
         }}
       />

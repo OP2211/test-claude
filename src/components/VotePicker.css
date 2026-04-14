@@ -54,7 +54,7 @@
   justify-content: center;
   gap: 2px;
   padding: 8px 4px;
-  min-height: 48px;
+  min-height: 52px;
   background: rgba(var(--neutral-rgb), 0.04);
   border: 1.5px solid rgba(var(--neutral-rgb), 0.1);
   border-radius: 10px;
@@ -62,7 +62,7 @@
   transition: all var(--duration-normal) var(--ease-smooth);
 }
 
-.vp-opt:active {
+.vp-opt:active:not(:disabled) {
   transform: scale(0.96);
 }
 
@@ -73,20 +73,43 @@
   animation: voteCelebrate var(--duration-slow) var(--ease-spring);
 }
 
+.vp-opt.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Vote button: logo above label ─────────────────────────── */
+.vp-opt-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  width: 100%;
+}
+
+.vp-opt-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .vp-opt-badge {
   font-size: 1.1rem;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .vp-opt-label {
-  font-size: 0.6rem;
+  font-size: 0.56rem;
   font-weight: 750;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   line-height: 1.15;
   text-align: center;
-  max-width: 100%;
+  width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -100,6 +123,69 @@
   animation: scaleIn 0.2s var(--ease-spring);
 }
 
+/* ── Vote confirmation ─────────────────────────────────────── */
+.vp-vote-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(var(--neutral-rgb), 0.04);
+  border: 1px solid rgba(var(--neutral-rgb), 0.1);
+  border-radius: 8px;
+  animation: fadeInUp 0.2s var(--ease-out);
+}
+
+.vp-vote-confirm-text {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.vp-vote-confirm-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.vp-vote-confirm-btn {
+  flex: 1;
+  padding: 7px;
+  border-radius: 6px;
+  font-size: var(--text-xs);
+  font-weight: 750;
+  transition: all 0.2s;
+}
+
+.vp-vote-confirm-btn:active { transform: scale(0.97); }
+
+.vp-vote-confirm-btn.cancel {
+  background: rgba(var(--neutral-rgb), 0.06);
+  border: 1px solid rgba(var(--neutral-rgb), 0.12);
+  color: var(--text-secondary);
+}
+
+.vp-vote-confirm-btn.confirm {
+  background: var(--gradient-brand);
+  color: #060613;
+}
+
+/* ── Lock message ──────────────────────────────────────────── */
+.vp-lock-msg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--accent-yellow);
+  text-align: center;
+  padding: 6px 0 2px;
+  animation: fadeInUp 0.25s var(--ease-out);
+}
+
+/* ── Results ───────────────────────────────────────────────── */
 .vp-results {
   display: flex;
   flex-direction: column;
@@ -117,11 +203,11 @@
 }
 
 .vp-bar-label {
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   font-weight: 700;
   color: var(--text-dim);
   text-transform: uppercase;
-  width: 28px;
+  width: 46px;
   flex-shrink: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -222,22 +308,28 @@
   font-weight: 600;
 }
 
+/* ── Score Prediction Card ─────────────────────────────────── */
 .vp-score-card {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 10px;
   background: rgba(var(--neutral-rgb), 0.02);
   border: 1px solid rgba(var(--neutral-rgb), 0.08);
   border-radius: 10px;
-  padding: 8px 10px;
+  padding: 10px 12px;
+}
+
+.vp-score-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .vp-score-icon {
   color: var(--accent-yellow);
-  flex-shrink: 0;
   opacity: 0.75;
-  margin-top: 1px;
+  flex-shrink: 0;
 }
 
 .vp-score-title {
@@ -245,37 +337,175 @@
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
-  text-align: center;
 }
 
-.vp-score-hint {
-  font-size: 0.62rem;
-  color: var(--text-dim);
-  line-height: 1.25;
-  margin-top: 2px;
-  text-align: center;
+.vp-score-teams {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
 }
 
-.vp-score-value {
-  font-size: 0.8rem;
-  font-weight: 800;
+.vp-score-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 50px;
+}
+
+.vp-score-team-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.vp-score-team-badge {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.vp-score-team-name {
+  font-size: 0.58rem;
+  font-weight: 750;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 64px;
+}
+
+.vp-score-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vp-score-box {
+  width: 36px;
+  height: 40px;
+  background: rgba(var(--neutral-rgb), 0.06);
+  border: 1.5px solid rgba(var(--neutral-rgb), 0.15);
+  border-radius: 8px;
   color: var(--text-primary);
-  line-height: 1.2;
-  margin-top: 4px;
-  font-variant-numeric: tabular-nums;
+  font-size: 1.1rem;
+  font-weight: 900;
   text-align: center;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.2s;
 }
 
+.vp-score-box:focus {
+  border-color: var(--accent-blue);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.vp-score-box.locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vp-score-box::placeholder {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.vp-score-dash {
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--text-dim);
+}
+
+.vp-score-submit {
+  width: 100%;
+  padding: 8px;
+  background: var(--gradient-brand);
+  color: #060613;
+  border-radius: 8px;
+  font-size: var(--text-xs);
+  font-weight: 750;
+  transition: all 0.2s;
+  animation: fadeInUp 0.2s var(--ease-out);
+}
+
+.vp-score-submit:active {
+  transform: scale(0.97);
+}
+
+/* ── Score confirm dialog ──────────────────────────────────── */
+.vp-score-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeInUp 0.2s var(--ease-out);
+}
+
+.vp-score-confirm-text {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.vp-score-confirm-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.vp-score-confirm-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: var(--text-xs);
+  font-weight: 750;
+  transition: all 0.2s;
+}
+
+.vp-score-confirm-btn:active {
+  transform: scale(0.97);
+}
+
+.vp-score-confirm-btn.cancel {
+  background: rgba(var(--neutral-rgb), 0.06);
+  border: 1px solid rgba(var(--neutral-rgb), 0.12);
+  color: var(--text-secondary);
+}
+
+.vp-score-confirm-btn.confirm {
+  background: var(--gradient-brand);
+  color: #060613;
+}
+
+.vp-score-locked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--color-success);
+}
+
+/* ── Desktop ───────────────────────────────────────────────── */
 @media (min-width: 768px) {
   .vp-opt {
-    min-height: 52px;
+    min-height: 56px;
     padding: 10px 6px;
   }
+  .vp-opt-logo {
+    width: 28px;
+    height: 28px;
+  }
   .vp-opt-badge {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
   }
   .vp-opt-label {
-    font-size: 0.65rem;
+    font-size: 0.68rem;
   }
   .vp-bar-av {
     width: 20px;
@@ -288,5 +518,14 @@
   .vp-bar-users-fallback {
     width: 20px;
     height: 20px;
+  }
+  .vp-score-box {
+    width: 40px;
+    height: 44px;
+    font-size: 1.2rem;
+  }
+  .vp-score-team-logo {
+    width: 32px;
+    height: 32px;
   }
 }
