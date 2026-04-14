@@ -1,6 +1,5 @@
 "use client";
 
-import WaitlistSection from "@/components/WaitlistSection";
 import "./LandingHome.css";
 
 interface LandingHomeProps {
