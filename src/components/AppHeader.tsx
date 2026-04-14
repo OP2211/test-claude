@@ -9,6 +9,14 @@ import { LOGOUT_CONFIRM_VARIANTS, pickRandomLogoutVariant } from '@/lib/logout-v
 import type { User } from '@/lib/types';
 import '@/app/page.css';
 
+type ThemePreference = 'system' | 'light' | 'dark';
+
+const THEME_LABELS: Record<ThemePreference, string> = {
+  system: 'System',
+  light: 'Light',
+  dark: 'Dark',
+};
+
 export interface AppHeaderHomeActionsProps {
   installPrompt: boolean;
   onInstall: () => void;
@@ -35,6 +43,16 @@ interface AppHeaderProps {
   homeActions?: AppHeaderHomeActionsProps;
   /** Profile: avatar + hover/click menu (replaces always-visible Log out). */
   profileMenu?: AppHeaderProfileMenuProps;
+}
+
+function applyThemePreference(pref: ThemePreference) {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  if (pref === 'system') {
+    root.removeAttribute('data-theme');
+    return;
+  }
+  root.setAttribute('data-theme', pref);
 }
 
 function UserAvatarMenu({
@@ -170,6 +188,25 @@ export default function AppHeader({
   profileMenu,
 }: AppHeaderProps) {
   const logoLabel = onLogoClick ? 'Back to matches' : 'FanGround home';
+  const [themePref, setThemePref] = useState<ThemePreference>('system');
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+    const saved = localStorage.getItem('fg-theme-preference') as ThemePreference | null;
+    const pref: ThemePreference = saved === 'light' || saved === 'dark' || saved === 'system' ? saved : 'system';
+    setThemePref(pref);
+    applyThemePreference(pref);
+  }, []);
+
+  const cycleTheme = useCallback(() => {
+    setThemePref((current) => {
+      const next: ThemePreference = current === 'system' ? 'light' : current === 'light' ? 'dark' : 'system';
+      localStorage.setItem('fg-theme-preference', next);
+      applyThemePreference(next);
+      return next;
+    });
+  }, []);
 
   return (
     <header className={`app-header ${inRoom ? 'in-room' : ''}`}>
@@ -187,6 +224,21 @@ export default function AppHeader({
         )}
 
         <div className="header-right">
+          {hasMounted && (
+            <button
+              type="button"
+              className="theme-toggle-btn"
+              onClick={cycleTheme}
+              aria-label={`Theme: ${THEME_LABELS[themePref]}. Click to switch theme.`}
+              title={`Theme: ${THEME_LABELS[themePref]}`}
+            >
+              <span className="theme-toggle-icon" aria-hidden>
+                {themePref === 'light' ? '☀️' : themePref === 'dark' ? '🌙' : '🖥️'}
+              </span>
+              <span className="theme-toggle-text">{THEME_LABELS[themePref]}</span>
+            </button>
+          )}
+
           {variant === 'home' && homeActions && (
             <>
               {homeActions.installPrompt && (

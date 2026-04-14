@@ -47,7 +47,8 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
     inputRef.current?.focus();
   };
 
-  const teamColor = (fanTeamId: string | null): string => fanTeamId ? TEAM_COLORS[fanTeamId] || '#6060aa' : '#6060aa';
+  const teamColor = (fanTeamId: string | null): string =>
+    fanTeamId ? TEAM_COLORS[fanTeamId] || 'var(--accent-blue)' : 'var(--accent-blue)';
 
   const formatTime = (ts: string): string => {
     const d = new Date(ts);
@@ -99,6 +100,18 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
                   <div className={`cp-bubble ${isOwn ? 'cp-bubble-own' : ''}`}>
                     {msg.text}
                   </div>
+                  {msg.moderation?.moderated && (
+                    <span
+                      className="cp-moderation-badge"
+                      title={`Content moderated by admin: ${msg.moderation.reason}`}
+                      aria-label={`Content moderated by admin: ${msg.moderation.reason}`}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z" />
+                        <path d="M9 12l2 2 4-4" />
+                      </svg>
+                    </span>
+                  )}
                   {isOwn && <span className="cp-msg-time own-t">{formatTime(msg.timestamp)}</span>}
                 </div>
 

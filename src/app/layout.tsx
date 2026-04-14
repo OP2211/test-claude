@@ -41,7 +41,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0a0a1a',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f3f6fb' },
+    { media: '(prefers-color-scheme: dark)', color: '#070a12' },
+  ],
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -50,6 +53,7 @@ export const viewport: Viewport = {
 };
 
 import AuthContext from './AuthContext';
+import ClientBoot from './ClientBoot';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -62,18 +66,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {process.env.NEXT_PUBLIC_GTM_ID ? (
           <GoogleTagManager gtmId={process.env.NEXT_PUBLIC_GTM_ID} />
         ) : null}
+        <ClientBoot />
         <AuthContext>{children}</AuthContext>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js').catch(() => {});
-                });
-              }
-            `,
-          }}
-        />
       </body>
     </html>
   );

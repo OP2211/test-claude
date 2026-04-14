@@ -8,6 +8,73 @@ interface LandingHomeProps {
   onSeeLiveRooms: () => void;
 }
 
+function SecondScreenIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <line x1="9" y1="17" x2="15" y2="17" />
+      <circle cx="12" cy="7.5" r="1.5" />
+    </svg>
+  );
+}
+
+function MatchChatIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 6h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H11l-4.5 3v-3H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" />
+      <path d="M8 10h8M8 13h5" />
+    </svg>
+  );
+}
+
+function CrowdIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="7" cy="8" r="2" />
+      <circle cx="17" cy="8" r="2" />
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M3.5 18c.3-2 2-3.5 4-3.5h.5M20.5 18c-.3-2-2-3.5-4-3.5H16M7.5 18c.4-2.4 2.3-4 4.5-4s4.1 1.6 4.5 4" />
+    </svg>
+  );
+}
+
+function ArrowRushIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 12h14" />
+      <path d="m13 6 6 6-6 6" />
+    </svg>
+  );
+}
+
+function FanShieldIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3 5 6v5c0 5 3.4 8.5 7 10 3.6-1.5 7-5 7-10V6l-7-3z" />
+      <path d="M9.5 12.5 11 14l3.5-3.5" />
+    </svg>
+  );
+}
+
+function StadiumIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9h18" />
+      <path d="M5 9v9m14-9v9" />
+      <path d="M3 18h18" />
+      <path d="m8 9 2-4h4l2 4" />
+    </svg>
+  );
+}
+
+function PredictionBoltIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m13 2-7 11h5l-1 9 8-12h-5z" />
+    </svg>
+  );
+}
+
 export default function LandingHome({
   onEnterFanGround,
   onSeeLiveRooms,
@@ -39,6 +106,7 @@ export default function LandingHome({
                 className="landing-btn landing-btn--primary"
                 onClick={onEnterFanGround}
               >
+                <span className="landing-btn-icon" aria-hidden="true"><ArrowRushIcon /></span>
                 Enter FanGround
               </button>
               <button
@@ -46,6 +114,7 @@ export default function LandingHome({
                 className="landing-btn landing-btn--secondary"
                 onClick={onSeeLiveRooms}
               >
+                <span className="landing-btn-icon" aria-hidden="true"><StadiumIcon /></span>
                 See Live Match Rooms
               </button>
             </div>
@@ -92,19 +161,19 @@ export default function LandingHome({
         <div className="landing-strip-inner">
           <div className="landing-stat">
             <span className="landing-stat-icon" aria-hidden="true">
-              📱
+              <SecondScreenIcon />
             </span>
             <span>90%+ fans use second screen</span>
           </div>
           <div className="landing-stat">
             <span className="landing-stat-icon" aria-hidden="true">
-              💬
+              <MatchChatIcon />
             </span>
             <span>79% discuss matches live</span>
           </div>
           <div className="landing-stat">
             <span className="landing-stat-icon" aria-hidden="true">
-              🏟️
+              <CrowdIcon />
             </span>
             <span>Now there&apos;s a place built for it</span>
           </div>
@@ -117,6 +186,7 @@ export default function LandingHome({
           className="landing-btn landing-btn--primary landing-btn--compact"
           onClick={onSeeLiveRooms}
         >
+          <span className="landing-btn-icon" aria-hidden="true"><ArrowRushIcon /></span>
           Join a match room
         </button>
       </div>
@@ -192,6 +262,7 @@ export default function LandingHome({
           className="landing-btn landing-btn--primary landing-btn--compact"
           onClick={onEnterFanGround}
         >
+          <span className="landing-btn-icon" aria-hidden="true"><ArrowRushIcon /></span>
           Feel the next match
         </button>
       </div>
@@ -206,7 +277,10 @@ export default function LandingHome({
         </h2>
         <div className="landing-features">
           <article className="landing-feature">
-            <h3 className="landing-feature-title">Fan identity</h3>
+            <h3 className="landing-feature-title">
+              <span className="landing-feature-title-icon" aria-hidden="true"><FanShieldIcon /></span>
+              Fan identity
+            </h3>
             <ul className="landing-feature-list">
               <li>Pick your team once</li>
               <li>Permanent identity</li>
@@ -217,7 +291,10 @@ export default function LandingHome({
             </p>
           </article>
           <article className="landing-feature">
-            <h3 className="landing-feature-title">Match rooms</h3>
+            <h3 className="landing-feature-title">
+              <span className="landing-feature-title-icon" aria-hidden="true"><StadiumIcon /></span>
+              Match rooms
+            </h3>
             <ul className="landing-feature-list">
               <li>Pre-match → live → post-match</li>
               <li>Real-time chat</li>
@@ -228,7 +305,10 @@ export default function LandingHome({
             </p>
           </article>
           <article className="landing-feature">
-            <h3 className="landing-feature-title">Predictions</h3>
+            <h3 className="landing-feature-title">
+              <span className="landing-feature-title-icon" aria-hidden="true"><PredictionBoltIcon /></span>
+              Predictions
+            </h3>
             <ul className="landing-feature-list">
               <li>Match outcome</li>
               <li>Scoreline</li>
@@ -264,6 +344,7 @@ export default function LandingHome({
           className="landing-btn landing-btn--secondary landing-btn--compact"
           onClick={onSeeLiveRooms}
         >
+          <span className="landing-btn-icon" aria-hidden="true"><StadiumIcon /></span>
           See live match rooms
         </button>
       </div>
@@ -286,28 +367,29 @@ export default function LandingHome({
             </thead>
             <tbody>
               <tr>
-                <td>Passive</td>
-                <td>Active</td>
+                <td><span className="landing-table-row-label">Passive</span></td>
+                <td><span className="landing-table-win">Active</span></td>
               </tr>
               <tr>
-                <td>No identity</td>
-                <td>Team identity</td>
+                <td><span className="landing-table-row-label">No identity</span></td>
+                <td><span className="landing-table-win">Team identity</span></td>
               </tr>
               <tr>
-                <td>Fragmented</td>
-                <td>Match-based</td>
+                <td><span className="landing-table-row-label">Fragmented</span></td>
+                <td><span className="landing-table-win">Match-based</span></td>
               </tr>
               <tr>
-                <td>Slow</td>
-                <td>Real-time</td>
+                <td><span className="landing-table-row-label">Slow</span></td>
+                <td><span className="landing-table-win">Real-time</span></td>
               </tr>
               <tr>
-                <td>Alone</td>
-                <td>Together</td>
+                <td><span className="landing-table-row-label">Alone</span></td>
+                <td><span className="landing-table-win">Together</span></td>
               </tr>
             </tbody>
           </table>
         </div>
+        <p className="landing-table-note">Same match. More energy. Better banter.</p>
       </section>
 
       {/* 8. Audience */}
@@ -360,6 +442,7 @@ export default function LandingHome({
             className="landing-btn landing-btn--primary"
             onClick={onSeeLiveRooms}
           >
+            <span className="landing-btn-icon" aria-hidden="true"><ArrowRushIcon /></span>
             Join the Next Match Room
           </button>
           <button
@@ -367,6 +450,7 @@ export default function LandingHome({
             className="landing-btn landing-btn--secondary"
             onClick={onEnterFanGround}
           >
+            <span className="landing-btn-icon" aria-hidden="true"><FanShieldIcon /></span>
             Start Your Fan Identity
           </button>
         </div>
@@ -379,6 +463,7 @@ export default function LandingHome({
           className="landing-btn landing-btn--primary"
           onClick={onSeeLiveRooms}
         >
+          <span className="landing-btn-icon" aria-hidden="true"><ArrowRushIcon /></span>
           Join the next match room
         </button>
       </div>

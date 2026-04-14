@@ -37,9 +37,10 @@ interface AddMessageParams {
   fanTeamId: TeamId | null;
   image?: string;
   text: string;
+  moderation?: Message['moderation'];
 }
 
-export async function addMessage(matchId: string, { tab, userId, username, fanTeamId, image, text }: AddMessageParams): Promise<Message> {
+export async function addMessage(matchId: string, { tab, userId, username, fanTeamId, image, text, moderation }: AddMessageParams): Promise<Message> {
   const room = await getRoom(matchId);
   const msg: Message = {
     id: uuidv4(),
@@ -51,6 +52,7 @@ export async function addMessage(matchId: string, { tab, userId, username, fanTe
     text: (text || '').trim().slice(0, 500),
     timestamp: new Date().toISOString(),
     reactions: {},
+    moderation,
   };
   if (!room[tab]) room[tab] = [];
   room[tab].push(msg);

@@ -131,7 +131,7 @@ export default function WaitlistSection({ className }: WaitlistSectionProps) {
           </p>
         </div>
 
-        <form className="wl-form" onSubmit={onSubmit} noValidate>
+        <form className="wl-form" onSubmit={onSubmit} noValidate suppressHydrationWarning>
           <label className="wl-visually-hidden" htmlFor="wl-email">
             Email
           </label>
@@ -146,6 +146,7 @@ export default function WaitlistSection({ className }: WaitlistSectionProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={status === 'loading'}
+            suppressHydrationWarning
           />
 
           <div className="wl-row">
@@ -162,6 +163,7 @@ export default function WaitlistSection({ className }: WaitlistSectionProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={status === 'loading'}
+              suppressHydrationWarning
             />
             <label className="wl-visually-hidden" htmlFor="wl-club">
               Club or note (optional)
@@ -175,12 +177,13 @@ export default function WaitlistSection({ className }: WaitlistSectionProps) {
               value={club}
               onChange={(e) => setClub(e.target.value)}
               disabled={status === 'loading'}
+              suppressHydrationWarning
             />
           </div>
 
           {/* Bots often tick every checkbox; humans never see this */}
           <div className="wl-honeypot" aria-hidden="true">
-            <input ref={botTrapRef} type="checkbox" name="confirm_hp" tabIndex={-1} defaultChecked={false} />
+            <input ref={botTrapRef} type="checkbox" name="confirm_hp" tabIndex={-1} defaultChecked={false} suppressHydrationWarning />
           </div>
 
           {status === 'error' && errorMessage && (
@@ -189,7 +192,7 @@ export default function WaitlistSection({ className }: WaitlistSectionProps) {
             </p>
           )}
 
-          <button type="submit" className="wl-submit" disabled={status === 'loading'}>
+          <button type="submit" className="wl-submit" disabled={status === 'loading'} suppressHydrationWarning>
             {status === 'loading' ? (
               <>
                 <span className="wl-spinner" aria-hidden="true" />

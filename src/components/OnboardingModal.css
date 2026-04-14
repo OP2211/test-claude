@@ -1,7 +1,7 @@
 /* ── Overlay ──────────────────────────────────────────────────── */
 .ob-overlay {
   position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(var(--neutral-rgb), 0.22);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex; align-items: flex-end; justify-content: center;
@@ -23,15 +23,15 @@
   animation: slideUp 0.35s var(--ease-out);
   box-shadow: var(--shadow-4);
 }
-.ob-handle { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); margin: 0 auto 16px; }
+.ob-handle { width: 36px; height: 4px; border-radius: 2px; background: rgba(var(--neutral-rgb),0.15); margin: 0 auto 16px; }
 .ob-close {
   position: absolute; top: 16px; right: 16px;
   width: 36px; height: 36px; border-radius: 50%;
-  background: rgba(255,255,255,0.06); color: var(--text-muted);
+  background: rgba(var(--neutral-rgb),0.06); color: var(--text-muted);
   display: flex; align-items: center; justify-content: center;
   transition: all var(--duration-fast);
 }
-.ob-close:active { transform: scale(0.9); background: rgba(255,255,255,0.1); }
+.ob-close:active { transform: scale(0.9); background: rgba(var(--neutral-rgb),0.1); }
 
 /* ── Progress dots ───────────────────────────────────────────── */
 .ob-progress { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; }
@@ -93,7 +93,7 @@
 .ob-team-check {
   position: absolute; top: 6px; right: 6px;
   width: 20px; height: 20px; border-radius: 50%;
-  background: var(--team-color); color: #fff;
+  background: var(--team-color); color: rgb(var(--neutral-rgb));
   display: flex; align-items: center; justify-content: center;
   animation: scaleIn 0.2s var(--ease-spring);
 }
