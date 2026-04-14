@@ -253,20 +253,54 @@ export interface MatchLineup {
 }
 
 /**
+ * Extract a display surname from a full name. Handles edge cases:
+ * - Single-name players like "Casemiro", "Amad", "Vinicius Jr" → returns full name
+ * - Trailing whitespace from ESPN data
+ * - Multi-part surnames like "Mac Allister", "Van Dijk" → keeps the surname only
+ */
+function surnameOf(displayName: string): string {
+  const cleaned = displayName.trim();
+  if (!cleaned) return '';
+  const parts = cleaned.split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  // Use the last word as the surname (works for most cases)
+  return parts[parts.length - 1];
+}
+
+/**
  * Categorize an ESPN position abbreviation into a row group.
  * Lower number = closer to own goal (GK=0, DEF=1, MID=2-3, FWD=4).
  */
 function positionGroup(posAbbr: string): number {
-  if (posAbbr === 'G') return 0;
+  const p = posAbbr.toUpperCase();
+  if (p === 'G') return 0;
   // Defenders
-  if (/^(LB|RB|CB|CD|CD-L|CD-R|SW|LWB|RWB|WB)/.test(posAbbr)) return 1;
-  // Defensive / central midfielders
-  if (/^(CDM|DM|LDM|RDM|CM|LM|RM)$/.test(posAbbr)) return 2;
+  if (/^(LB|RB|CB|CD|SW|LWB|RWB|WB)/.test(p)) return 1;
+  // Defensive / central midfielders (catches CM, CM-L, CM-R, CDM, LM, RM, etc.)
+  if (/^(CDM|DM|LDM|RDM|CM|LM|RM)/.test(p)) return 2;
   // Attacking midfielders / wingers
-  if (/^(AM|AM-L|AM-R|CAM|LW|RW)/.test(posAbbr)) return 3;
+  if (/^(AM|CAM|LW|RW)/.test(p)) return 3;
   // Forwards
-  if (/^(F|FW|ST|CF|SS|LF|RF)/.test(posAbbr)) return 4;
+  if (/^(F|FW|ST|CF|SS|LF|RF)/.test(p)) return 4;
   return 2; // default to midfield
+}
+
+/**
+ * Returns a left-to-right rank within a row (0 = leftmost on screen).
+ * ESPN's tactics view places right-side positions (RB, RW, CD-R) on the LEFT
+ * of the screen and left-side positions (LB, LW, CD-L) on the RIGHT.
+ * Lower rank = leftmost in the rendered row.
+ */
+function horizontalRank(posAbbr: string): number {
+  const p = posAbbr.toUpperCase();
+  // Right-flank players (appear leftmost in ESPN-style view)
+  if (p === 'RB' || p === 'RWB' || p === 'RM' || p === 'RW' || p === 'RF') return 0;
+  if (/-R$/.test(p)) return 1;
+  // Left-flank players (appear rightmost)
+  if (p === 'LB' || p === 'LWB' || p === 'LM' || p === 'LW' || p === 'LF') return 4;
+  if (/-L$/.test(p)) return 3;
+  // Centre / no flank designation
+  return 2;
 }
 
 /**
@@ -277,11 +311,14 @@ function positionGroup(posAbbr: string): number {
  */
 export async function fetchMatchLineups(
   espnEventId: string,
-  leagueSlug: string
+  leagueSlug: string,
+  matchStatus: Match['status'] = 'upcoming'
 ): Promise<{ home: MatchLineup; away: MatchLineup } | null> {
   const url = `${ESPN_BASE}/${leagueSlug}/summary?event=${espnEventId}`;
   try {
-    const res = await fetch(url, { next: { revalidate: 60 } });
+    // Tighter revalidate for live matches so subs propagate quickly
+    const revalidate = matchStatus === 'live' ? 20 : matchStatus === 'finished' ? 3600 : 60;
+    const res = await fetch(url, { next: { revalidate } });
     if (!res.ok) return null;
     const data = await res.json();
     const rosters = data.rosters;
@@ -299,37 +336,56 @@ export async function fetchMatchLineups(
 
       const formation = r.formation || '4-3-3';
 
-      // Parse formation to figure out how many rows and slots per row
+      // Parse formation to figure out row sizes: [GK=1, ...formation parts]
       const parts = formation.split('-').map(Number).filter(n => n > 0);
-      // Row sizes: [1 (GK), ...formation parts]
       const rowSizes = [1, ...parts];
 
-      // Sort starters by position group, then by formationPlace within group
-      starters.sort((a, b) => {
-        const ga = positionGroup(a.position?.abbreviation || 'CM');
-        const gb = positionGroup(b.position?.abbreviation || 'CM');
-        if (ga !== gb) return ga - gb;
-        return (a.formationPlace || 0) - (b.formationPlace || 0);
-      });
+      // Bucket players by row group first
+      const buckets: Record<number, typeof starters> = {};
+      for (const p of starters) {
+        const group = positionGroup(p.position?.abbreviation || 'CM');
+        (buckets[group] = buckets[group] || []).push(p);
+      }
 
-      // Assign players to formation rows by taking rowSizes[i] players per row
+      // Flatten buckets in row order (0=GK, 1=DEF, 2=DM/CM, 3=AM/W, 4=FWD),
+      // sorting each bucket left-to-right within the row.
+      const groupOrder = Object.keys(buckets).map(Number).sort((a, b) => a - b);
+      const flat: typeof starters = [];
+      for (const g of groupOrder) {
+        buckets[g].sort((a, b) => {
+          const ha = horizontalRank(a.position?.abbreviation || '');
+          const hb = horizontalRank(b.position?.abbreviation || '');
+          if (ha !== hb) return ha - hb;
+          return (a.formationPlace || 0) - (b.formationPlace || 0);
+        });
+        flat.push(...buckets[g]);
+      }
+
+      // Now take players in row-sized chunks so the row widths match the formation.
+      // If a bucket is larger/smaller than expected (e.g. ESPN mis-categorises a CDM
+      // as midfield in a 4-2-3-1), the slicing still produces a sensible result.
       const ordered: typeof starters = [];
       let idx = 0;
       for (const size of rowSizes) {
-        // Take the next `size` players from the sorted list
-        const rowPlayers = starters.slice(idx, idx + size);
+        const rowPlayers = flat.slice(idx, idx + size);
+        // Re-sort the actual assigned row left-to-right (safety net for
+        // cases where a player straddled buckets)
+        rowPlayers.sort((a, b) => {
+          const ha = horizontalRank(a.position?.abbreviation || '');
+          const hb = horizontalRank(b.position?.abbreviation || '');
+          if (ha !== hb) return ha - hb;
+          return (a.formationPlace || 0) - (b.formationPlace || 0);
+        });
         ordered.push(...rowPlayers);
         idx += size;
       }
 
       return {
         formation,
-        players: ordered.map(p => {
-          const name = p.athlete.displayName;
-          const parts = name.split(' ');
-          return parts.length > 1 ? parts.slice(1).join(' ') : name;
-        }),
-        confirmed: true,
+        players: ordered.map(p => surnameOf(p.athlete.displayName)),
+        // Confirmed only once teams are out (live/finished). Pre-match data is
+        // ESPN's predicted/announced XI which may change.
+        confirmed: matchStatus !== 'upcoming',
       };
     }
 
@@ -357,10 +413,7 @@ export async function fetchTeamRoster(espnTeamId: string, leagueSlug: string): P
       const pb = posOrder[b.position?.abbreviation || 'M'] ?? 2;
       return pa - pb;
     });
-    return players.slice(0, 11).map(p => {
-      const parts = p.displayName.split(' ');
-      return parts.length > 1 ? parts.slice(1).join(' ') : p.displayName;
-    });
+    return players.slice(0, 11).map(p => surnameOf(p.displayName));
   } catch {
     return [];
   }
