@@ -92,8 +92,20 @@ export interface Message {
 
 export interface User {
   userId: string;
+  name?: string;
   username: string;
   fanTeamId: TeamId | null;
   email?: string;
   image?: string;
+  mobileNumber?: string;
+}
+
+export interface ProfileRow {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  mobile_number: string;
+  team: string;
+  avatar_url: string | null;
 }

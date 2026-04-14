@@ -1,18 +1,33 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
 import { openGoogleSignInPopup } from '@/lib/google-signin-popup';
 import Image from 'next/image';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import SiteFooter from '@/components/SiteFooter';
+import { useAuth } from '@/app/AuthContext';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { useEffect, useState } from 'react';
+import type { ProfileRow } from '@/lib/types';
 import '../page.css';
 import './profile.css';
 
 export default function Profile() {
-  const { data: session, status, update: updateSession } = useSession();
+  const { session, loading: status, refreshSession, signOut } = useAuth();
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
 
-  if (status === 'loading') {
+  useEffect(() => {
+    if (!session?.user) return;
+    const supabase = getSupabaseBrowserClient();
+    void supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .maybeSingle()
+      .then(({ data }) => setProfile((data as ProfileRow | null) ?? null));
+  }, [session]);
+
+  if (status) {
     return (
       <div className="app">
         <AppHeader variant="simple" />
@@ -26,7 +41,7 @@ export default function Profile() {
     );
   }
 
-  if (!session) {
+  if (!session?.user) {
     return (
       <div className="app">
         <AppHeader variant="simple" />
@@ -46,7 +61,7 @@ export default function Profile() {
                 <button
                   type="button"
                   className="google-signin-btn google-signin-btn--wide"
-                  onClick={() => void openGoogleSignInPopup(() => updateSession())}
+                  onClick={() => void openGoogleSignInPopup(() => refreshSession())}
                   aria-label="Sign in with Google"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
@@ -68,19 +83,18 @@ export default function Profile() {
     );
   }
 
-  const name = session.user?.name ?? 'Fan';
-  const email = session.user?.email ?? '—';
-  const image = session.user?.image ?? '';
+  const name = profile?.name ?? session.user.user_metadata?.name ?? 'Fan';
+  const email = profile?.email ?? session.user.email ?? '—';
+  const image = profile?.avatar_url ?? session.user.user_metadata?.avatar_url ?? '';
 
   return (
     <div className="app">
       <AppHeader
         variant="profile"
         profileMenu={{
-          image: session.user?.image ?? null,
-          name: session.user?.name ?? 'Fan',
+          image: image || null,
+          name,
           onSignOut: () => {
-            localStorage.removeItem('ffc_user');
             void signOut();
           },
         }}
@@ -117,6 +131,18 @@ export default function Profile() {
                 <div className="profile-row">
                   <div className="profile-row-label">Name</div>
                   <div className="profile-row-value">{name}</div>
+                </div>
+                <div className="profile-row">
+                  <div className="profile-row-label">Username</div>
+                  <div className="profile-row-value">{profile?.username ?? '—'}</div>
+                </div>
+                <div className="profile-row">
+                  <div className="profile-row-label">Mobile</div>
+                  <div className="profile-row-value">{profile?.mobile_number ?? '—'}</div>
+                </div>
+                <div className="profile-row">
+                  <div className="profile-row-label">Team</div>
+                  <div className="profile-row-value">{profile?.team ?? '—'}</div>
                 </div>
                 <div className="profile-row">
                   <div className="profile-row-label">Email</div>

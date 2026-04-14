@@ -1,7 +1,7 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { openGoogleSignInPopup } from '@/lib/google-signin-popup';
+import { useAuth } from '@/app/AuthContext';
 import { useState } from 'react';
 import type { TeamId } from '@/lib/types';
 import Logo from './Logo';
@@ -36,14 +36,14 @@ interface OnboardingModalProps {
 const isDev = process.env.NODE_ENV === 'development';
 
 export default function OnboardingModal({ onComplete, onClose }: OnboardingModalProps) {
-  const { update: updateSession } = useSession();
+  const { refreshSession } = useAuth();
   const [step, setStep] = useState<1 | 2>(isDev ? 1 : 2);
   const [selectedTeam, setSelectedTeam] = useState<TeamId | null>(null);
   const [error, setError] = useState<string>('');
   const [devName, setDevName] = useState<string>('');
 
   const handleGoogleSignIn = () => {
-    void openGoogleSignInPopup(() => updateSession());
+    void openGoogleSignInPopup(() => refreshSession());
   };
 
   const handleDevNext = () => {

@@ -1,15 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { useAuth } from '@/app/AuthContext';
 import { openGoogleSignInPopup } from '@/lib/google-signin-popup';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import MatchList from '@/components/MatchList';
 import MatchRoom from '@/components/MatchRoom';
 import OnboardingModal from '@/components/OnboardingModal';
+import AuthModal from '@/components/AuthModal';
 import AppHeader from '@/components/AppHeader';
 import SiteFooter from '@/components/SiteFooter';
 import LandingHome from '@/components/LandingHome';
-import type { Match, User, TeamId } from '@/lib/types';
+import type { Match, User, TeamId, ProfileRow } from '@/lib/types';
 import './page.css';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -22,7 +25,8 @@ function generateUserId(): string {
 }
 
 export default function Home() {
-  const { data: session, status: sessionStatus, update: updateSession } = useSession();
+  const { session, loading: authLoading, refreshSession, signOut } = useAuth();
+  const { data: nextAuthSession, update: updateNextAuthSession } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [activeMatch, setActiveMatch] = useState<Match | null>(null);
@@ -30,30 +34,59 @@ export default function Home() {
   const [pendingMatch, setPendingMatch] = useState<Match | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
-    if (session?.user) {
-      const { name, email, image } = session.user;
-      const saved = localStorage.getItem('ffc_user');
-      if (saved) {
-        try {
-          const existingUser = JSON.parse(saved);
-          const newUser = { ...existingUser, username: name, email, image };
-          localStorage.setItem('ffc_user', JSON.stringify(newUser));
-          setUser(newUser);
-        } catch {}
-      } else {
-        const newUser: User = { userId: generateUserId(), username: name ?? '', email: email ?? '', image: image ?? '', fanTeamId: null };
-        localStorage.setItem('ffc_user', JSON.stringify(newUser));
-        setUser(newUser);
-      }
-    } else {
-      const saved = localStorage.getItem('ffc_user');
-      if (saved) {
-        try { setUser(JSON.parse(saved)); } catch {}
-      }
+    if (!session?.user && nextAuthSession?.user) {
+      setUser({
+        userId: generateUserId(),
+        username: nextAuthSession.user.name ?? 'Fan',
+        email: nextAuthSession.user.email ?? '',
+        image: nextAuthSession.user.image ?? '',
+        fanTeamId: null,
+        mobileNumber: '',
+        name: nextAuthSession.user.name ?? 'Fan',
+      });
+      setShowAuthModal(true);
+      return;
     }
-  }, [session]);
+
+    if (!session?.user) {
+      setUser(null);
+      return;
+    }
+    const supabase = getSupabaseBrowserClient();
+    void supabase
+      .from('profiles')
+      .select('id, username, email, avatar_url, team')
+      .eq('id', session.user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) {
+          setUser({
+            userId: session.user.id,
+            username: session.user.user_metadata?.name ?? 'Fan',
+            email: session.user.email ?? '',
+            image: session.user.user_metadata?.avatar_url ?? '',
+            fanTeamId: null,
+            mobileNumber: '',
+            name: session.user.user_metadata?.name ?? 'Fan',
+          });
+          setShowAuthModal(true);
+          return;
+        }
+        const profile = data as ProfileRow;
+        setUser({
+          userId: profile.id,
+          username: profile.username,
+          email: profile.email,
+          image: profile.avatar_url ?? '',
+          fanTeamId: profile.team as TeamId,
+          mobileNumber: profile.mobile_number ?? '',
+          name: profile.name,
+        });
+      });
+  }, [session, nextAuthSession]);
 
   useEffect(() => {
     const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e as BeforeInstallPromptEvent); };
@@ -87,11 +120,11 @@ export default function Home() {
   }, [fetchMatches]);
 
   const handleSelectMatch = (match: Match) => {
-    if (sessionStatus === 'loading') return;
+    if (authLoading) return;
 
-    if (!session?.user) {
+    if (!session?.user && !nextAuthSession?.user) {
       setPendingMatch(match);
-      void openGoogleSignInPopup(() => updateSession());
+      setShowAuthModal(true);
       return;
     }
 
@@ -111,10 +144,18 @@ export default function Home() {
     }
     setActiveMatch(pendingMatch);
     setPendingMatch(null);
-  }, [pendingMatch, session, user]);
+  }, [pendingMatch, session, nextAuthSession, user]);
 
   const handleOnboardingComplete = (fanTeamId: TeamId, devUsername?: string) => {
-    const newUser: User = { userId: generateUserId(), username: devUsername || session?.user?.name || '', email: session?.user?.email ?? '', image: session?.user?.image ?? '', fanTeamId };
+    const newUser: User = {
+      userId: session?.user?.id ?? generateUserId(),
+      username: devUsername || user?.username || session?.user?.user_metadata?.name || '',
+      email: session?.user?.email ?? user?.email ?? '',
+      image: user?.image ?? '',
+      fanTeamId,
+      mobileNumber: user?.mobileNumber ?? '',
+      name: user?.name ?? session?.user?.user_metadata?.name ?? '',
+    };
     localStorage.setItem('ffc_user', JSON.stringify(newUser));
     setUser(newUser);
     setShowOnboarding(false);
@@ -136,10 +177,9 @@ export default function Home() {
   const isInRoom = activeMatch && user;
 
   const handleSignOut = () => {
-    localStorage.removeItem('ffc_user');
     setUser(null);
     setActiveMatch(null);
-    signOut();
+    void signOut();
   };
 
   return (
@@ -153,8 +193,14 @@ export default function Home() {
           onInstall: handleInstall,
           user,
           onSignOut: handleSignOut,
-          showGoogleSignIn: sessionStatus === 'unauthenticated',
-          onSignInWithGoogle: () => void openGoogleSignInPopup(() => updateSession()),
+          showGoogleSignIn: !session && !nextAuthSession,
+          onSignInWithGoogle: () =>
+            void openGoogleSignInPopup(() => {
+              void updateNextAuthSession();
+              void refreshSession();
+              setShowAuthModal(true);
+            }),
+          onSignIn: () => setShowAuthModal(true),
         }}
       />
 
@@ -182,6 +228,30 @@ export default function Home() {
         <OnboardingModal
           onComplete={handleOnboardingComplete}
           onClose={() => { setShowOnboarding(false); setPendingMatch(null); }}
+        />
+      )}
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          forceProfileSetup={
+            (!!session && !!user && (!user.mobileNumber || !user.fanTeamId)) ||
+            (!!nextAuthSession && !!user && (!user.mobileNumber || !user.fanTeamId))
+          }
+          onCompleteProfile={async (profile) => {
+            setUser((prev) => ({
+              userId: prev?.userId ?? generateUserId(),
+              username: profile.username,
+              email: profile.email,
+              image: profile.avatarUrl ?? prev?.image ?? '',
+              fanTeamId: profile.team,
+              mobileNumber: profile.mobileNumber,
+              name: profile.name,
+            }));
+          }}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            void refreshSession();
+          }}
         />
       )}
     </div>
