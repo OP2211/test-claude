@@ -239,7 +239,13 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
   const [votes, setVotes] = useState<VoteTally>({ home: 0, draw: 0, away: 0 });
   const [voteByChoice, setVoteByChoice] = useState<Record<VoteChoice, VoteVoter[]>>(emptyVoteByChoice);
   const [voteHistory, setVoteHistory] = useState<VoteHistoryPoint[]>([]);
-  const [userVote, setUserVote] = useState<VoteChoice | null>(null);
+  const [userVote, setUserVote] = useState<VoteChoice | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const saved = localStorage.getItem(`ffc_uservote_${initialMatch.id}`);
+      return saved ? (JSON.parse(saved) as VoteChoice) : null;
+    } catch { return null; }
+  });
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isDesktop, setIsDesktop] = useState(false);
   const [realtime, setRealtime] = useState<RealtimeConfig | null>(() => {
@@ -508,6 +514,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
         setVotes(data as VoteTally);
       }
       setUserVote(vote);
+      try { localStorage.setItem(`ffc_uservote_${match.id}`, JSON.stringify(vote)); } catch {}
       if (!realtime?.key) {
         addNotification(formatPredictionToast(vote, match, { self: true }), 'prediction');
       }
