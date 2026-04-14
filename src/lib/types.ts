@@ -17,6 +17,15 @@ export interface TeamSheet {
   confirmed: boolean;
 }
 
+export interface MatchEvent {
+  type: 'goal' | 'red-card' | 'yellow-card' | 'substitution' | 'other';
+  clock: string;
+  teamId: 'home' | 'away';
+  player: string;
+  assist?: string;
+  detail?: string;
+}
+
 export interface Match {
   id: string;
   homeTeamId: TeamId;
@@ -34,6 +43,8 @@ export interface Match {
     home: TeamSheet;
     away: TeamSheet;
   };
+  /** Key match events (goals, red cards). */
+  events?: MatchEvent[];
   /** ESPN internal metadata - used to fetch rosters on demand */
   _espn?: {
     homeTeamId: string;

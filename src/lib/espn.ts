@@ -1,4 +1,4 @@
-import type { Match, Team } from './types';
+import type { Match, MatchEvent, Team } from './types';
 
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
 
@@ -173,7 +173,7 @@ function espnDate(d: Date): string {
 async function fetchLeagueMatches(league: LeagueConfig, dateRange?: string): Promise<Match[]> {
   const params = dateRange ? `?dates=${dateRange}` : '';
   const url = `${ESPN_BASE}/${league.slug}/scoreboard${params}`;
-  const res = await fetch(url, { next: { revalidate: 60 } });
+  const res = await fetch(url, { next: { revalidate: 10 } });
   if (!res.ok) return [];
   const data: EspnScoreboard = await res.json();
   return (data.events || [])
@@ -722,6 +722,52 @@ export async function fetchTopContributors(leagueSlug: string = 'eng.1'): Promis
 
     const sorted = [...players.values()].sort((a, b) => b.contributions - a.contributions || b.goals - a.goals);
     return sorted.slice(0, 10).map((p, i) => ({ ...p, rank: i + 1 }));
+  } catch {
+    return [];
+  }
+}
+
+// ---------- Match events (goals, cards) ----------
+
+export async function fetchMatchEvents(
+  espnEventId: string,
+  leagueSlug: string,
+  homeTeamName: string
+): Promise<MatchEvent[]> {
+  const url = `${ESPN_BASE}/${leagueSlug}/summary?event=${espnEventId}`;
+  try {
+    const res = await fetch(url, { next: { revalidate: 15 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const keyEvents = data.keyEvents;
+    if (!Array.isArray(keyEvents)) return [];
+
+    const events: MatchEvent[] = [];
+    for (const e of keyEvents) {
+      const typeText = (e.type?.text || '').toLowerCase();
+      let type: MatchEvent['type'];
+      if (typeText.includes('goal')) type = 'goal';
+      else if (typeText.includes('red')) type = 'red-card';
+      else if (typeText.includes('yellow')) type = 'yellow-card';
+      else if (typeText.includes('sub')) type = 'substitution';
+      else continue; // skip kickoff, halftime, etc.
+
+      const teamName = e.team?.displayName || '';
+      const teamId: MatchEvent['teamId'] = teamName === homeTeamName ? 'home' : 'away';
+      const players = e.participants || [];
+      const scorer = players[0]?.athlete?.displayName || '';
+      const assister = players[1]?.athlete?.displayName || '';
+
+      events.push({
+        type,
+        clock: e.clock?.displayValue || '',
+        teamId,
+        player: surnameOf(scorer),
+        assist: assister ? surnameOf(assister) : undefined,
+        detail: type === 'goal' ? (e.text || undefined) : undefined,
+      });
+    }
+    return events;
   } catch {
     return [];
   }
