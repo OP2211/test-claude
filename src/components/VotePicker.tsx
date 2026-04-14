@@ -300,7 +300,7 @@ export default function VotePicker({ match, votes, votersByChoice, voteHistory, 
         {pendingVote && (
           <div className="vp-vote-confirm">
             <p className="vp-vote-confirm-text">
-              Predict <strong>{pendingVote === 'home' ? match.homeTeam.shortName : pendingVote === 'away' ? match.awayTeam.shortName : 'Draw'}</strong> to win?
+              Predict <strong>{pendingVote === 'home' ? match.homeTeam.shortName : pendingVote === 'away' ? match.awayTeam.shortName : 'Draw'}</strong> {(pendingVote !== 'home' && pendingVote !== 'away') ? "?": "to win?"}
               {!userVote && ' You can only change this once.'}
             </p>
             <div className="vp-vote-confirm-actions">
