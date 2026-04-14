@@ -380,11 +380,7 @@ export default function VotePicker({ match, votes, votersByChoice, voteHistory, 
           </div>
         )}
 
-        <VoteTimelineChart
-          history={voteHistory}
-          homeLabel={match.homeTeam.shortName}
-          awayLabel={match.awayTeam.shortName}
-        />
+        
 
         {total === 0 && !userVote && <p className="vp-nudge">Cast your prediction!</p>}
       </div>

@@ -1,0 +1,329 @@
+/* ── Root ─────────────────────────────────────────────────── */
+.lh-root {
+  padding: 0 16px 32px;
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.lh-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.lh-title {
+  font-size: var(--text-base);
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+/* ── Tabs ─────────────────────────────────────────────────── */
+.lh-tabs {
+  display: flex;
+  gap: 2px;
+  background: rgba(var(--neutral-rgb), 0.06);
+  border: 1px solid rgba(var(--neutral-rgb), 0.08);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.lh-tab {
+  padding: 5px 12px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-dim);
+  border-radius: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.lh-tab.active {
+  background: rgba(var(--neutral-rgb), 0.1);
+  color: var(--text-primary);
+}
+
+/* ── Loading ──────────────────────────────────────────────── */
+.lh-loading {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.lh-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid rgba(var(--neutral-rgb), 0.1);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Table ────────────────────────────────────────────────── */
+.lh-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgba(var(--neutral-rgb), 0.08);
+  border-radius: var(--radius-md);
+}
+
+.lh-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lh-th {
+  padding: 8px 4px;
+  font-weight: 800;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  text-align: center;
+  border-bottom: 1px solid rgba(var(--neutral-rgb), 0.08);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: var(--bg-primary);
+  z-index: 1;
+}
+
+.lh-th-pos { width: 28px; text-align: center; }
+.lh-th-team { text-align: left; padding-left: 8px; }
+.lh-th-num { width: 28px; }
+.lh-th-pts { width: 32px; }
+.lh-th-next { text-align: left; width: 140px; padding-left: 8px; }
+
+.lh-row {
+  border-bottom: 1px solid rgba(var(--neutral-rgb), 0.04);
+  transition: background 0.15s;
+}
+
+.lh-row:hover {
+  background: rgba(var(--neutral-rgb), 0.03);
+}
+
+.lh-td {
+  padding: 6px 4px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.lh-td-pos {
+  position: relative;
+  font-weight: 800;
+  color: var(--text-dim);
+  width: 28px;
+}
+
+.lh-note-dot {
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+}
+
+.lh-td-team {
+  text-align: left;
+  padding-left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lh-team-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.lh-team-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lh-team-abbr {
+  display: none;
+}
+
+.lh-td-pts {
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+.lh-td-next {
+  text-align: left;
+  padding-left: 8px;
+}
+
+.lh-next {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lh-next-logo {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.lh-next-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.lh-next-opp {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lh-next-date {
+  font-size: 0.52rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.lh-next-tbd {
+  color: var(--text-dim);
+}
+
+/* ── Top Scorers ──────────────────────────────────────────── */
+.lh-scorers {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid rgba(var(--neutral-rgb), 0.08);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.lh-scorer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(var(--neutral-rgb), 0.02);
+  transition: background 0.15s;
+}
+
+.lh-scorer-row:hover {
+  background: rgba(var(--neutral-rgb), 0.05);
+}
+
+.lh-scorer-row:not(:last-child) {
+  border-bottom: 1px solid rgba(var(--neutral-rgb), 0.04);
+}
+
+.lh-scorer-rank {
+  font-size: 0.62rem;
+  font-weight: 900;
+  color: var(--text-dim);
+  width: 18px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.lh-scorer-team-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.lh-scorer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.lh-scorer-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lh-scorer-team {
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.lh-scorer-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 32px;
+  flex-shrink: 0;
+}
+
+.lh-scorer-goals {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: var(--accent-yellow);
+  font-variant-numeric: tabular-nums;
+}
+
+.lh-scorer-assists,
+.lh-scorer-apps {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.lh-scorer-label {
+  font-size: 0.46rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+.lh-hide-sm { display: none; }
+
+@media (min-width: 600px) {
+  .lh-root { padding: 0 0 40px; }
+  .lh-hide-sm { display: table-cell; }
+  .lh-scorer-row .lh-hide-sm { display: flex; }
+  .lh-team-logo { width: 22px; height: 22px; }
+  .lh-table { font-size: 0.72rem; }
+  .lh-th { font-size: 0.6rem; }
+}
+
+@media (max-width: 440px) {
+  .lh-team-name { display: none; }
+  .lh-team-abbr { display: inline; font-weight: 700; color: var(--text-primary); }
+  .lh-th-num { width: 22px; }
+  .lh-td { padding: 5px 2px; font-size: 0.62rem; }
+}
