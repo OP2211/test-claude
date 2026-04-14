@@ -62,6 +62,11 @@ interface Notification {
   kind?: 'prediction' | 'warning';
 }
 
+interface RealtimeConfig {
+  key: string;
+  cluster: string;
+}
+
 interface SendMessageResponse {
   message: Message;
   moderation?: {
@@ -237,6 +242,11 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
   const [userVote, setUserVote] = useState<VoteChoice | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [realtime, setRealtime] = useState<RealtimeConfig | null>(() => {
+    const key = process.env.NEXT_PUBLIC_PUSHER_KEY;
+    const cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'eu';
+    return key ? { key, cluster } : null;
+  });
   const pusherRef = useRef<Pusher | null>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
   const matchRef = useRef(match);
@@ -262,6 +272,32 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
       setDidInitViewportMenuState(true);
     }
   }, [isDesktop, didInitViewportMenuState]);
+
+  useEffect(() => {
+    if (realtime?.key) return;
+    let cancelled = false;
+    async function loadRealtimeConfig() {
+      try {
+        const res = await fetch('/api/pusher-config');
+        if (!res.ok) return;
+        const data = await res.json() as Partial<RealtimeConfig>;
+        if (cancelled || typeof data.key !== 'string' || !data.key.trim()) return;
+        setRealtime({
+          key: data.key,
+          cluster:
+            typeof data.cluster === 'string' && data.cluster.trim()
+              ? data.cluster
+              : 'eu',
+        });
+      } catch {
+        /* realtime stays disabled when config is unavailable */
+      }
+    }
+    loadRealtimeConfig();
+    return () => {
+      cancelled = true;
+    };
+  }, [realtime?.key]);
 
   const upsertMessage = useCallback((msg: Message) => {
     if (!isTabId(msg.tab)) return;
@@ -344,11 +380,9 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
 
   // Pusher subscription
   useEffect(() => {
-    const key = process.env.NEXT_PUBLIC_PUSHER_KEY;
-    const cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'eu';
-    if (!key) return;
+    if (!realtime?.key) return;
 
-    pusherRef.current = new Pusher(key, { cluster });
+    pusherRef.current = new Pusher(realtime.key, { cluster: realtime.cluster });
     const channel = pusherRef.current.subscribe(`match-${match.id}`);
 
     channel.bind('new-message', (raw: unknown) => {
@@ -391,7 +425,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
       pusherRef.current?.unsubscribe(`match-${match.id}`);
       pusherRef.current?.disconnect();
     };
-  }, [match.id, upsertMessage, addNotification]);
+  }, [match.id, upsertMessage, addNotification, realtime]);
 
   const sendMessage = useCallback(async (text: string): Promise<void> => {
     if (!text.trim()) return;
@@ -474,13 +508,13 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
         setVotes(data as VoteTally);
       }
       setUserVote(vote);
-      if (!process.env.NEXT_PUBLIC_PUSHER_KEY) {
+      if (!realtime?.key) {
         addNotification(formatPredictionToast(vote, match, { self: true }), 'prediction');
       }
     } catch (err) {
       console.error('Vote failed', err);
     }
-  }, [match.id, user.userId, user.username, match, addNotification]);
+  }, [match.id, user.userId, user.username, match, addNotification, realtime]);
 
   const isLive = match.status === 'live';
   const kickoff = new Date(match.kickoff);

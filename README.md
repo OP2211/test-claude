@@ -39,8 +39,8 @@ When prompted, set the following **Environment Variables** in the Vercel dashboa
 | `PUSHER_KEY` | from Pusher dashboard |
 | `PUSHER_SECRET` | from Pusher dashboard |
 | `PUSHER_CLUSTER` | e.g. `eu` |
-| `REACT_APP_PUSHER_KEY` | same as `PUSHER_KEY` |
-| `REACT_APP_PUSHER_CLUSTER` | same as `PUSHER_CLUSTER` |
+| `NEXT_PUBLIC_PUSHER_KEY` | same as `PUSHER_KEY` |
+| `NEXT_PUBLIC_PUSHER_CLUSTER` | same as `PUSHER_CLUSTER` |
 
 ### 3. Redeploy after adding env vars
 
