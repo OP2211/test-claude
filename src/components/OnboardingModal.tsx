@@ -37,7 +37,7 @@ const isDev = process.env.NODE_ENV === 'development';
 
 export default function OnboardingModal({ onComplete, onClose }: OnboardingModalProps) {
   const { update: updateSession } = useSession();
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2>(isDev ? 1 : 2);
   const [selectedTeam, setSelectedTeam] = useState<TeamId | null>(null);
   const [error, setError] = useState<string>('');
   const [devName, setDevName] = useState<string>('');
@@ -120,12 +120,14 @@ export default function OnboardingModal({ onComplete, onClose }: OnboardingModal
 
         {step === 2 && (
           <div className="ob-step" key="step2">
-            <button className="ob-back" onClick={() => { setStep(1); setError(''); }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6"/>
-              </svg>
-              Back
-            </button>
+            {isDev && (
+              <button className="ob-back" onClick={() => { setStep(1); setError(''); }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Back
+              </button>
+            )}
 
             <div className="ob-hero compact">
               <h1 className="ob-title">Pick Your Club</h1>

@@ -83,6 +83,11 @@ export interface Message {
   text: string;
   timestamp: string;
   reactions: Reactions;
+  moderation?: {
+    moderated: boolean;
+    reason: string;
+    by: 'admin';
+  };
 }
 
 export interface User {

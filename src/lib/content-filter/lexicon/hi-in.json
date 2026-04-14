@@ -1,0 +1,32 @@
+{
+  "language": "hi-IN",
+  "version": 1,
+  "safeWords": [],
+  "categories": {
+    "hindi_profanity_direct": [
+      { "term": "madarchod", "severity": "high", "variants": ["maderchod", "madharchod", "mdrchd", "मादरचोद"] },
+      { "term": "behenchod", "severity": "high", "variants": ["behnchod", "bhenchod", "b.c", "bc", "बहनचोद"] },
+      { "term": "chutiya", "severity": "high", "variants": ["chutia", "chutya", "chuitya", "चूतिया"] },
+      { "term": "randi", "severity": "high", "variants": ["r@ndi", "रंडी"] },
+      { "term": "gandu", "severity": "high", "variants": ["gaandu", "gaand", "गांडू"] },
+      { "term": "lund", "severity": "high", "variants": ["l*nd", "लंड"] }
+    ],
+    "hindi_slang_insults": [
+      { "term": "kamina", "severity": "medium", "variants": ["kameena", "कमीना"] },
+      { "term": "harami", "severity": "high", "variants": ["haraami", "हरामी"] },
+      { "term": "bakchod", "severity": "medium", "variants": ["bakch*d", "बकचोद"] },
+      { "term": "bhadwe", "severity": "high", "variants": ["bhadve", "भड़वे"] },
+      { "term": "bhosdike", "severity": "high", "variants": ["bhosdika", "bh0sdike", "भोसडीके"] }
+    ],
+    "india_offensive_identity_terms": [
+      { "term": "identity-slur-placeholder", "severity": "high", "contextSensitive": true }
+    ],
+    "mild_vulgarity": [
+      { "term": "saala", "severity": "low", "variants": ["sala", "साला"], "contextSensitive": true },
+      { "term": "saali", "severity": "low", "variants": ["sali", "साली"], "contextSensitive": true },
+      { "term": "mc", "severity": "high", "variants": ["m.c", "emsee"] },
+      { "term": "bc", "severity": "high", "variants": ["b.c", "beecee"] },
+      { "term": "pagal", "severity": "low", "variants": ["pagl", "पागल"], "contextSensitive": true }
+    ]
+  }
+}

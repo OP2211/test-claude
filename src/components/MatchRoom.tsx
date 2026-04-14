@@ -59,7 +59,19 @@ interface MessagesByTab {
 interface Notification {
   id: string;
   text: string;
-  kind?: 'prediction';
+  kind?: 'prediction' | 'warning';
+}
+
+interface SendMessageResponse {
+  message: Message;
+  moderation?: {
+    moderated: boolean;
+    warning: string | null;
+  };
+}
+
+function isSendMessageResponse(payload: SendMessageResponse | Message): payload is SendMessageResponse {
+  return typeof payload === 'object' && payload !== null && 'message' in payload;
 }
 
 const VOTE_CHOICES: readonly VoteChoice[] = ['home', 'draw', 'away'];
@@ -196,6 +208,17 @@ function parseIncomingMessage(raw: unknown): Message | null {
       text: typeof m.text === 'string' ? m.text : '',
       timestamp: typeof m.timestamp === 'string' ? m.timestamp : new Date().toISOString(),
       reactions: m.reactions && typeof m.reactions === 'object' ? m.reactions : {},
+      moderation:
+        m.moderation &&
+        typeof m.moderation === 'object' &&
+        (m.moderation as { moderated?: unknown }).moderated === true &&
+        typeof (m.moderation as { reason?: unknown }).reason === 'string'
+          ? {
+              moderated: true,
+              reason: (m.moderation as { reason: string }).reason,
+              by: 'admin',
+            }
+          : undefined,
     };
   } catch {
     return null;
@@ -251,7 +274,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     });
   }, []);
 
-  const addNotification = useCallback((text: string, kind?: 'prediction') => {
+  const addNotification = useCallback((text: string, kind?: 'prediction' | 'warning') => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     setNotifications(n => [...n, { id, text, kind }]);
     setTimeout(() => setNotifications(n => n.filter(x => x.id !== id)), 4200);
@@ -373,13 +396,20 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
         console.error('Send failed', await res.text());
         return;
       }
-      const msg: Message = await res.json();
+      const payload: SendMessageResponse | Message = await res.json();
+      const msg = isSendMessageResponse(payload) ? payload.message : payload;
       // Ensure the sender sees their message even if realtime is misconfigured.
       upsertMessage(msg);
+      if (isSendMessageResponse(payload) && payload.moderation?.moderated) {
+        addNotification(
+          payload.moderation.warning || 'Content moderated: your message was updated to meet chat rules.',
+          'warning'
+        );
+      }
     } catch (err) {
       console.error('Send failed', err);
     }
-  }, [match.id, activeTab, user, upsertMessage]);
+  }, [match.id, activeTab, user, upsertMessage, addNotification]);
 
   const reactToMessage = useCallback(async (messageId: string, tab: TabId, emoji: string): Promise<void> => {
     try {
@@ -469,7 +499,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
         {notifications.map(n => (
           <div
             key={n.id}
-            className={`mr-toast ${n.kind === 'prediction' ? 'mr-toast--prediction' : ''}`}
+            className={`mr-toast ${n.kind === 'prediction' ? 'mr-toast--prediction' : ''} ${n.kind === 'warning' ? 'mr-toast--warning' : ''}`}
             role="status"
           >
             {n.text}

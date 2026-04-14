@@ -168,6 +168,20 @@
   border-color: color-mix(in srgb, var(--accent-yellow) 24%, transparent);
   border-radius: 18px 10px 18px 18px;
 }
+.cp-moderation-badge {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 158, 11, 0.16);
+  color: rgb(180, 83, 9);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  flex-shrink: 0;
+  align-self: center;
+  cursor: help;
+}
 
 /* ── Reactions ────────────────────────────────────────────────── */
 .cp-reactions { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; position: relative; }
