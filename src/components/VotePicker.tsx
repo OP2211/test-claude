@@ -64,9 +64,19 @@ function UsersGlyph() {
 
 /** Score prediction: two single-digit inputs with a dash between them. */
 function ScorePrediction({ match }: { match: Match }) {
-  const [homeGoals, setHomeGoals] = useState<string>('');
-  const [awayGoals, setAwayGoals] = useState<string>('');
-  const [submitted, setSubmitted] = useState(false);
+  const scoreKey = `ffc_score_${match.id}`;
+  const [homeGoals, setHomeGoals] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    try { const s = JSON.parse(localStorage.getItem(scoreKey) || '{}'); return s.home ?? ''; } catch { return ''; }
+  });
+  const [awayGoals, setAwayGoals] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    try { const s = JSON.parse(localStorage.getItem(scoreKey) || '{}'); return s.away ?? ''; } catch { return ''; }
+  });
+  const [submitted, setSubmitted] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try { const s = JSON.parse(localStorage.getItem(scoreKey) || '{}'); return s.locked === true; } catch { return false; }
+  });
   const awayRef = useRef<HTMLInputElement>(null);
 
   const handleDigit = (value: string, setter: (v: string) => void, autoFocusNext?: () => void) => {
@@ -87,6 +97,9 @@ function ScorePrediction({ match }: { match: Match }) {
   const confirmLock = () => {
     setSubmitted(true);
     setShowConfirm(false);
+    try {
+      localStorage.setItem(scoreKey, JSON.stringify({ home: homeGoals, away: awayGoals, locked: true }));
+    } catch {}
   };
 
   return (
