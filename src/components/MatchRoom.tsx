@@ -567,18 +567,25 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
         </button>
 
         <div className="mr-match-strip">
-          {match.homeTeam.logo ? (
-            <img src={match.homeTeam.logo} alt="" className="mr-strip-logo" />
-          ) : (
-            <span className="mr-strip-badge">{match.homeTeam.badge}</span>
-          )}
           <div className="mr-strip-info">
             <span className="mr-strip-teams">
-              {match.homeTeam.shortName}
-              {(isLive || match.status === 'finished') && match.homeScore != null
-                ? ` ${match.homeScore} - ${match.awayScore} `
-                : ' vs '}
-              {match.awayTeam.shortName}
+              {match.homeTeam.logo ? (
+                <img src={match.homeTeam.logo} alt="" className="mr-strip-logo" />
+              ) : (
+                <span className="mr-strip-badge">{match.homeTeam.badge}</span>
+              )}
+              <span className="mr-strip-name">{match.homeTeam.shortName}</span>
+              <span className="mr-strip-score">
+                {(isLive || match.status === 'finished') && match.homeScore != null
+                  ? `${match.homeScore} - ${match.awayScore}`
+                  : 'vs'}
+              </span>
+              <span className="mr-strip-name">{match.awayTeam.shortName}</span>
+              {match.awayTeam.logo ? (
+                <img src={match.awayTeam.logo} alt="" className="mr-strip-logo" />
+              ) : (
+                <span className="mr-strip-badge">{match.awayTeam.badge}</span>
+              )}
             </span>
             <span className="mr-strip-meta">
               {isLive ? (
@@ -593,11 +600,6 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
               )}
             </span>
           </div>
-          {match.awayTeam.logo ? (
-            <img src={match.awayTeam.logo} alt="" className="mr-strip-logo" />
-          ) : (
-            <span className="mr-strip-badge">{match.awayTeam.badge}</span>
-          )}
         </div>
 
         <button

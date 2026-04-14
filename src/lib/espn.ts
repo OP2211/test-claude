@@ -9,9 +9,7 @@ export interface LeagueConfig {
 
 export const LEAGUES: LeagueConfig[] = [
   { slug: 'eng.1', name: 'Premier League' },
-  { slug: 'esp.1', name: 'La Liga' },
-  { slug: 'ger.1', name: 'Bundesliga' },
-  { slug: 'ita.1', name: 'Serie A' },
+  { slug: 'eng.fa', name: 'FA Cup' },
   { slug: 'uefa.champions', name: 'Champions League' },
 ];
 

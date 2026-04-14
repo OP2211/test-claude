@@ -88,8 +88,8 @@
 .ob-team-card.selected { border-color: var(--team-color); background: color-mix(in srgb, var(--team-color) 8%, var(--bg-primary)); }
 .ob-team-card.selected::before { opacity: 1; }
 .ob-team-badge { font-size: 1.5rem; }
+.ob-team-logo { width: 36px; height: 36px; object-fit: contain; }
 .ob-team-name { font-size: var(--text-xs); font-weight: 700; color: var(--text-primary); line-height: 1.2; }
-.ob-team-league { font-size: 0.6rem; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
 .ob-team-check {
   position: absolute; top: 6px; right: 6px;
   width: 20px; height: 20px; border-radius: 50%;
