@@ -60,7 +60,8 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
 
   const formatTime = (ts: string): string => {
     const d = new Date(ts);
-    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    if (Number.isNaN(d.getTime())) return '--:--';
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
   return (
@@ -79,14 +80,16 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
           </div>
         )}
 
-        {messages.map((msg) => {
+        {messages.map((msg, index) => {
           const isOwn = msg.userId === user.userId;
+          const prevMsg = index > 0 ? messages[index - 1] : null;
+          const showSenderMeta = !prevMsg || prevMsg.userId !== msg.userId;
           const color = teamColor(msg.fanTeamId);
           const teamInfo = getTeamInfo(msg.fanTeamId);
 
           return (
             <div key={msg.id} className={`cp-msg ${isOwn ? 'own' : ''}`}>
-              {!isOwn && (
+              {showSenderMeta && (
                 <div className="cp-msg-avatar" style={{ background: color }}>
                   {msg.image ? (
                     // eslint-disable-next-line @next/next/no-img-element -- OAuth avatars use many domains; next/image would error without listing every host
@@ -98,19 +101,18 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
               )}
 
               <div className="cp-msg-body">
-                {!isOwn && (
+                {showSenderMeta && (
                   <div className="cp-msg-meta">
                     <span className="cp-msg-name" style={{ color }}>{msg.username}</span>
                     <span className="cp-msg-time">{formatTime(msg.timestamp)}</span>
                   </div>
                 )}
-                {!isOwn && teamInfo && (
+                {showSenderMeta && teamInfo && (
                   <div className="cp-msg-team-row">
                     <span className="cp-msg-team">
                       <img src={teamInfo.logo} alt="" className="cp-msg-team-logo" />
                       <span className="cp-msg-team-name">{teamInfo.name}</span>
                     </span>
-                    <span className="cp-msg-badge">Supporter</span>
                   </div>
                 )}
 
