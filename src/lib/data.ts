@@ -95,7 +95,7 @@ export async function getMatches(): Promise<Match[]> {
 }
 
 // Lineup cache: matchId -> { home, away } (short TTL for live matches, longer for finished)
-const _lineupCache: Record<string, { home: { formation: string; players: string[]; confirmed: boolean }; away: { formation: string; players: string[]; confirmed: boolean }; fetchedAt: number; status: Match['status'] }> = {};
+const _lineupCache: Record<string, { home: { formation: string; players: string[]; positions: string[]; subs: string[]; confirmed: boolean }; away: { formation: string; players: string[]; positions: string[]; subs: string[]; confirmed: boolean }; fetchedAt: number; status: Match['status'] }> = {};
 
 function lineupTtl(status: Match['status']): number {
   if (status === 'live') return 20_000;        // 20s while live (subs, formation changes)

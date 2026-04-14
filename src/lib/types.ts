@@ -11,6 +11,9 @@ export interface Team {
 export interface TeamSheet {
   formation: string;
   players: string[];
+  /** Position abbreviation for each player (same order as players[]). */
+  positions?: string[];
+  subs?: string[];
   confirmed: boolean;
 }
 
