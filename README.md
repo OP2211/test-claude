@@ -98,7 +98,8 @@ npm run dev
 
 ---
 
-## Project Structure
+TODO: Update Project
+## Project Structure 
 
 ```
 football-fan-chat/
