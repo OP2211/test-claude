@@ -83,6 +83,9 @@
 .ml-team-text.right { align-items: flex-end; }
 .ml-team-name { font-size: var(--text-sm); font-weight: 720; color: rgba(var(--neutral-rgb),0.92); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; max-width: 100%; }
 .ml-team-short { font-size: var(--text-xs); font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ml-scorers { display: flex; flex-wrap: wrap; gap: 1px 6px; margin-top: 1px; }
+.ml-scorer { font-size: 0.54rem; font-weight: 650; color: var(--text-dim); white-space: nowrap; }
+.ml-team-text.right .ml-scorers { justify-content: flex-end; }
 
 /* Center */
 .ml-center { flex-shrink: 0; text-align: center; min-width: 56px; padding: 0 2px; }

@@ -18,7 +18,9 @@ function isChatOpen(match: Match): boolean {
   if (match.status === 'live') return true;
   // Open 2hrs before kickoff
   if (minsToKickoff <= 120 && minsToKickoff > 0) return true;
-  // Stay open 3hrs after kickoff for finished matches (roughly ~90min match + 90min post-match)
+  // Past kickoff — keep open for ~2.5hrs (match duration + buffer) even if ESPN is slow to update status
+  if (minsToKickoff <= 0 && minsToKickoff > -150) return true;
+  // Stay open 3hrs after kickoff for finished matches
   if (match.status === 'finished' && minsToKickoff > -180) return true;
   return false;
 }
@@ -29,12 +31,12 @@ function getMatchStatus(match: Match): MatchStatus {
   const minsToKickoff = (kickoff - now) / 60_000;
   if (match.status === 'live') return { label: 'LIVE', type: 'live' };
   if (match.status === 'finished') {
-    // Recently finished — still accessible
-    if (minsToKickoff > -180) return { label: 'FT', type: 'finished' };
-    // Old finished match — disabled
     return { label: 'FT', type: 'finished' };
   }
-  if (minsToKickoff <= 0) return { label: 'FT', type: 'finished' };
+  // Past kickoff but ESPN hasn't marked it live yet — treat as OPEN (ESPN has a slight delay)
+  if (minsToKickoff <= 0 && minsToKickoff > -150) return { label: 'OPEN', type: 'open' };
+  // Way past kickoff with no live/finished status — likely ended
+  if (minsToKickoff <= -150) return { label: 'FT', type: 'finished' };
   if (minsToKickoff <= 120) return { label: 'OPEN', type: 'open' };
   return { label: 'SOON', type: 'upcoming' };
 }
@@ -282,6 +284,13 @@ export default function MatchList({ matches, user, onSelectMatch, isLoading }: M
             <div className="ml-team-text">
               <span className="ml-team-name">{match.homeTeam.name}</span>
               <span className="ml-team-short">{match.homeTeam.shortName}</span>
+              {match.events && match.events.filter(e => e.type === 'goal' && e.teamId === 'home').length > 0 && (
+                <span className="ml-scorers">
+                  {match.events.filter(e => e.type === 'goal' && e.teamId === 'home').map((e, i) => (
+                    <span key={i} className="ml-scorer">{e.player} {e.clock}</span>
+                  ))}
+                </span>
+              )}
             </div>
           </div>
 
@@ -311,6 +320,13 @@ export default function MatchList({ matches, user, onSelectMatch, isLoading }: M
             <div className="ml-team-text right">
               <span className="ml-team-name">{match.awayTeam.name}</span>
               <span className="ml-team-short">{match.awayTeam.shortName}</span>
+              {match.events && match.events.filter(e => e.type === 'goal' && e.teamId === 'away').length > 0 && (
+                <span className="ml-scorers">
+                  {match.events.filter(e => e.type === 'goal' && e.teamId === 'away').map((e, i) => (
+                    <span key={i} className="ml-scorer">{e.player} {e.clock}</span>
+                  ))}
+                </span>
+              )}
             </div>
             {match.awayTeam.logo ? (
               <img src={match.awayTeam.logo} alt="" className="ml-team-logo" aria-hidden="true" />

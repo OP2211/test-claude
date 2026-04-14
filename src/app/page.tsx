@@ -125,7 +125,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchMatches();
-    const interval = setInterval(fetchMatches, 30000);
+    const interval = setInterval(fetchMatches, 15000);
     return () => clearInterval(interval);
   }, [fetchMatches]);
 

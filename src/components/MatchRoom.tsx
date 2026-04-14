@@ -366,10 +366,11 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     }
     init();
 
-    // Re-fetch match data periodically so live scores and lineup updates flow in.
-    // Faster cadence while live, slower otherwise.
-    const refreshMs = match.status === 'live' ? 30_000 : match.status === 'upcoming' ? 120_000 : 0;
-    if (refreshMs === 0) return;
+    // Re-fetch match data periodically so live scores, clock, and lineups stay fresh.
+    // Always poll while in the room — 15s for live/near-kickoff, 60s otherwise.
+    const kickoffMs = new Date(match.kickoff).getTime();
+    const nearKickoff = Math.abs(Date.now() - kickoffMs) < 3 * 3600_000; // within 3hrs of kickoff
+    const refreshMs = (match.status === 'live' || nearKickoff) ? 15_000 : 60_000;
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`/api/match?id=${match.id}`);
@@ -382,7 +383,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
       }
     }, refreshMs);
     return () => clearInterval(interval);
-  }, [match.id, match.status]);
+  }, [match.id, match.status, match.kickoff]);
 
   // Pusher subscription
   useEffect(() => {
@@ -574,25 +575,25 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
         </button>
 
         <div className="mr-match-strip">
-          <div className="mr-strip-info">
-            <span className="mr-strip-teams">
-              {match.homeTeam.logo ? (
-                <img src={match.homeTeam.logo} alt="" className="mr-strip-logo" />
-              ) : (
-                <span className="mr-strip-badge">{match.homeTeam.badge}</span>
-              )}
-              <span className="mr-strip-name">{match.homeTeam.shortName}</span>
-              <span className="mr-strip-score">
-                {(isLive || match.status === 'finished') && match.homeScore != null
-                  ? `${match.homeScore} - ${match.awayScore}`
-                  : 'vs'}
-              </span>
-              <span className="mr-strip-name">{match.awayTeam.shortName}</span>
-              {match.awayTeam.logo ? (
-                <img src={match.awayTeam.logo} alt="" className="mr-strip-logo" />
-              ) : (
-                <span className="mr-strip-badge">{match.awayTeam.badge}</span>
-              )}
+          {/* Home team column */}
+          <div className="mr-strip-team">
+            {match.homeTeam.logo ? (
+              <img src={match.homeTeam.logo} alt="" className="mr-strip-logo" />
+            ) : (
+              <span className="mr-strip-badge">{match.homeTeam.badge}</span>
+            )}
+            <span className="mr-strip-name">{match.homeTeam.shortName}</span>
+            {match.events && match.events.filter(e => e.type === 'goal' && e.teamId === 'home').map((e, i) => (
+              <span key={i} className="mr-strip-scorer">{e.player} {e.clock}</span>
+            ))}
+          </div>
+
+          {/* Center: score + meta */}
+          <div className="mr-strip-center">
+            <span className="mr-strip-score">
+              {(isLive || match.status === 'finished') && match.homeScore != null
+                ? `${match.homeScore} - ${match.awayScore}`
+                : 'vs'}
             </span>
             <span className="mr-strip-meta">
               {isLive ? (
@@ -601,11 +602,24 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
                   {match.clock || 'LIVE'}
                 </span>
               ) : match.status === 'finished' ? (
-                <>FT &middot; {match.competition}</>
+                <>FT</>
               ) : (
-                <>{match.competition} &middot; {kickoffStr}</>
+                <>{kickoffStr}</>
               )}
             </span>
+          </div>
+
+          {/* Away team column */}
+          <div className="mr-strip-team mr-strip-team--away">
+            {match.awayTeam.logo ? (
+              <img src={match.awayTeam.logo} alt="" className="mr-strip-logo" />
+            ) : (
+              <span className="mr-strip-badge">{match.awayTeam.badge}</span>
+            )}
+            <span className="mr-strip-name">{match.awayTeam.shortName}</span>
+            {match.events && match.events.filter(e => e.type === 'goal' && e.teamId === 'away').map((e, i) => (
+              <span key={i} className="mr-strip-scorer">{e.player} {e.clock}</span>
+            ))}
           </div>
         </div>
 

@@ -72,13 +72,26 @@
 }
 .mr-back:hover { background: rgba(var(--neutral-rgb),0.065); }
 .mr-back:active { transform: scale(0.96); background: rgba(var(--neutral-rgb),0.08); }
-.mr-match-strip { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.mr-match-strip { display: flex; align-items: flex-start; gap: 4px; flex: 1; min-width: 0; }
 .mr-strip-badge { font-size: 1.2rem; flex-shrink: 0; }
-.mr-strip-logo { width: 42px; height: 42px; object-fit: contain; flex-shrink: 0; }
-.mr-strip-info { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; text-align: center; align-items: center; }
-.mr-strip-teams { display: flex; align-items: center; gap: 5px; font-size: var(--text-sm); font-weight: 760; color: rgba(var(--neutral-rgb),0.92); letter-spacing: -0.25px; white-space: nowrap; overflow: hidden; max-width: 100%; }
-.mr-strip-name { overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 0; }
-.mr-strip-score { flex-shrink: 0; font-weight: 800; }
+.mr-strip-team {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  flex: 1; min-width: 0;
+}
+.mr-strip-logo { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
+.mr-strip-name {
+  font-size: 0.66rem; font-weight: 760; color: rgba(var(--neutral-rgb),0.92);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center;
+}
+.mr-strip-scorer {
+  font-size: 0.62rem; font-weight: 700; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center;
+}
+.mr-strip-center {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  flex-shrink: 0; padding: 2px 4px 0;
+}
+.mr-strip-score { font-size: var(--text-base); font-weight: 900; color: rgba(var(--neutral-rgb),0.95); }
 .mr-strip-meta { font-size: var(--text-xs); color: var(--text-dim); font-weight: 600; }
 .mr-strip-live { display: inline-flex; align-items: center; gap: 4px; color: var(--color-live); font-weight: 800; letter-spacing: 0.5px; }
 .mr-strip-live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-live); animation: livePulse 1.5s infinite; }
@@ -98,6 +111,7 @@
 }
 .mr-menu:hover { background: rgba(var(--neutral-rgb), 0.07); color: rgb(var(--neutral-rgb)); }
 .mr-menu:active { transform: scale(0.96); }
+
 
 /* Hidden on desktop — tabs replace the drawer trigger */
 .mr-desktop-tabs {
@@ -422,7 +436,8 @@
 
   .mr-header { padding: 12px 16px; }
   .mr-strip-badge { font-size: 1.4rem; }
-  .mr-strip-teams { font-size: var(--text-base); }
+  .mr-strip-logo { width: 32px; height: 32px; }
+  .mr-strip-name { font-size: 0.72rem; }
   .mr-content { padding: 12px 16px 0; }
   .mr-drawer-panel { width: min(320px, 40vw); }
   .mr-teamsheet-layout {

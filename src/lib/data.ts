@@ -1,5 +1,5 @@
 import type { Team, Match } from './types';
-import { fetchAllMatches, fetchMatchLineups, fetchTeamRoster, extractEspnId } from './espn';
+import { fetchAllMatches, fetchMatchLineups, fetchMatchEvents, fetchTeamRoster, extractEspnId } from './espn';
 
 const TEAMS: Record<string, Team> = {
   'manchester-united': { name: 'Manchester United', shortName: 'MAN UTD', badge: '\u{1F534}', color: '#DA020E' },
@@ -58,7 +58,7 @@ function buildFallbackMatches(): Match[] {
 // ---------- Simple in-memory cache ----------
 
 let _cache: { matches: Match[]; fetchedAt: number } | null = null;
-const CACHE_TTL = 60_000; // 60 seconds
+const CACHE_TTL = 15_000; // 15 seconds — keeps live scores fresh
 
 /** Fetch matches from ESPN, falling back to hardcoded data on failure. */
 export async function getMatches(): Promise<Match[]> {
@@ -81,6 +81,25 @@ export async function getMatches(): Promise<Match[]> {
           match.teamSheet.away.players = awayPlayers;
         }
       }
+
+      // Fetch events (goal scorers) for live/finished matches in parallel
+      const liveMatches = espnMatches.filter(m => m.status === 'live' || m.status === 'finished');
+      if (liveMatches.length > 0) {
+        const eventResults = await Promise.allSettled(
+          liveMatches.map(m => {
+            const eid = extractEspnId(m.id);
+            if (!eid || !m._espn) return Promise.resolve([]);
+            return fetchMatchEvents(eid, m._espn.leagueSlug, m.homeTeam.name);
+          })
+        );
+        liveMatches.forEach((m, i) => {
+          const r = eventResults[i];
+          if (r.status === 'fulfilled' && r.value.length > 0) {
+            m.events = r.value;
+          }
+        });
+      }
+
       _cache = { matches: espnMatches, fetchedAt: now };
       return espnMatches;
     }
@@ -115,6 +134,15 @@ async function ensureRoster(match: Match): Promise<void> {
   // 1) Always try the summary endpoint first - ESPN has predicted XI for upcoming matches too,
   //    actual XI once announced (~1hr before kickoff), and live updates for sub changes.
   if (espnEventId) {
+    // Always fetch events for live/finished matches (goals can happen any time)
+    if (match.status === 'live' || match.status === 'finished') {
+      const events = await fetchMatchEvents(espnEventId, leagueSlug, match.homeTeam.name);
+      if (events.length > 0) {
+        match.events = events;
+      }
+    }
+
+    // Lineup cache — reuse if fresh
     const cached = _lineupCache[match.id];
     const ttl = lineupTtl(match.status);
     if (cached && cached.status === match.status && Date.now() - cached.fetchedAt < ttl) {
