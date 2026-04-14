@@ -11,18 +11,27 @@
   ],
   "categories": {
     "direct_profanity": [
+      { "term": "ass", "severity": "medium" },
+      { "term": "arse", "severity": "medium" },
+      { "term": "asshat", "severity": "medium" },
       { "term": "fuck", "severity": "high", "variants": ["fuk", "fck", "phuck"] },
       { "term": "fucking", "severity": "high", "variants": ["fukin", "fcking"] },
       { "term": "shit", "severity": "high", "variants": ["sh1t", "sht"] },
+      { "term": "shithead", "severity": "medium" },
       { "term": "bitch", "severity": "medium", "variants": ["biatch"] },
       { "term": "bastard", "severity": "medium" },
       { "term": "dick", "severity": "medium" },
+      { "term": "douchebag", "severity": "medium", "variants": ["douche"] },
+      { "term": "piss", "severity": "low", "contextSensitive": true },
       { "term": "asshole", "severity": "high", "variants": ["a55hole", "a hole"] },
       { "term": "motherfucker", "severity": "high", "variants": ["mfer", "mf"] }
     ],
     "slang_insults": [
       { "term": "idiot", "severity": "low", "contextSensitive": true },
       { "term": "moron", "severity": "low", "contextSensitive": true },
+      { "term": "jerk", "severity": "low", "contextSensitive": true },
+      { "term": "loser", "severity": "low", "contextSensitive": true },
+      { "term": "stupid", "severity": "low", "contextSensitive": true },
       { "term": "dumbass", "severity": "medium" },
       { "term": "jackass", "severity": "medium" },
       { "term": "scumbag", "severity": "medium" }
@@ -34,6 +43,8 @@
       { "term": "damn", "severity": "low", "contextSensitive": true },
       { "term": "goddamn", "severity": "medium" },
       { "term": "wtf", "severity": "low", "variants": ["wth"] },
+      { "term": "ffs", "severity": "low" },
+      { "term": "fml", "severity": "low" },
       { "term": "hell", "severity": "low", "contextSensitive": true },
       { "term": "crap", "severity": "low", "contextSensitive": true }
     ]
