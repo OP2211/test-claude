@@ -46,6 +46,12 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
     prevCountRef.current = messages.length;
   }, [messages]);
 
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100); // delay for mobile keyboard to finish opening
+  };
+
   const handleSend = () => {
     if (!input.trim()) return;
     onSendMessage(input);
@@ -93,8 +99,8 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
           const teamInfo = getTeamInfo(msg.fanTeamId);
 
           return (
-            <div key={msg.id} className={`cp-msg ${isOwn ? 'own' : ''}`}>
-              {showSenderMeta && (
+            <div key={msg.id} className={`cp-msg ${isOwn ? 'own' : ''} ${!showSenderMeta ? 'cp-msg-cont' : ''}`}>
+              {showSenderMeta ? (
                 <div className="cp-msg-avatar" style={{ background: color }}>
                   {msg.image ? (
                     // eslint-disable-next-line @next/next/no-img-element -- OAuth avatars use many domains; next/image would error without listing every host
@@ -103,13 +109,14 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
                     msg.username?.[0]?.toUpperCase()
                   )}
                 </div>
+              ) : (
+                <div className="cp-msg-avatar-spacer" />
               )}
 
               <div className="cp-msg-body">
                 {showSenderMeta && (
                   <div className="cp-msg-meta">
                     <span className="cp-msg-name" style={{ color }}>{msg.username}</span>
-                    <span className="cp-msg-time">{formatTime(msg.timestamp)}</span>
                   </div>
                 )}
                 {showSenderMeta && teamInfo && (
@@ -137,7 +144,7 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
                       </svg>
                     </span>
                   )}
-                  {isOwn && <span className="cp-msg-time own-t">{formatTime(msg.timestamp)}</span>}
+                  <span className="cp-msg-time">{formatTime(msg.timestamp)}</span>
                 </div>
 
                 {/* Reactions */}
@@ -203,6 +210,7 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
             placeholder={placeholder || 'Message...'}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
             onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+            onFocus={scrollToBottom}
           />
           <button
             className={`cp-send ${input.trim() ? 'active' : ''}`}
