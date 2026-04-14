@@ -1,4 +1,4 @@
-# ⚽ FanGround
+# ⚽ FanGround.Online
 
 A real-time football fan chat app for matchday banter, predictions, and team sheet discussion.
 
