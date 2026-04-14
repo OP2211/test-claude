@@ -10,6 +10,7 @@ export interface LeagueConfig {
 export const LEAGUES: LeagueConfig[] = [
   { slug: 'eng.1', name: 'Premier League' },
   { slug: 'eng.fa', name: 'FA Cup' },
+  { slug: 'uefa.champions', name: 'Champions League' },
 ];
 
 /** Map ESPN team IDs to our app's team slugs for known teams. */
