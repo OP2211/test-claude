@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Message, User } from '@/lib/types';
 import { TEAMS } from '@/lib/teams';
+import TeamLogoImage from './TeamLogoImage';
 import './ChatPanel.css';
 
 const TEAM_COLORS: Record<string, string> = {
@@ -122,7 +123,7 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
                 {showSenderMeta && teamInfo && (
                   <div className="cp-msg-team-row">
                     <span className="cp-msg-team">
-                      <img src={teamInfo.logo} alt="" className="cp-msg-team-logo" />
+                      <TeamLogoImage src={teamInfo.logo} alt="" className="cp-msg-team-logo" />
                       <span className="cp-msg-team-name">{teamInfo.name}</span>
                     </span>
                   </div>

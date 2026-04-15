@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
 
     const profile = await upsertProfile({
       googleSub,
+      fullName: session.user?.name ?? null,
       email: session.user?.email ?? null,
       image: session.user?.image ?? null,
       username: validation.value.username,

@@ -6,12 +6,14 @@ import { openGoogleSignInPopup } from '@/lib/google-signin-popup';
 import Image from 'next/image';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
+import TeamLogoImage from '@/components/TeamLogoImage';
 import SiteFooter from '@/components/SiteFooter';
 import { TEAMS } from '@/lib/teams';
 import '../page.css';
 import './profile.css';
 
 interface ProfileData {
+  full_name: string | null;
   username: string;
   phone: string;
   fan_team_id: string;
@@ -101,7 +103,8 @@ export default function Profile() {
     );
   }
 
-  const name = session.user?.name ?? 'Fan';
+  const name = profile?.full_name?.trim() || session.user?.name || 'Fan';
+  const username = profile?.username ?? '—';
   const email = session.user?.email ?? '—';
   const image = session.user?.image ?? '';
   const selectedTeam = profile?.fan_team_id
@@ -127,7 +130,7 @@ export default function Profile() {
           <div className="profile-page">
             <div className="profile-header">
               <div>
-                <h1 className="profile-title">Profile</h1>
+                  <h1 className="profile-title">{name}</h1>
                 <p className="profile-subtitle">Manage your FanGround account.</p>
               </div>
             </div>
@@ -144,6 +147,7 @@ export default function Profile() {
                   </div>
                   <div>
                     <div className="profile-name">{name}</div>
+                    <div className="profile-username">@{username}</div>
                     <div className="profile-email">{email}</div>
                     <div
                       className={`profile-team-pill ${selectedTeam ? '' : 'is-placeholder'}`}
@@ -152,7 +156,7 @@ export default function Profile() {
                     >
                       <span className="profile-team-pill-dot" />
                       {selectedTeam?.logo ? (
-                        <img src={selectedTeam.logo} alt="" className="profile-team-pill-logo" />
+                        <TeamLogoImage src={selectedTeam.logo} alt="" className="profile-team-pill-logo" />
                       ) : (
                         <span className="profile-team-pill-logo-placeholder" aria-hidden />
                       )}
@@ -167,7 +171,7 @@ export default function Profile() {
               <div className="profile-card-body">
                 <div className="profile-row">
                   <div className="profile-row-label">Username</div>
-                  <div className="profile-row-value">{profile?.username ?? '—'}</div>
+                  <div className="profile-row-value">{username}</div>
                 </div>
                 <div className="profile-row">
                   <div className="profile-row-label">Email</div>
@@ -182,7 +186,7 @@ export default function Profile() {
                   <div className="profile-row-value">
                     {selectedTeam ? (
                       <span className="profile-team-value">
-                        <img src={selectedTeam.logo} alt={`${selectedTeam.name} logo`} className="profile-team-value-logo" />
+                        <TeamLogoImage src={selectedTeam.logo} alt={`${selectedTeam.name} logo`} className="profile-team-value-logo" />
                         <span>{selectedTeam.name}</span>
                       </span>
                     ) : (

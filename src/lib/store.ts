@@ -4,7 +4,26 @@ import type { Message, TabId, TeamId, VoteChoice, VoteTally, VoteSnapshot, VoteV
 
 type Room = Record<TabId, Message[]>;
 
-const _messages: Record<string, Room> = {};
+interface InMemoryStoreState {
+  messages: Record<string, Room>;
+  votes: Record<string, Record<string, StoredVote>>;
+  voteHistory: Record<string, VoteHistoryPoint[]>;
+}
+
+const STORE_GLOBAL_KEY = '__matchday_store_state__';
+const globalStore = globalThis as typeof globalThis & {
+  [STORE_GLOBAL_KEY]?: InMemoryStoreState;
+};
+
+if (!globalStore[STORE_GLOBAL_KEY]) {
+  globalStore[STORE_GLOBAL_KEY] = {
+    messages: {},
+    votes: {},
+    voteHistory: {},
+  };
+}
+
+const _messages = globalStore[STORE_GLOBAL_KEY]!.messages;
 interface StoredVote {
   vote: VoteChoice;
   username: string;
@@ -12,8 +31,8 @@ interface StoredVote {
   fanTeamId: TeamId | null;
 }
 
-const _votes: Record<string, Record<string, StoredVote>> = {};
-const _voteHistory: Record<string, VoteHistoryPoint[]> = {};
+const _votes = globalStore[STORE_GLOBAL_KEY]!.votes;
+const _voteHistory = globalStore[STORE_GLOBAL_KEY]!.voteHistory;
 
 const MAX_VOTE_HISTORY = 200;
 
@@ -56,7 +75,6 @@ export async function addMessage(matchId: string, { tab, userId, username, fanTe
   };
   if (!room[tab]) room[tab] = [];
   room[tab].push(msg);
-  if (room[tab].length > 200) room[tab] = room[tab].slice(-200);
   return msg;
 }
 

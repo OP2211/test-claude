@@ -1,0 +1,357 @@
+.teams-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.teams-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.teams-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.8vw, 2rem);
+  color: var(--text-primary);
+}
+
+.teams-subtitle {
+  margin: 0;
+  color: rgba(var(--neutral-rgb), 0.72);
+}
+
+.teams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.9rem;
+}
+
+.team-card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.9rem;
+  border-radius: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--team-accent) 50%, #24334f);
+  text-decoration: none;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--team-accent) 12%, var(--bg-card));
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.team-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--team-accent) 75%, #3a4a68);
+}
+
+.team-card-logo-wrap {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-card-logo {
+  width: 100%;
+  height: 100%;
+}
+
+.team-card-name {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.team-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--team-accent) 56%, #2e3c58);
+  border-radius: 1rem;
+}
+
+.team-detail-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.team-detail-logo {
+  width: 3rem;
+  height: 3rem;
+}
+
+.team-detail-title {
+  margin: 0;
+  font-size: 1.35rem;
+  color: var(--text-primary);
+}
+
+.team-detail-subtitle {
+  margin: 0.2rem 0 0;
+  color: rgba(var(--neutral-rgb), 0.72);
+}
+
+.team-back-link {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--team-accent) 75%, #c8d0df);
+  text-underline-offset: 0.2em;
+}
+
+.supporters-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.8rem;
+}
+
+.team-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.9rem;
+}
+
+.team-story-card {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  border-radius: 1rem;
+  padding: 1rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.team-story-history {
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.team-story-title {
+  margin: 0 0 0.35rem;
+  color: var(--text-primary);
+  font-size: 0.98rem;
+}
+
+.team-story-text {
+  margin: 0;
+  color: rgba(var(--neutral-rgb), 0.78);
+  line-height: 1.5;
+}
+
+.team-insight-card {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  border-radius: 0.9rem;
+  padding: 0.95rem;
+}
+
+.team-insight-title {
+  margin: 0 0 0.7rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.team-insight-list {
+  margin: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.team-insight-list div {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) 1.2fr;
+  gap: 0.7rem;
+}
+
+.team-insight-list dt {
+  margin: 0;
+  color: rgba(var(--neutral-rgb), 0.68);
+  font-size: 0.85rem;
+}
+
+.team-insight-list dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 650;
+  word-break: break-word;
+}
+
+.team-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.team-clan-banner {
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-card) 85%, var(--accent-green) 15%);
+  padding: 0.95rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.team-clan-banner-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.team-clan-banner-text {
+  margin: 0;
+  color: rgba(var(--neutral-rgb), 0.75);
+  font-size: 0.92rem;
+}
+
+.team-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.team-section-title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.team-section-subtitle {
+  margin: 0;
+  color: rgba(var(--neutral-rgb), 0.7);
+  font-size: 0.9rem;
+}
+
+.fixtures-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.fixture-card {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  border-radius: 0.85rem;
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.fixture-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.fixture-teams {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.fixture-status {
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.fixture-status.is-upcoming {
+  color: #0f172a;
+  background: #fde68a;
+}
+
+.fixture-status.is-live {
+  color: #fff;
+  background: #dc2626;
+}
+
+.fixture-status.is-finished {
+  color: #fff;
+  background: #334155;
+}
+
+.fixture-score {
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.fixture-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.9rem;
+  color: rgba(var(--neutral-rgb), 0.7);
+  font-size: 0.85rem;
+}
+
+.supporters-empty {
+  margin: 0;
+  color: rgba(var(--neutral-rgb), 0.72);
+}
+
+.supporter-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 0.85rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.supporter-card:hover {
+  border-color: var(--border-light);
+}
+
+.supporter-avatar {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 999px;
+  background: #23324a;
+  color: #d9e3f6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  overflow: hidden;
+}
+
+.supporter-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.supporter-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.supporter-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.supporter-city {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: rgba(var(--neutral-rgb), 0.72);
+  font-size: 0.85rem;
+}
+
+.supporter-city-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}

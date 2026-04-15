@@ -22,6 +22,7 @@ interface BeforeInstallPromptEvent extends Event {
 interface ProfileResponse {
   profile: {
     google_sub: string;
+    full_name: string | null;
     email: string | null;
     image: string | null;
     username: string;
@@ -45,7 +46,7 @@ function mapProfileToUser(profile: NonNullable<ProfileResponse['profile']>): Use
   return {
     userId: profile.google_sub,
     googleSub: profile.google_sub,
-    username: profile.username,
+    username: profile.full_name?.trim() || profile.username,
     email: profile.email ?? undefined,
     image: profile.image ?? undefined,
     fanTeamId: profile.fan_team_id,

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { Match, Team } from '@/lib/types';
+import TeamLogoImage from './TeamLogoImage';
 import './TeamSheet.css';
 
 interface FormationRow {
@@ -177,7 +178,7 @@ export default function TeamSheet({ match }: TeamSheetProps) {
           onClick={() => setView('home')}
         >
           {match.homeTeam.logo ? (
-            <img src={match.homeTeam.logo} alt="" className="ts-sw-logo" />
+            <TeamLogoImage src={match.homeTeam.logo} alt="" className="ts-sw-logo" />
           ) : (
             <span className="ts-sw-badge">{match.homeTeam.badge}</span>
           )}
@@ -188,7 +189,7 @@ export default function TeamSheet({ match }: TeamSheetProps) {
           onClick={() => setView('away')}
         >
           {match.awayTeam.logo ? (
-            <img src={match.awayTeam.logo} alt="" className="ts-sw-logo" />
+            <TeamLogoImage src={match.awayTeam.logo} alt="" className="ts-sw-logo" />
           ) : (
             <span className="ts-sw-badge">{match.awayTeam.badge}</span>
           )}

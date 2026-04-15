@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { StandingEntry, TopScorer } from '@/lib/espn';
+import TeamLogoImage from './TeamLogoImage';
 import './LeagueHub.css';
 
 type Tab = 'table' | 'scorers';
@@ -42,7 +43,7 @@ function StandingsTable({ standings }: { standings: StandingEntry[] }) {
                 {s.position}
               </td>
               <td className="lh-td lh-td-team">
-                <img src={s.logo} alt="" className="lh-team-logo" />
+                <TeamLogoImage src={s.logo} alt="" className="lh-team-logo" />
                 <span className="lh-team-name">{s.teamShortName}</span>
                 <span className="lh-team-abbr">{s.teamAbbr}</span>
               </td>
@@ -59,7 +60,7 @@ function StandingsTable({ standings }: { standings: StandingEntry[] }) {
               <td className="lh-td lh-td-next lh-hide-sm">
                 {s.nextMatch ? (
                   <div className="lh-next">
-                    <img src={s.nextMatch.opponentLogo} alt="" className="lh-next-logo" />
+                    <TeamLogoImage src={s.nextMatch.opponentLogo} alt="" className="lh-next-logo" />
                     <span className="lh-next-info">
                       <span className="lh-next-opp">
                         {s.nextMatch.isHome ? 'vs' : '@'} {s.nextMatch.opponent}
@@ -85,7 +86,7 @@ function TopScorersList({ scorers }: { scorers: TopScorer[] }) {
       {scorers.map(s => (
         <div key={s.playerId} className="lh-scorer-row">
           <span className="lh-scorer-rank">{s.rank}</span>
-          <img src={s.teamLogo} alt="" className="lh-scorer-team-logo" />
+          <TeamLogoImage src={s.teamLogo} alt="" className="lh-scorer-team-logo" />
           <div className="lh-scorer-info">
             <span className="lh-scorer-name">{s.playerName}</span>
             <span className="lh-scorer-team">{s.teamName}</span>

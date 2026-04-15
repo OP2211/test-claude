@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import SiteFooter from '@/components/SiteFooter';
 import MatchRoom from '@/components/MatchRoom';
@@ -16,6 +17,7 @@ import './matches.css';
 interface ProfileResponse {
   profile: {
     google_sub: string;
+    full_name: string | null;
     email: string | null;
     image: string | null;
     username: string;
@@ -39,7 +41,7 @@ function mapProfileToUser(profile: NonNullable<ProfileResponse['profile']>): Use
   return {
     userId: profile.google_sub,
     googleSub: profile.google_sub,
-    username: profile.username,
+    username: profile.full_name?.trim() || profile.username,
     email: profile.email ?? undefined,
     image: profile.image ?? undefined,
     fanTeamId: profile.fan_team_id,
@@ -181,6 +183,7 @@ function StatsTab() {
 export default function MatchesPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [activeMatch, setActiveMatch] = useState<Match | null>(null);
@@ -188,6 +191,21 @@ export default function MatchesPage() {
   const [pendingMatch, setPendingMatch] = useState<Match | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<PageTab>('matches');
+  const forceOpenMatchesForDebug =
+    searchParams.get('debugOpenAll') === '1' ||
+    searchParams.get('debugOpenAll') === 'true';
+  const headerUser: User | null = user ?? (
+    session?.user
+      ? {
+          userId: session.user.googleSub ?? session.user.email ?? session.user.name ?? 'fan',
+          googleSub: session.user.googleSub ?? undefined,
+          username: session.user.name ?? 'Fan',
+          fanTeamId: null,
+          email: session.user.email ?? undefined,
+          image: session.user.image ?? undefined,
+        }
+      : null
+  );
 
   // Redirect to home if not logged in
   useEffect(() => {
@@ -298,7 +316,7 @@ export default function MatchesPage() {
         homeActions={{
           installPrompt: false,
           onInstall: () => {},
-          user,
+          user: headerUser,
           onSignOut: handleSignOut,
           showGoogleSignIn: false,
           onSignInWithGoogle: () => {},
@@ -324,6 +342,10 @@ export default function MatchesPage() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 Stats
               </button>
+              <Link href="/teams" className="mp-tab">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>
+                Teams
+              </Link>
             </nav>
 
             {/* Tab content */}
@@ -333,6 +355,7 @@ export default function MatchesPage() {
                 user={user}
                 onSelectMatch={handleSelectMatch}
                 isLoading={isLoading}
+                forceOpenAll={forceOpenMatchesForDebug}
               />
             )}
             {activeTab === 'table' && <LeagueHub />}
