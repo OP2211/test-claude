@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import AppHeaderSession from '@/components/AppHeaderSession';
 import SiteFooter from '@/components/SiteFooter';
@@ -16,12 +16,154 @@ interface HealthCheckResult {
   error?: string;
 }
 
+interface HealthRun {
+  runId: string;
+  createdAt: string;
+  results: HealthCheckResult[];
+}
+
 const HEALTH_CHECKS = [
   { name: 'Matches API', path: '/api/matches' },
   { name: 'Results API', path: '/api/results' },
   { name: 'Session API', path: '/api/auth/session' },
   { name: 'Profile API', path: '/api/profile/me' },
 ];
+
+const CHART_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#a855f7', '#06b6d4'];
+
+async function parseApiPayload(response: Response): Promise<{ data: unknown; rawText: string }> {
+  const rawText = await response.text();
+  try {
+    return { data: JSON.parse(rawText), rawText };
+  } catch {
+    return { data: null, rawText };
+  }
+}
+
+function EndpointLatencyGraph({ title, runs }: { title: string; runs: HealthRun[] }) {
+  const W = 640;
+  const H = 220;
+  const pad = { l: 58, r: 24, t: 24, b: 56 };
+  const x0 = pad.l;
+  const x1 = W - pad.r;
+  const yTop = pad.t;
+  const yBottom = H - pad.b;
+
+  const endpointDefs = HEALTH_CHECKS;
+  const runCount = runs.length;
+  const allDurations = runs.flatMap((run) =>
+    run.results
+      .map((result) => result.durationMs)
+      .filter((duration): duration is number => typeof duration === 'number'),
+  );
+  const maxDurationMs = Math.max(1, ...allDurations);
+
+  const xAt = (index: number) => {
+    if (runCount <= 1) return (x0 + x1) / 2;
+    return x0 + (index / (runCount - 1)) * (x1 - x0);
+  };
+
+  const yAt = (durationMs: number) => {
+    const normalized = durationMs / maxDurationMs;
+    return yBottom - normalized * (yBottom - yTop);
+  };
+
+  const linePath = (endpointPath: string) => {
+    let path = '';
+    let needsMove = true;
+    runs.forEach((run, index) => {
+      const endpoint = run.results.find((r) => r.path === endpointPath);
+      const durationMs = endpoint?.durationMs;
+      if (typeof durationMs !== 'number') {
+        needsMove = true;
+        return;
+      }
+      const x = xAt(index);
+      const y = yAt(durationMs);
+      path += needsMove ? `M ${x} ${y}` : ` L ${x} ${y}`;
+      needsMove = false;
+    });
+    return path;
+  };
+
+  if (runs.length === 0) {
+    return (
+      <div className="debug-graph-card">
+        <h3>{title}</h3>
+        <p className="debug-meta">No health history recorded yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="debug-graph-card">
+      <h3>{title}</h3>
+      <svg className="debug-graph-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={title}>
+        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+          const y = yBottom - ratio * (yBottom - yTop);
+          const value = Math.round(maxDurationMs * ratio);
+          return (
+            <g key={ratio}>
+              <line className="debug-graph-grid" x1={x0} x2={x1} y1={y} y2={y} />
+              <text className="debug-graph-ylabel" x={x0 - 8} y={y + 4} textAnchor="end">
+                {value}ms
+              </text>
+            </g>
+          );
+        })}
+
+        {endpointDefs.map((endpoint, endpointIndex) => (
+          <g key={endpoint.path}>
+            <path
+              d={linePath(endpoint.path)}
+              fill="none"
+              stroke={CHART_COLORS[endpointIndex % CHART_COLORS.length]}
+              strokeWidth={2.5}
+              vectorEffect="non-scaling-stroke"
+            />
+            {runs.map((run, runIndex) => {
+              const item = run.results.find((r) => r.path === endpoint.path);
+              if (typeof item?.durationMs !== 'number') return null;
+              const x = xAt(runIndex);
+              const y = yAt(item.durationMs);
+              return (
+                <circle
+                  key={`${endpoint.path}-${run.runId}`}
+                  cx={x}
+                  cy={y}
+                  r={3.5}
+                  fill={CHART_COLORS[endpointIndex % CHART_COLORS.length]}
+                />
+              );
+            })}
+          </g>
+        ))}
+      </svg>
+      <div className="debug-graph-xlabels">
+        {runs.map((run, index) => {
+          const leftPercent = ((xAt(index) - x0) / (x1 - x0)) * 100;
+          const clampedPercent = Math.min(96, Math.max(4, leftPercent));
+          return (
+            <span key={run.runId} style={{ left: `${clampedPercent}%` }}>
+            {new Date(run.createdAt).toLocaleTimeString()}
+            </span>
+          );
+        })}
+      </div>
+      <div className="debug-legend">
+        {endpointDefs.map((endpoint, endpointIndex) => (
+          <span key={endpoint.path} className="debug-legend-item">
+            <i
+              className="debug-legend-dot"
+              style={{ backgroundColor: CHART_COLORS[endpointIndex % CHART_COLORS.length] }}
+            />
+            {endpoint.name}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function DebugPage() {
   const { data: session, status, update } = useSession();
@@ -30,6 +172,33 @@ export default function DebugPage() {
   const [results, setResults] = useState<HealthCheckResult[]>([]);
   const [lastRunAt, setLastRunAt] = useState<string | null>(null);
   const [clearMessage, setClearMessage] = useState<string>('');
+  const [historyRuns, setHistoryRuns] = useState<HealthRun[]>([]);
+  const [historyError, setHistoryError] = useState<string>('');
+
+  const loadHealthHistory = useCallback(async () => {
+    try {
+      setHistoryError('');
+      const response = await fetch('/api/debug/health', { cache: 'no-store' });
+      const { data, rawText } = await parseApiPayload(response);
+      const payload = (data && typeof data === 'object' ? data : {}) as {
+        runs?: HealthRun[];
+        error?: string;
+      };
+      if (!response.ok) {
+        const fallback = rawText.trim().startsWith('<')
+          ? 'Health history endpoint returned HTML instead of JSON'
+          : rawText.trim();
+        throw new Error(payload.error ?? (fallback || 'Failed to load health history'));
+      }
+      setHistoryRuns(Array.isArray(payload.runs) ? payload.runs : []);
+    } catch (error) {
+      setHistoryError(error instanceof Error ? error.message : 'Failed to load health history');
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadHealthHistory();
+  }, [loadHealthHistory]);
 
   const sessionInfo = useMemo(
     () => ({
@@ -77,8 +246,26 @@ export default function DebugPage() {
 
     setResults(checks);
     setLastRunAt(new Date().toLocaleTimeString());
+    try {
+      const response = await fetch('/api/debug/health', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ results: checks }),
+      });
+      if (!response.ok) {
+        const { data, rawText } = await parseApiPayload(response);
+        const payload = (data && typeof data === 'object' ? data : {}) as { error?: string };
+        const fallback = rawText.trim().startsWith('<')
+          ? 'Health history save endpoint returned HTML instead of JSON'
+          : rawText.trim();
+        setHistoryError(payload.error ?? (fallback || 'Failed to save health history'));
+      }
+      await loadHealthHistory();
+    } catch {
+      // Keep the latest in-memory result even if persistence fails.
+    }
     setIsChecking(false);
-  }, []);
+  }, [loadHealthHistory]);
 
   const clearClientState = useCallback(async () => {
     setIsClearing(true);
@@ -133,8 +320,8 @@ export default function DebugPage() {
             </div>
             {lastRunAt && <p className="debug-meta">Last checked: {lastRunAt}</p>}
             <div className="debug-list">
-              {(results.length === 0 ? HEALTH_CHECKS : results).map((item) => {
-                const result = 'ok' in item ? item : null;
+              {HEALTH_CHECKS.map((item) => {
+                const result = results.find((entry) => entry.path === item.path) ?? null;
                 const stateClass = !result ? 'is-pending' : result.ok ? 'is-ok' : 'is-fail';
                 return (
                   <div key={item.path} className={`debug-list-item ${stateClass}`}>
@@ -150,6 +337,18 @@ export default function DebugPage() {
                   </div>
                 );
               })}
+            </div>
+          </section>
+
+          <section className="debug-section debug-card">
+            <h2>API Latency Timeline</h2>
+            <p className="debug-meta">
+              Per-endpoint response time history (milliseconds) across health-check runs.
+            </p>
+            {historyError && <p className="debug-meta">{historyError}</p>}
+            <div className="debug-graphs">
+              <EndpointLatencyGraph title="Last 5 runs (time vs ms)" runs={historyRuns.slice(-5)} />
+              <EndpointLatencyGraph title="Full history (time vs ms)" runs={historyRuns} />
             </div>
           </section>
 
