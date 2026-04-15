@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import SiteFooter from '@/components/SiteFooter';
@@ -183,6 +183,7 @@ function StatsTab() {
 export default function MatchesPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [activeMatch, setActiveMatch] = useState<Match | null>(null);
@@ -190,6 +191,9 @@ export default function MatchesPage() {
   const [pendingMatch, setPendingMatch] = useState<Match | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<PageTab>('matches');
+  const forceOpenMatchesForDebug =
+    searchParams.get('debugOpenAll') === '1' ||
+    searchParams.get('debugOpenAll') === 'true';
   const headerUser: User | null = user ?? (
     session?.user
       ? {
@@ -351,6 +355,7 @@ export default function MatchesPage() {
                 user={user}
                 onSelectMatch={handleSelectMatch}
                 isLoading={isLoading}
+                forceOpenAll={forceOpenMatchesForDebug}
               />
             )}
             {activeTab === 'table' && <LeagueHub />}

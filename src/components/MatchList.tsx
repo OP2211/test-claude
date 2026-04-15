@@ -90,6 +90,7 @@ interface MatchListProps {
   user: User | null;
   onSelectMatch: (match: Match) => void;
   isLoading: boolean;
+  forceOpenAll?: boolean;
 }
 
 function formatGroupDate(iso: string): string {
@@ -234,10 +235,11 @@ function RecentResults() {
   );
 }
 
-export default function MatchList({ matches, user, onSelectMatch, isLoading }: MatchListProps) {
+export default function MatchList({ matches, user, onSelectMatch, isLoading, forceOpenAll = false }: MatchListProps) {
   const [fetchError, setFetchError] = useState<boolean>(false);
-  const openMatches = matches.filter(isChatOpen);
-  const closedMatches = matches.filter(m => !isChatOpen(m));
+  const isMatchOpen = (match: Match) => forceOpenAll || isChatOpen(match);
+  const openMatches = matches.filter(isMatchOpen);
+  const closedMatches = matches.filter(m => !isMatchOpen(m));
   const upcomingGroups = groupByDate(closedMatches);
 
   useEffect(() => {
@@ -250,7 +252,7 @@ export default function MatchList({ matches, user, onSelectMatch, isLoading }: M
 
   const renderCard = (match: Match, index: number) => {
     const status = getMatchStatus(match);
-    const open = isChatOpen(match);
+    const open = isMatchOpen(match);
     const kickoff = new Date(match.kickoff);
     const timeStr = kickoff.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
