@@ -57,6 +57,17 @@ interface MessagesByTab {
   banter: Message[];
 }
 
+interface TabPageState {
+  predictions: boolean;
+  teamsheet: boolean;
+  banter: boolean;
+}
+
+interface MessagesResponse {
+  messages: Message[];
+  hasMore: boolean;
+}
+
 interface Notification {
   id: string;
   text: string;
@@ -237,6 +248,8 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
   const [menuOpen, setMenuOpen] = useState(false);
   const [didInitViewportMenuState, setDidInitViewportMenuState] = useState(false);
   const [messages, setMessages] = useState<MessagesByTab>({ predictions: [], teamsheet: [], banter: [] });
+  const [hasMoreByTab, setHasMoreByTab] = useState<TabPageState>({ predictions: false, teamsheet: false, banter: false });
+  const [loadingOlderByTab, setLoadingOlderByTab] = useState<TabPageState>({ predictions: false, teamsheet: false, banter: false });
   const [votes, setVotes] = useState<VoteTally>({ home: 0, draw: 0, away: 0 });
   const [voteByChoice, setVoteByChoice] = useState<Record<VoteChoice, VoteVoter[]>>(emptyVoteByChoice);
   const [voteHistory, setVoteHistory] = useState<VoteHistoryPoint[]>([]);
@@ -327,17 +340,18 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
   useEffect(() => {
     async function init() {
       try {
+        const pageSize = 50;
         const [pRes, tRes, bRes, vRes, mRes] = await Promise.all([
-          fetch(`/api/messages?matchId=${match.id}&tab=predictions`, { cache: 'no-store' }),
-          fetch(`/api/messages?matchId=${match.id}&tab=teamsheet`, { cache: 'no-store' }),
-          fetch(`/api/messages?matchId=${match.id}&tab=banter`, { cache: 'no-store' }),
+          fetch(`/api/messages?matchId=${match.id}&tab=predictions&limit=${pageSize}`, { cache: 'no-store' }),
+          fetch(`/api/messages?matchId=${match.id}&tab=teamsheet&limit=${pageSize}`, { cache: 'no-store' }),
+          fetch(`/api/messages?matchId=${match.id}&tab=banter&limit=${pageSize}`, { cache: 'no-store' }),
           fetch(`/api/vote?matchId=${match.id}`, { cache: 'no-store' }),
           fetch(`/api/match?id=${match.id}`, { cache: 'no-store' }),
         ]);
-        const [predictions, teamsheet, banter, votePayload]: [
-          Message[],
-          Message[],
-          Message[],
+        const [predictionsPayload, teamsheetPayload, banterPayload, votePayload]: [
+          MessagesResponse,
+          MessagesResponse,
+          MessagesResponse,
           | VoteTally
           | { tally: VoteTally; byChoice: Record<VoteChoice, VoteVoter[]>; history?: VoteHistoryPoint[] },
         ] = await Promise.all([pRes.json(), tRes.json(), bRes.json(), vRes.json()]);
@@ -346,7 +360,16 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
           const enriched: Match = await mRes.json();
           setMatch(enriched);
         }
-        setMessages({ predictions, teamsheet, banter });
+        setMessages({
+          predictions: predictionsPayload.messages,
+          teamsheet: teamsheetPayload.messages,
+          banter: banterPayload.messages,
+        });
+        setHasMoreByTab({
+          predictions: predictionsPayload.hasMore,
+          teamsheet: teamsheetPayload.hasMore,
+          banter: banterPayload.hasMore,
+        });
         if (votePayload && typeof votePayload === 'object' && 'byChoice' in votePayload && 'tally' in votePayload) {
           const snap = votePayload as {
             tally: VoteTally;
@@ -385,6 +408,39 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     }, refreshMs);
     return () => clearInterval(interval);
   }, [match.id, match.status, match.kickoff]);
+
+  const loadOlderMessages = useCallback(async (tab: TabId) => {
+    const current = messages[tab];
+    if (current.length === 0 || loadingOlderByTab[tab]) return;
+    const oldest = current[0]?.timestamp;
+    if (!oldest) return;
+
+    setLoadingOlderByTab((prev) => ({ ...prev, [tab]: true }));
+    try {
+      const params = new URLSearchParams({
+        matchId: match.id,
+        tab,
+        limit: '50',
+        before: oldest,
+      });
+      const res = await fetch(`/api/messages?${params.toString()}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const payload: MessagesResponse = await res.json();
+
+      setMessages((prev) => {
+        const existing = prev[tab];
+        const existingIds = new Set(existing.map((m) => m.id));
+        const older = payload.messages.filter((m) => !existingIds.has(m.id));
+        if (older.length === 0) return prev;
+        return { ...prev, [tab]: [...older, ...existing] };
+      });
+      setHasMoreByTab((prev) => ({ ...prev, [tab]: payload.hasMore }));
+    } catch (err) {
+      console.error('Failed to load older messages', err);
+    } finally {
+      setLoadingOlderByTab((prev) => ({ ...prev, [tab]: false }));
+    }
+  }, [loadingOlderByTab, match.id, messages]);
 
   // Pusher subscription
   useEffect(() => {
@@ -525,6 +581,21 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     }
   }, [match.id, user.userId, user.username, match, addNotification, realtime]);
 
+  const copyRoomLink = useCallback(async () => {
+    if (typeof window === 'undefined') return;
+    const roomUrl = window.location.href;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(roomUrl);
+        addNotification('Room link copied.');
+        return;
+      }
+      addNotification('Clipboard not available on this device.', 'warning');
+    } catch {
+      addNotification('Could not copy room link.', 'warning');
+    }
+  }, [addNotification]);
+
   const isLive = match.status === 'live';
   const kickoff = new Date(match.kickoff);
   const kickoffStr = kickoff.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -623,6 +694,22 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
             ))}
           </div>
         </div>
+
+        <button
+          type="button"
+          className="mr-menu"
+          onClick={() => { void copyRoomLink(); }}
+          aria-label="Share room link"
+          title="Share room link"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+          </svg>
+        </button>
 
         <button
           type="button"
@@ -762,6 +849,9 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
                   user={user}
                   onSendMessage={sendMessage}
                   onReact={(id: string, emoji: string) => reactToMessage(id, 'predictions', emoji)}
+                  onLoadOlder={() => { void loadOlderMessages('predictions'); }}
+                  hasMore={hasMoreByTab.predictions}
+                  loadingOlder={loadingOlderByTab.predictions}
                   placeholder="Your prediction…"
                   compact
                 />
@@ -773,6 +863,9 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
               user={user}
               onSendMessage={sendMessage}
               onReact={(id: string, emoji: string) => reactToMessage(id, 'predictions', emoji)}
+              onLoadOlder={() => { void loadOlderMessages('predictions'); }}
+              hasMore={hasMoreByTab.predictions}
+              loadingOlder={loadingOlderByTab.predictions}
               placeholder="Your prediction…"
               compact
             />
@@ -785,6 +878,9 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
               user={user}
               onSendMessage={sendMessage}
               onReact={(id: string, emoji: string) => reactToMessage(id, 'teamsheet', emoji)}
+              onLoadOlder={() => { void loadOlderMessages('teamsheet'); }}
+              hasMore={hasMoreByTab.teamsheet}
+              loadingOlder={loadingOlderByTab.teamsheet}
               placeholder="React to the lineup…"
               compact
             />
@@ -796,6 +892,9 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
             user={user}
             onSendMessage={sendMessage}
             onReact={(id: string, emoji: string) => reactToMessage(id, 'banter', emoji)}
+            onLoadOlder={() => { void loadOlderMessages('banter'); }}
+            hasMore={hasMoreByTab.banter}
+            loadingOlder={loadingOlderByTab.banter}
             placeholder="Talk your talk…"
             compact
           />

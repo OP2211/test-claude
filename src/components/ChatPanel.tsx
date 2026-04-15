@@ -26,13 +26,27 @@ interface ChatPanelProps {
   user: User;
   onSendMessage: (text: string) => void;
   onReact: (messageId: string, emoji: string) => void;
+  onLoadOlder?: () => void;
+  hasMore?: boolean;
+  loadingOlder?: boolean;
   placeholder?: string;
   fullHeight?: boolean;
   /** Denser bubbles and spacing — fits more messages on screen */
   compact?: boolean;
 }
 
-export default function ChatPanel({ messages, user, onSendMessage, onReact, placeholder, fullHeight, compact }: ChatPanelProps) {
+export default function ChatPanel({
+  messages,
+  user,
+  onSendMessage,
+  onReact,
+  onLoadOlder,
+  hasMore = false,
+  loadingOlder = false,
+  placeholder,
+  fullHeight,
+  compact,
+}: ChatPanelProps) {
   const [input, setInput] = useState<string>('');
   const [showEmojiFor, setShowEmojiFor] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -81,6 +95,16 @@ export default function ChatPanel({ messages, user, onSendMessage, onReact, plac
 
       {/* Messages */}
       <div className="cp-messages">
+        {onLoadOlder && hasMore && (
+          <button
+            type="button"
+            className="cp-load-older"
+            onClick={onLoadOlder}
+            disabled={loadingOlder}
+          >
+            {loadingOlder ? 'Loading...' : 'Load older messages'}
+          </button>
+        )}
         {messages.length === 0 && (
           <div className="cp-empty">
             <div className="cp-empty-icon">

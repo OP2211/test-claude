@@ -2,13 +2,20 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 export function getSupabaseAdmin() {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
+  if (!supabaseUrl) {
     return null;
   }
 
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+  // Prefer service-role key for server APIs. Fallback to publishable key so
+  // chat persistence can still function in local/dev environments where
+  // service-role key is not loaded yet.
+  const key = supabaseServiceRoleKey || supabasePublishableKey;
+  if (!key) return null;
+
+  return createClient(supabaseUrl, key, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,

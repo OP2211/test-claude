@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getMatch } from './data';
+import { getSupabaseAdmin } from './supabase-admin';
 import type { Message, TabId, TeamId, VoteChoice, VoteTally, VoteSnapshot, VoteVoter, VoteHistoryPoint, Reactions } from './types';
 
 type Room = Record<TabId, Message[]>;
@@ -44,9 +45,112 @@ async function getRoom(matchId: string): Promise<Room> {
   return _messages[matchId];
 }
 
-export async function getMessages(matchId: string, tab: TabId): Promise<Message[]> {
-  const room = await getRoom(matchId);
-  return room[tab] || [];
+interface ChatMessageRow {
+  id: string;
+  match_id: string;
+  tab: TabId;
+  user_id: string;
+  username: string;
+  fan_team_id: TeamId | null;
+  image: string | null;
+  text: string;
+  timestamp: string;
+  reactions: Reactions | null;
+  moderation: Message['moderation'] | null;
+}
+
+function toChatMessageRow(matchId: string, message: Message): ChatMessageRow {
+  return {
+    id: message.id,
+    match_id: matchId,
+    tab: message.tab,
+    user_id: message.userId,
+    username: message.username,
+    fan_team_id: message.fanTeamId,
+    image: message.image ?? null,
+    text: message.text,
+    timestamp: message.timestamp,
+    reactions: message.reactions,
+    moderation: message.moderation ?? null,
+  };
+}
+
+function fromChatMessageRow(row: ChatMessageRow): Message {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    username: row.username,
+    fanTeamId: row.fan_team_id,
+    image: row.image ?? undefined,
+    tab: row.tab,
+    text: row.text,
+    timestamp: row.timestamp,
+    reactions: row.reactions || {},
+    moderation: row.moderation ?? undefined,
+  };
+}
+
+export interface GetMessagesOptions {
+  limit?: number;
+  before?: string;
+}
+
+export interface MessagesPage {
+  messages: Message[];
+  hasMore: boolean;
+}
+
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 100;
+
+export async function getMessages(matchId: string, tab: TabId, opts: GetMessagesOptions = {}): Promise<MessagesPage> {
+  const normalizedMatchId = matchId.trim();
+  const normalizedTab = tab.trim() as TabId;
+  const requestedLimit = Number.isFinite(opts.limit) ? Math.floor(opts.limit as number) : DEFAULT_PAGE_SIZE;
+  const limit = Math.max(1, Math.min(MAX_PAGE_SIZE, requestedLimit || DEFAULT_PAGE_SIZE));
+  const before = opts.before?.trim();
+  const supabaseAdmin = getSupabaseAdmin();
+  if (supabaseAdmin) {
+    let query = supabaseAdmin
+      .from('chat_messages')
+      .select('*')
+      .eq('match_id', normalizedMatchId)
+      .eq('tab', normalizedTab)
+      .order('timestamp', { ascending: false })
+      .limit(limit + 1);
+
+    if (before) {
+      query = query.lt('timestamp', before);
+    }
+
+    const { data, error } = await query;
+
+    if (!error && data) {
+      const rows = data as ChatMessageRow[];
+      const hasMore = rows.length > limit;
+      const pageRows = (hasMore ? rows.slice(0, limit) : rows).reverse();
+      return {
+        messages: pageRows.map(fromChatMessageRow),
+        hasMore,
+      };
+    }
+    if (error) {
+      console.error('Supabase getMessages failed, falling back to in-memory store:', error.message);
+    }
+  }
+
+  const room = await getRoom(normalizedMatchId);
+  const all = room[normalizedTab] || [];
+  let eligible = all;
+  if (before) {
+    const beforeMs = new Date(before).getTime();
+    if (!Number.isNaN(beforeMs)) {
+      eligible = all.filter((m) => new Date(m.timestamp).getTime() < beforeMs);
+    }
+  }
+  const hasMore = eligible.length > limit;
+  const messages = (hasMore ? eligible.slice(-limit) : eligible);
+  return { messages, hasMore };
 }
 
 interface AddMessageParams {
@@ -60,7 +164,6 @@ interface AddMessageParams {
 }
 
 export async function addMessage(matchId: string, { tab, userId, username, fanTeamId, image, text, moderation }: AddMessageParams): Promise<Message> {
-  const room = await getRoom(matchId);
   const msg: Message = {
     id: uuidv4(),
     userId,
@@ -73,12 +176,62 @@ export async function addMessage(matchId: string, { tab, userId, username, fanTe
     reactions: {},
     moderation,
   };
+
+  const supabaseAdmin = getSupabaseAdmin();
+  if (supabaseAdmin) {
+    const { error } = await supabaseAdmin.from('chat_messages').insert(toChatMessageRow(matchId, msg));
+    if (!error) {
+      return msg;
+    }
+    console.error('Supabase addMessage failed, falling back to in-memory store:', error.message);
+  }
+
+  const room = await getRoom(matchId);
   if (!room[tab]) room[tab] = [];
   room[tab].push(msg);
   return msg;
 }
 
 export async function toggleReaction(matchId: string, tab: TabId, messageId: string, emoji: string, userId: string): Promise<Reactions | null> {
+  const supabaseAdmin = getSupabaseAdmin();
+  if (supabaseAdmin) {
+    const { data, error } = await supabaseAdmin
+      .from('chat_messages')
+      .select('*')
+      .eq('match_id', matchId)
+      .eq('tab', tab)
+      .eq('id', messageId)
+      .maybeSingle();
+
+    if (!error && data) {
+      const row = data as ChatMessageRow;
+      const reactions: Reactions = { ...(row.reactions || {}) };
+      if (!reactions[emoji]) reactions[emoji] = [];
+      const idx = reactions[emoji].indexOf(userId);
+      if (idx === -1) {
+        reactions[emoji].push(userId);
+      } else {
+        reactions[emoji].splice(idx, 1);
+        if (reactions[emoji].length === 0) delete reactions[emoji];
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from('chat_messages')
+        .update({ reactions })
+        .eq('id', messageId)
+        .eq('match_id', matchId)
+        .eq('tab', tab);
+
+      if (!updateError) {
+        return reactions;
+      }
+      console.error('Supabase toggleReaction update failed, falling back to in-memory store:', updateError.message);
+    }
+    if (error) {
+      console.error('Supabase toggleReaction fetch failed, falling back to in-memory store:', error.message);
+    }
+  }
+
   const room = await getRoom(matchId);
   const msg = (room[tab] || []).find(m => m.id === messageId);
   if (!msg) return null;

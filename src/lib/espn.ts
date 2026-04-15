@@ -152,7 +152,7 @@ function mapEvent(event: EspnEvent, leagueName: string, leagueSlug: string): Mat
   const awayScore = parseInt(away.score, 10);
 
   return {
-    id: `espn-${event.id}`,
+    id: `fanground-${event.id}`,
     homeTeamId: toTeamId(home.team),
     awayTeamId: toTeamId(away.team),
     kickoff: event.date,
@@ -279,7 +279,7 @@ export async function fetchMatch(espnEventId: string): Promise<Match | null> {
         const awayScore = parseInt(away.score || '0', 10);
 
         return {
-          id: `espn-${espnEventId}`,
+          id: `fanground-${espnEventId}`,
           homeTeamId: toTeamId(home.team),
           awayTeamId: toTeamId(away.team),
           kickoff: comp.date || comp.startDate || new Date().toISOString(),
@@ -511,7 +511,9 @@ export async function fetchTeamRoster(espnTeamId: string, leagueSlug: string): P
 
 /** Extract the ESPN event ID from our match ID format. */
 export function extractEspnId(matchId: string): string | null {
-  if (matchId.startsWith('espn-')) return matchId.slice(5);
+  if (matchId.startsWith('fanground-')) return matchId.slice('fanground-'.length);
+  // Backward compatibility for older match URLs/room IDs.
+  if (matchId.startsWith('espn-')) return matchId.slice('espn-'.length);
   return null;
 }
 

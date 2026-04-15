@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import SiteFooter from '@/components/SiteFooter';
-import MatchRoom from '@/components/MatchRoom';
 import OnboardingModal from '@/components/OnboardingModal';
 import MatchList from '@/components/MatchList';
 import LeagueHub from '@/components/LeagueHub';
@@ -186,9 +185,8 @@ function MatchesPageContent() {
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
-  const [activeMatch, setActiveMatch] = useState<Match | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [pendingMatch, setPendingMatch] = useState<Match | null>(null);
+  const [pendingMatchId, setPendingMatchId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<PageTab>('matches');
   const forceOpenMatchesForDebug =
@@ -258,18 +256,12 @@ function MatchesPageContent() {
 
   const handleSelectMatch = (match: Match) => {
     if (!user || !user.fanTeamId) {
-      setPendingMatch(match);
+      setPendingMatchId(match.id);
       setShowOnboarding(true);
       return;
     }
-    setActiveMatch(match);
+    router.push(`/matches/${match.id}`);
   };
-
-  useEffect(() => {
-    if (!pendingMatch || !user) return;
-    setActiveMatch(pendingMatch);
-    setPendingMatch(null);
-  }, [pendingMatch, user]);
 
   const handleOnboardingComplete = async (payload: OnboardingPayload) => {
     const res = await fetch('/api/profile/upsert', {
@@ -282,24 +274,22 @@ function MatchesPageContent() {
     const newUser = mapProfileToUser(data.profile);
     setUser(newUser);
     setShowOnboarding(false);
-    if (pendingMatch) {
-      setActiveMatch(pendingMatch);
-      setPendingMatch(null);
+    if (pendingMatchId) {
+      const nextMatchId = pendingMatchId;
+      setPendingMatchId(null);
+      router.push(`/matches/${nextMatchId}`);
     }
   };
 
   const handleBack = () => {
-    setActiveMatch(null);
+    router.push('/matches');
     fetchMatches();
   };
 
   const handleSignOut = () => {
     setUser(null);
-    setActiveMatch(null);
     signOut({ callbackUrl: '/' });
   };
-
-  const isInRoom = activeMatch && user;
 
   if (sessionStatus === 'loading') {
     return <div className="mp-loading-full"><div className="mp-spinner" /></div>;
@@ -312,7 +302,7 @@ function MatchesPageContent() {
       <AppHeader
         variant="home"
         onLogoClick={handleBack}
-        inRoom={!!isInRoom}
+        inRoom={false}
         homeActions={{
           installPrompt: false,
           onInstall: () => {},
@@ -324,51 +314,50 @@ function MatchesPageContent() {
       />
 
       <main className="app-main">
-        {isInRoom ? (
-          <MatchRoom match={activeMatch!} user={user!} onBack={handleBack} />
-        ) : (
-          <div className="mp-root">
-            {/* Page tabs */}
-            <nav className="mp-tabs" aria-label="Page sections">
-              <button className={`mp-tab ${activeTab === 'matches' ? 'active' : ''}`} onClick={() => setActiveTab('matches')}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                Matches
-              </button>
-              <button className={`mp-tab ${activeTab === 'table' ? 'active' : ''}`} onClick={() => setActiveTab('table')}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-                Table
-              </button>
-              <button className={`mp-tab ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => setActiveTab('stats')}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                Stats
-              </button>
-              <Link href="/teams" className="mp-tab">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>
-                Teams
-              </Link>
-            </nav>
+        <div className="mp-root">
+          {/* Page tabs */}
+          <nav className="mp-tabs" aria-label="Page sections">
+            <button className={`mp-tab ${activeTab === 'matches' ? 'active' : ''}`} onClick={() => setActiveTab('matches')}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Matches
+            </button>
+            <button className={`mp-tab ${activeTab === 'table' ? 'active' : ''}`} onClick={() => setActiveTab('table')}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+              Table
+            </button>
+            <button className={`mp-tab ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => setActiveTab('stats')}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              Stats
+            </button>
+            <Link href="/teams" className="mp-tab">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>
+              Teams
+            </Link>
+          </nav>
 
-            {/* Tab content */}
-            {activeTab === 'matches' && (
-              <MatchList
-                matches={matches}
-                user={user}
-                onSelectMatch={handleSelectMatch}
-                isLoading={isLoading}
-                forceOpenAll={forceOpenMatchesForDebug}
-              />
-            )}
-            {activeTab === 'table' && <LeagueHub />}
-            {activeTab === 'stats' && <StatsTab />}
-          </div>
-        )}
+          {/* Tab content */}
+          {activeTab === 'matches' && (
+            <MatchList
+              matches={matches}
+              user={user}
+              onSelectMatch={handleSelectMatch}
+              isLoading={isLoading}
+              forceOpenAll={forceOpenMatchesForDebug}
+            />
+          )}
+          {activeTab === 'table' && <LeagueHub />}
+          {activeTab === 'stats' && <StatsTab />}
+        </div>
       </main>
 
-      {!isInRoom && <SiteFooter />}
+      <SiteFooter />
       {showOnboarding && (
         <OnboardingModal
           onComplete={handleOnboardingComplete}
-          onClose={() => { setShowOnboarding(false); setPendingMatch(null); }}
+          onClose={() => {
+            setShowOnboarding(false);
+            setPendingMatchId(null);
+          }}
         />
       )}
     </div>
