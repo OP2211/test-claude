@@ -34,10 +34,13 @@
   padding: 5px 12px;
   font-size: var(--text-xs);
   font-weight: 700;
-  color: var(--text-dim);
+  color: var(--text-muted);
   border-radius: 6px;
   transition: all 0.2s;
   white-space: nowrap;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
 }
 
 .lh-tab.active {
@@ -86,13 +89,13 @@
   font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-dim);
+  color: var(--text-muted);
   text-align: center;
   border-bottom: 1px solid rgba(var(--neutral-rgb), 0.08);
   white-space: nowrap;
   position: sticky;
   top: 0;
-  background: var(--bg-primary);
+  background: var(--bg-card);
   z-index: 1;
 }
 
