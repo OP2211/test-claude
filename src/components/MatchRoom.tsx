@@ -871,19 +871,8 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
             />
           ))}
         {activeTab === 'teamsheet' && (
-          <div className="mr-teamsheet-layout">
+          <div className="mr-teamsheet-layout mr-teamsheet-full">
             <TeamSheet match={match} />
-            <ChatPanel
-              messages={messages.teamsheet}
-              user={user}
-              onSendMessage={sendMessage}
-              onReact={(id: string, emoji: string) => reactToMessage(id, 'teamsheet', emoji)}
-              onLoadOlder={() => { void loadOlderMessages('teamsheet'); }}
-              hasMore={hasMoreByTab.teamsheet}
-              loadingOlder={loadingOlderByTab.teamsheet}
-              placeholder="React to the lineup…"
-              compact
-            />
           </div>
         )}
         {activeTab === 'banter' && (

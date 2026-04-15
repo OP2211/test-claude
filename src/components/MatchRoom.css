@@ -357,6 +357,12 @@
   flex: 1;
   min-height: 0;
 }
+/* Full-space teamsheet (no chat alongside) */
+.mr-teamsheet-full > .ts {
+  flex: 1;
+  max-height: none;
+  overflow-y: auto;
+}
 
 /* ── Desktop ──────────────────────────────────────────────────── */
 @media (min-width: 600px) {
@@ -445,6 +451,9 @@
     grid-template-columns: 1fr 1fr;
     gap: 12px;
     overflow: hidden;
+  }
+  .mr-teamsheet-layout.mr-teamsheet-full {
+    display: flex;
   }
   .mr-teamsheet-layout > .ts {
     max-height: none;

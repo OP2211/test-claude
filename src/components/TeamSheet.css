@@ -65,6 +65,23 @@
 }
 .ts-player-pos { font-size: 0.44rem; font-weight: 800; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 0 3px rgba(0,0,0,0.8); }
 
+/* ── Empty state (lineups not announced) ────────────────────── */
+.ts-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; padding: 48px 24px;
+  color: var(--text-dim);
+  background: rgba(var(--neutral-rgb), 0.02);
+  border: 1px dashed rgba(var(--neutral-rgb), 0.12);
+  border-radius: var(--radius-md);
+}
+.ts-empty svg { opacity: 0.4; }
+.ts-empty-title {
+  font-size: var(--text-sm); font-weight: 750; color: var(--text-secondary);
+}
+.ts-empty-sub {
+  font-size: var(--text-xs); color: var(--text-dim); text-align: center;
+}
+
 /* ── Substitutes ─────────────────────────────────────────────── */
 .ts-subs {
   background: rgba(var(--neutral-rgb), 0.03);

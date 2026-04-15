@@ -168,6 +168,8 @@ export default function TeamSheet({ match }: TeamSheetProps) {
   const [view, setView] = useState<'home' | 'away'>('home');
   const teamData = view === 'home' ? match.homeTeam : match.awayTeam;
   const sheetData = view === 'home' ? match.teamSheet.home : match.teamSheet.away;
+  // Real match-day lineup is only present when positions[] is populated (from ESPN summary)
+  const hasRealLineup = Array.isArray(sheetData.positions) && sheetData.positions.length > 0;
 
   return (
     <div className="ts">
@@ -198,34 +200,46 @@ export default function TeamSheet({ match }: TeamSheetProps) {
       </div>
 
       {/* Status */}
-      <div className="ts-status">
-        <span className={`ts-confirmed ${sheetData.confirmed ? 'yes' : 'no'}`}>
-          {sheetData.confirmed ? (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-              Confirmed
-            </>
-          ) : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-              </svg>
-              Predicted
-            </>
-          )}
-        </span>
-        <span className="ts-formation-badge">{sheetData.formation}</span>
-      </div>
+      {hasRealLineup && (
+        <div className="ts-status">
+          <span className={`ts-confirmed ${sheetData.confirmed ? 'yes' : 'no'}`}>
+            {sheetData.confirmed ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Confirmed
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                Predicted
+              </>
+            )}
+          </span>
+          <span className="ts-formation-badge">{sheetData.formation}</span>
+        </div>
+      )}
 
-      {/* Pitch */}
-      <PitchView
-        team={teamData}
-        players={sheetData.players}
-        positions={sheetData.positions}
-        formation={sheetData.formation}
-      />
+      {/* Pitch or "not announced" message */}
+      {hasRealLineup ? (
+        <PitchView
+          team={teamData}
+          players={sheetData.players}
+          positions={sheetData.positions}
+          formation={sheetData.formation}
+        />
+      ) : (
+        <div className="ts-empty">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <p className="ts-empty-title">Lineups not announced yet</p>
+          <p className="ts-empty-sub">Usually confirmed 60 minutes before kickoff</p>
+        </div>
+      )}
 
       {/* Substitutes */}
       {sheetData.subs && sheetData.subs.length > 0 && (
