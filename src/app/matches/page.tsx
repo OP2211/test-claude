@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -180,7 +180,7 @@ function StatsTab() {
   );
 }
 
-export default function MatchesPage() {
+function MatchesPageContent() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -372,5 +372,13 @@ export default function MatchesPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function MatchesPage() {
+  return (
+    <Suspense fallback={<div className="mp-loading-full"><div className="mp-spinner" /></div>}>
+      <MatchesPageContent />
+    </Suspense>
   );
 }
