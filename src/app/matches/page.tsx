@@ -16,6 +16,7 @@ import './matches.css';
 interface ProfileResponse {
   profile: {
     google_sub: string;
+    full_name: string | null;
     email: string | null;
     image: string | null;
     username: string;
@@ -39,7 +40,7 @@ function mapProfileToUser(profile: NonNullable<ProfileResponse['profile']>): Use
   return {
     userId: profile.google_sub,
     googleSub: profile.google_sub,
-    username: profile.username,
+    username: profile.full_name?.trim() || profile.username,
     email: profile.email ?? undefined,
     image: profile.image ?? undefined,
     fanTeamId: profile.fan_team_id,
@@ -188,6 +189,18 @@ export default function MatchesPage() {
   const [pendingMatch, setPendingMatch] = useState<Match | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<PageTab>('matches');
+  const headerUser: User | null = user ?? (
+    session?.user
+      ? {
+          userId: session.user.googleSub ?? session.user.email ?? session.user.name ?? 'fan',
+          googleSub: session.user.googleSub ?? undefined,
+          username: session.user.name ?? 'Fan',
+          fanTeamId: null,
+          email: session.user.email ?? undefined,
+          image: session.user.image ?? undefined,
+        }
+      : null
+  );
 
   // Redirect to home if not logged in
   useEffect(() => {
@@ -298,7 +311,7 @@ export default function MatchesPage() {
         homeActions={{
           installPrompt: false,
           onInstall: () => {},
-          user,
+          user: headerUser,
           onSignOut: handleSignOut,
           showGoogleSignIn: false,
           onSignInWithGoogle: () => {},

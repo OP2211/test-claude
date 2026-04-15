@@ -3,6 +3,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.profiles (
   id uuid primary key default gen_random_uuid(),
   google_sub text not null unique,
+  full_name text,
   email text,
   image text,
   username text not null,

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import type { Match, VoteTally, VoteChoice, VoteVoter, VoteHistoryPoint, TeamId } from '@/lib/types';
 import VoteTimelineChart from './VoteTimelineChart';
+import TeamLogoImage from './TeamLogoImage';
 import './VotePicker.css';
 
 const TEAM_COLORS: Record<string, string> = {
@@ -115,7 +116,7 @@ function ScorePrediction({ match }: { match: Match }) {
       <div className="vp-score-teams">
         <div className="vp-score-team">
           {match.homeTeam.logo ? (
-            <img src={match.homeTeam.logo} alt="" className="vp-score-team-logo" />
+            <TeamLogoImage src={match.homeTeam.logo} alt="" className="vp-score-team-logo" />
           ) : (
             <span className="vp-score-team-badge">{match.homeTeam.badge}</span>
           )}
@@ -152,7 +153,7 @@ function ScorePrediction({ match }: { match: Match }) {
 
         <div className="vp-score-team">
           {match.awayTeam.logo ? (
-            <img src={match.awayTeam.logo} alt="" className="vp-score-team-logo" />
+            <TeamLogoImage src={match.awayTeam.logo} alt="" className="vp-score-team-logo" />
           ) : (
             <span className="vp-score-team-badge">{match.awayTeam.badge}</span>
           )}
@@ -293,7 +294,7 @@ export default function VotePicker({ match, votes, votersByChoice, voteHistory, 
             >
               <div className="vp-opt-top">
                 {opt.logo ? (
-                  <img src={opt.logo} alt="" className="vp-opt-logo" />
+                  <TeamLogoImage src={opt.logo} alt="" className="vp-opt-logo" />
                 ) : (
                   <span className="vp-opt-badge">{opt.badge}</span>
                 )}

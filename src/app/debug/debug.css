@@ -1,0 +1,122 @@
+.debug-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.debug-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.debug-card {
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--bg-card);
+  padding: 1rem;
+}
+
+.debug-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+}
+
+.debug-subtitle {
+  margin: 0;
+  color: rgba(var(--neutral-rgb), 0.72);
+}
+
+.debug-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.debug-btn {
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-radius: 0.7rem;
+  padding: 0.5rem 0.85rem;
+  font-weight: 650;
+}
+
+.debug-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.debug-btn.is-danger {
+  border-color: color-mix(in srgb, var(--accent-red) 60%, var(--border));
+  background: color-mix(in srgb, var(--accent-red) 12%, var(--bg-elevated));
+}
+
+.debug-btn.is-accent {
+  border-color: color-mix(in srgb, var(--accent-blue) 50%, var(--border));
+  background: color-mix(in srgb, var(--accent-blue) 12%, var(--bg-elevated));
+}
+
+.debug-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.debug-list-item {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.7rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.debug-list-item.is-ok {
+  border-color: color-mix(in srgb, var(--accent-green) 55%, var(--border));
+}
+
+.debug-list-item.is-fail {
+  border-color: color-mix(in srgb, var(--accent-red) 55%, var(--border));
+}
+
+.debug-item-title {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.debug-item-path,
+.debug-meta {
+  color: rgba(var(--neutral-rgb), 0.68);
+  font-size: 0.9rem;
+}
+
+.debug-item-status {
+  font-weight: 650;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.debug-kv {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.debug-kv > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  color: var(--text-primary);
+}
+
+.debug-kv span {
+  color: rgba(var(--neutral-rgb), 0.68);
+}
+
+.debug-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}

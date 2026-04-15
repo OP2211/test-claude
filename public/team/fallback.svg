@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Team logo fallback">
+  <rect width="120" height="120" rx="16" fill="#f4f6fa"/>
+  <circle cx="60" cy="60" r="32" fill="#d5ddea"/>
+  <path d="M60 35l10 8-4 12H54l-4-12 10-8zm-19 24h12l4 12-10 8-10-8 4-12zm38 0h-12l-4 12 10 8 10-8-4-12zm-24 20h10v11H55z" fill="#8c9bb2"/>
+</svg>

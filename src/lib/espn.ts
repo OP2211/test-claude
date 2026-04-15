@@ -2,6 +2,21 @@ import type { Match, MatchEvent, Team } from './types';
 
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
 
+function toLocalTeamLogo(logoUrl: string | undefined, teamId: string): string {
+  const fallback = `/team/${teamId}.png`;
+  if (!logoUrl) return fallback;
+  const match = logoUrl.match(/\/i\/teamlogos\/soccer\/500\/(\d+)\.png(?:\?.*)?$/);
+  if (match?.[1]) return `/team/${match[1]}.png`;
+  return fallback;
+}
+
+function toLocalTeamLogoFromUrl(logoUrl: string | undefined): string {
+  if (!logoUrl) return '';
+  const match = logoUrl.match(/\/i\/teamlogos\/soccer\/500\/(\d+)\.png(?:\?.*)?$/);
+  if (match?.[1]) return `/team/${match[1]}.png`;
+  return '';
+}
+
 export interface LeagueConfig {
   slug: string;
   name: string;
@@ -116,7 +131,7 @@ function espnTeamToTeam(t: EspnTeam): Team {
     shortName: t.shortDisplayName || t.abbreviation,
     badge: teamBadge(t.color),
     color: `#${t.color}`,
-    logo: t.logo,
+    logo: toLocalTeamLogo(t.logo, t.id),
   };
 }
 
@@ -551,7 +566,7 @@ export async function fetchStandings(leagueSlug: string = 'eng.1'): Promise<Stan
       teamName: e.team.displayName,
       teamShortName: e.team.shortDisplayName,
       teamAbbr: e.team.abbreviation,
-      logo: e.team.logos?.[0]?.href || `https://a.espncdn.com/i/teamlogos/soccer/500/${e.team.id}.png`,
+      logo: toLocalTeamLogo(e.team.logos?.[0]?.href, e.team.id),
       played: statVal(e.stats, 'gamesPlayed'),
       wins: statVal(e.stats, 'wins'),
       draws: statVal(e.stats, 'ties'),
@@ -607,7 +622,7 @@ export async function fetchTopScorers(leagueSlug: string = 'eng.1'): Promise<Top
         playerId: l.athlete.id,
         teamName: l.athlete.team.displayName,
         teamAbbr: l.athlete.team.abbreviation,
-        teamLogo: l.athlete.team.logos?.[0]?.href || '',
+        teamLogo: toLocalTeamLogoFromUrl(l.athlete.team.logos?.[0]?.href),
         goals: l.value,
         assists: stats.find(s => s.name === 'goalAssists')?.value ?? 0,
         appearances: stats.find(s => s.name === 'appearances')?.value ?? 0,
@@ -646,7 +661,7 @@ export async function fetchTopAssists(leagueSlug: string = 'eng.1'): Promise<Top
         playerId: l.athlete.id,
         teamName: l.athlete.team.displayName,
         teamAbbr: l.athlete.team.abbreviation,
-        teamLogo: l.athlete.team.logos?.[0]?.href || '',
+        teamLogo: toLocalTeamLogoFromUrl(l.athlete.team.logos?.[0]?.href),
         goals: stats.find(s => s.name === 'totalGoals')?.value ?? 0,
         assists: l.value,
         appearances: stats.find(s => s.name === 'appearances')?.value ?? 0,
@@ -703,7 +718,7 @@ export async function fetchTopContributors(leagueSlug: string = 'eng.1'): Promis
             playerId: id,
             teamName: l.athlete.team.displayName,
             teamAbbr: l.athlete.team.abbreviation,
-            teamLogo: l.athlete.team.logos?.[0]?.href || '',
+            teamLogo: toLocalTeamLogoFromUrl(l.athlete.team.logos?.[0]?.href),
             goals,
             assists,
             contributions: goals + assists,
@@ -791,7 +806,7 @@ export async function fetchTeamNextMatch(espnTeamId: string, leagueSlug: string 
     if (!them) return null;
     return {
       opponent: them.team?.displayName || them.team?.shortDisplayName || '?',
-      opponentLogo: them.team?.logos?.[0]?.href || `https://a.espncdn.com/i/teamlogos/soccer/500/${them.id}.png`,
+      opponentLogo: toLocalTeamLogo(them.team?.logos?.[0]?.href, them.id),
       date: evt.date || comp.date || '',
       venue: comp.venue?.fullName || '',
       isHome: us?.homeAway === 'home',

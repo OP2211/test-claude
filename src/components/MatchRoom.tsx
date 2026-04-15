@@ -6,6 +6,7 @@ import type { Match, User, Message, VoteTally, VoteChoice, VoteVoter, VoteHistor
 import ChatPanel from './ChatPanel';
 import TeamSheet from './TeamSheet';
 import VotePicker from './VotePicker';
+import TeamLogoImage from './TeamLogoImage';
 import './MatchRoom.css';
 
 interface TabDef {
@@ -578,7 +579,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
           {/* Home team column */}
           <div className="mr-strip-team">
             {match.homeTeam.logo ? (
-              <img src={match.homeTeam.logo} alt="" className="mr-strip-logo" />
+              <TeamLogoImage src={match.homeTeam.logo} alt="" className="mr-strip-logo" />
             ) : (
               <span className="mr-strip-badge">{match.homeTeam.badge}</span>
             )}
@@ -612,7 +613,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
           {/* Away team column */}
           <div className="mr-strip-team mr-strip-team--away">
             {match.awayTeam.logo ? (
-              <img src={match.awayTeam.logo} alt="" className="mr-strip-logo" />
+              <TeamLogoImage src={match.awayTeam.logo} alt="" className="mr-strip-logo" />
             ) : (
               <span className="mr-strip-badge">{match.awayTeam.badge}</span>
             )}

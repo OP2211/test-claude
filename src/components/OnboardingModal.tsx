@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { TeamId } from '@/lib/types';
 import { TEAMS } from '@/lib/teams';
 import Logo from './Logo';
+import TeamLogoImage from './TeamLogoImage';
 import './OnboardingModal.css';
 
 interface OnboardingData {
@@ -202,7 +203,7 @@ export default function OnboardingModal({ onComplete, onClose }: OnboardingModal
                   style={{ '--team-color': t.color } as React.CSSProperties}
                   onClick={() => { setSelectedTeam(t.id); setError(''); }}
                 >
-                  <img src={t.logo} alt="" className="ob-team-logo" />
+                  <TeamLogoImage src={t.logo} alt="" className="ob-team-logo" />
                   <span className="ob-team-name">{t.name}</span>
                   {selectedTeam === t.id && (
                     <span className="ob-team-check">

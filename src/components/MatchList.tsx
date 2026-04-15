@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { Match, User } from '@/lib/types';
 import Logo from './Logo';
+import TeamLogoImage from './TeamLogoImage';
 import './MatchList.css';
 
 interface MatchStatus {
@@ -148,7 +149,7 @@ function renderResultCard(match: Match, index: number) {
       <div className="ml-teams">
         <div className="ml-team">
           {match.homeTeam.logo ? (
-            <img src={match.homeTeam.logo} alt="" className="ml-team-logo" aria-hidden="true" />
+            <TeamLogoImage src={match.homeTeam.logo} alt="" className="ml-team-logo" aria-hidden="true" />
           ) : (
             <span className="ml-badge" aria-hidden="true">{match.homeTeam.badge}</span>
           )}
@@ -171,7 +172,7 @@ function renderResultCard(match: Match, index: number) {
             <span className="ml-team-short">{match.awayTeam.shortName}</span>
           </div>
           {match.awayTeam.logo ? (
-            <img src={match.awayTeam.logo} alt="" className="ml-team-logo" aria-hidden="true" />
+            <TeamLogoImage src={match.awayTeam.logo} alt="" className="ml-team-logo" aria-hidden="true" />
           ) : (
             <span className="ml-badge" aria-hidden="true">{match.awayTeam.badge}</span>
           )}
@@ -277,7 +278,7 @@ export default function MatchList({ matches, user, onSelectMatch, isLoading }: M
         <div className="ml-teams">
           <div className="ml-team">
             {match.homeTeam.logo ? (
-              <img src={match.homeTeam.logo} alt="" className="ml-team-logo" aria-hidden="true" />
+              <TeamLogoImage src={match.homeTeam.logo} alt="" className="ml-team-logo" aria-hidden="true" />
             ) : (
               <span className="ml-badge" aria-hidden="true">{match.homeTeam.badge}</span>
             )}
@@ -329,7 +330,7 @@ export default function MatchList({ matches, user, onSelectMatch, isLoading }: M
               )}
             </div>
             {match.awayTeam.logo ? (
-              <img src={match.awayTeam.logo} alt="" className="ml-team-logo" aria-hidden="true" />
+              <TeamLogoImage src={match.awayTeam.logo} alt="" className="ml-team-logo" aria-hidden="true" />
             ) : (
               <span className="ml-badge" aria-hidden="true">{match.awayTeam.badge}</span>
             )}
