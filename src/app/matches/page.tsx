@@ -200,7 +200,7 @@ function MatchesPageContent() {
           username: session.user.name ?? 'Fan',
           fanTeamId: null,
           email: session.user.email ?? undefined,
-          image: session.user.image ?? undefined,
+          image: undefined,
         }
       : null
   );

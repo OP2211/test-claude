@@ -14,6 +14,7 @@ import './profile.css';
 
 interface ProfileData {
   full_name: string | null;
+  image: string | null;
   username: string;
   phone: string;
   fan_team_id: string;
@@ -106,7 +107,7 @@ export default function Profile() {
   const name = profile?.full_name?.trim() || session.user?.name || 'Fan';
   const username = profile?.username ?? '—';
   const email = session.user?.email ?? '—';
-  const image = session.user?.image ?? '';
+  const image = profile?.image ?? '';
   const selectedTeam = profile?.fan_team_id
     ? (TEAMS.find((team) => team.id === profile.fan_team_id) ?? null)
     : null;
@@ -116,7 +117,7 @@ export default function Profile() {
       <AppHeader
         variant="profile"
         profileMenu={{
-          image: session.user?.image ?? null,
+          image: profile?.image ?? null,
           name: session.user?.name ?? 'Fan',
           onSignOut: () => {
             localStorage.removeItem('ffc_user');

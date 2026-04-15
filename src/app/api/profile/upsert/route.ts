@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { isUsernameAvailable, upsertProfile } from '@/lib/profile-repo';
+import { persistProfileImageLocally } from '@/lib/profile-image';
 import { validateProfileInput } from '@/lib/profile-validation';
 
 export async function POST(request: NextRequest) {
@@ -24,11 +25,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Username already taken' }, { status: 409 });
     }
 
+    let profileImage: string | null = session.user?.image ?? null;
+    try {
+      profileImage = await persistProfileImageLocally(googleSub, session.user?.image);
+    } catch {
+      // Don't block onboarding if avatar download fails.
+      profileImage = session.user?.image ?? null;
+    }
+
     const profile = await upsertProfile({
       googleSub,
       fullName: session.user?.name ?? null,
       email: session.user?.email ?? null,
-      image: session.user?.image ?? null,
+      image: profileImage,
       username: validation.value.username,
       phone: validation.value.phone,
       fanTeamId: validation.value.fanTeamId,

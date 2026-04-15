@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { persistProfileImageLocally } from '@/lib/profile-image';
 import type { TeamId } from '@/lib/types';
 
 export interface UserProfile {
@@ -43,7 +44,7 @@ export async function getProfileByGoogleSub(googleSub: string): Promise<UserProf
     .maybeSingle<UserProfile>();
 
   if (!withFullName.error) {
-    return withFullName.data;
+    return maybePersistLocalAvatar(withFullName.data);
   }
 
   if (!isMissingColumnError(withFullName.error.message, 'full_name')) {
@@ -61,7 +62,8 @@ export async function getProfileByGoogleSub(googleSub: string): Promise<UserProf
   }
 
   if (!legacy.data) return null;
-  return { ...legacy.data, full_name: null };
+  const hydrated = await maybePersistLocalAvatar({ ...legacy.data, full_name: null });
+  return hydrated;
 }
 
 export async function isUsernameAvailable(username: string, googleSub?: string): Promise<boolean> {
@@ -138,6 +140,24 @@ export async function upsertProfile(input: UpsertProfileInput): Promise<UserProf
 
 function isMissingColumnError(message: string, column: string): boolean {
   return message.toLowerCase().includes(`column "${column}" does not exist`);
+}
+
+async function maybePersistLocalAvatar(profile: UserProfile | null): Promise<UserProfile | null> {
+  if (!profile?.image || profile.image.startsWith('/')) {
+    return profile;
+  }
+
+  try {
+    const localImage = await persistProfileImageLocally(profile.google_sub, profile.image);
+    if (!localImage || localImage === profile.image) {
+      return profile;
+    }
+
+    await supabase.from('profiles').update({ image: localImage }).eq('google_sub', profile.google_sub);
+    return { ...profile, image: localImage };
+  } catch {
+    return profile;
+  }
 }
 
 export async function getSupportersByTeamId(teamId: TeamId): Promise<PublicProfile[]> {

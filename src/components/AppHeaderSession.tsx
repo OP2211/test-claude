@@ -18,7 +18,7 @@ export default function AppHeaderSession({ logoHref = '/' }: AppHeaderSessionPro
         username: session.user.name ?? 'Fan',
         fanTeamId: null,
         email: session.user.email ?? undefined,
-        image: session.user.image ?? undefined,
+        image: undefined,
         googleSub: session.user.googleSub ?? undefined,
       }
     : null;
