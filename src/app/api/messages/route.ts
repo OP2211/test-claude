@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getMessages } from '@/lib/store';
 import type { TabId } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const matchId = request.nextUrl.searchParams.get('matchId');
   const tab = request.nextUrl.searchParams.get('tab') as TabId | null;

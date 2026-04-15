@@ -327,11 +327,11 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     async function init() {
       try {
         const [pRes, tRes, bRes, vRes, mRes] = await Promise.all([
-          fetch(`/api/messages?matchId=${match.id}&tab=predictions`),
-          fetch(`/api/messages?matchId=${match.id}&tab=teamsheet`),
-          fetch(`/api/messages?matchId=${match.id}&tab=banter`),
-          fetch(`/api/vote?matchId=${match.id}`),
-          fetch(`/api/match?id=${match.id}`),
+          fetch(`/api/messages?matchId=${match.id}&tab=predictions`, { cache: 'no-store' }),
+          fetch(`/api/messages?matchId=${match.id}&tab=teamsheet`, { cache: 'no-store' }),
+          fetch(`/api/messages?matchId=${match.id}&tab=banter`, { cache: 'no-store' }),
+          fetch(`/api/vote?matchId=${match.id}`, { cache: 'no-store' }),
+          fetch(`/api/match?id=${match.id}`, { cache: 'no-store' }),
         ]);
         const [predictions, teamsheet, banter, votePayload]: [
           Message[],
@@ -373,7 +373,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     const refreshMs = (match.status === 'live' || nearKickoff) ? 15_000 : 60_000;
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/match?id=${match.id}`);
+        const res = await fetch(`/api/match?id=${match.id}`, { cache: 'no-store' });
         if (res.ok) {
           const enriched: Match = await res.json();
           setMatch(enriched);
