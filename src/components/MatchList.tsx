@@ -27,6 +27,7 @@ function isChatOpen(match: Match): boolean {
 }
 
 function getMatchStatus(match: Match): MatchStatus {
+  if (match.isDemo) return { label: 'DEMO', type: 'open' };
   const now = Date.now();
   const kickoff = new Date(match.kickoff).getTime();
   const minsToKickoff = (kickoff - now) / 60_000;
@@ -246,7 +247,8 @@ export default function MatchList({
 }: MatchListProps) {
   const [fetchError, setFetchError] = useState<boolean>(false);
   const isMatchOpen = (match: Match) => forceOpenAll || isChatOpen(match);
-  const openMatches = matches.filter(isMatchOpen);
+  const demoOpenMatches = matches.filter((m) => m.isDemo && isMatchOpen(m));
+  const openMatches = matches.filter((m) => !m.isDemo && isMatchOpen(m));
   const closedMatches = matches.filter(m => !isMatchOpen(m));
   const upcomingGroups = groupByDate(closedMatches);
 
@@ -390,6 +392,22 @@ export default function MatchList({
         </div>
       )}
 
+      {/* Demo match */}
+      {demoOpenMatches.length > 0 && (
+        <section className="ml-section" aria-label="Demo match">
+          <div className="ml-section-header">
+            <div className="ml-section-left">
+              <span className="ml-section-dot active" />
+              <h2 className="ml-section-title">Demo Match</h2>
+            </div>
+            <span className="ml-section-count">{demoOpenMatches.length} match{demoOpenMatches.length !== 1 ? 'es' : ''}</span>
+          </div>
+          <div className="ml-demo-center">
+            {demoOpenMatches.map((m, i) => renderCard(m, i))}
+          </div>
+        </section>
+      )}
+
       {/* Live & Open */}
       {openMatches.length > 0 && (
         <section className="ml-section" aria-label="Live and open matches">
@@ -407,7 +425,7 @@ export default function MatchList({
       )}
 
       {/* Divider */}
-      {openMatches.length > 0 && closedMatches.length > 0 && (
+      {(demoOpenMatches.length > 0 || openMatches.length > 0) && closedMatches.length > 0 && (
         <div className="ml-divider" />
       )}
 

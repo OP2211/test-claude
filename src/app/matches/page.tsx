@@ -203,6 +203,7 @@ function MatchesPageContent() {
   const forceOpenMatchesForDebug =
     searchParams.get('debugOpenAll') === '1' ||
     searchParams.get('debugOpenAll') === 'true';
+  const demoParam = searchParams.get('demo');
   const headerUser: User | null = user ?? (
     session?.user
       ? {
@@ -256,7 +257,8 @@ function MatchesPageContent() {
 
   const fetchMatches = useCallback(async () => {
     try {
-      const res = await fetch('/api/matches');
+      const apiUrl = demoParam ? `/api/matches?demo=${encodeURIComponent(demoParam)}` : '/api/matches';
+      const res = await fetch(apiUrl);
       const data: Match[] = await res.json();
       setMatches(data);
     } catch (err) {
@@ -264,7 +266,7 @@ function MatchesPageContent() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [demoParam]);
 
   useEffect(() => {
     fetchMatches();

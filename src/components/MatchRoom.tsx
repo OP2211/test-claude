@@ -336,7 +336,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     setTimeout(() => setNotifications(n => n.filter(x => x.id !== id)), 4200);
   }, []);
 
-  // Fetch initial data
+  // Fetch initial room data when entering a match.
   useEffect(() => {
     async function init() {
       try {
@@ -390,7 +390,10 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     }
     init();
 
-    // Re-fetch match data periodically so live scores, clock, and lineups stay fresh.
+  }, [match.id]);
+
+  // Re-fetch match data periodically so live scores, clock, and lineups stay fresh.
+  useEffect(() => {
     // Always poll while in the room — 15s for live/near-kickoff, 60s otherwise.
     const kickoffMs = new Date(match.kickoff).getTime();
     const nearKickoff = Math.abs(Date.now() - kickoffMs) < 3 * 3600_000; // within 3hrs of kickoff

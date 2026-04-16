@@ -51,6 +51,7 @@ export interface Match {
     awayTeamId: string;
     leagueSlug: string;
   };
+  isDemo?: boolean;
 }
 
 export type TabId = 'predictions' | 'teamsheet' | 'banter';

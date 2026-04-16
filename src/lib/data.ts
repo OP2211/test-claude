@@ -2,16 +2,16 @@ import type { Team, Match } from './types';
 import { fetchAllMatches, fetchMatchLineups, fetchMatchEvents, fetchTeamRoster, extractEspnId } from './espn';
 
 const TEAMS: Record<string, Team> = {
-  'manchester-united': { name: 'Manchester United', shortName: 'MAN UTD', badge: '\u{1F534}', color: '#DA020E' },
-  'liverpool':         { name: 'Liverpool',         shortName: 'LIV',     badge: '\u{1F534}', color: '#C8102E' },
-  'arsenal':           { name: 'Arsenal',           shortName: 'ARS',     badge: '\u{1F534}', color: '#EF0107' },
-  'chelsea':           { name: 'Chelsea',           shortName: 'CHE',     badge: '\u{1F535}', color: '#034694' },
-  'manchester-city':   { name: 'Manchester City',   shortName: 'MCI',     badge: '\u{1F535}', color: '#6CABDD' },
-  'tottenham':         { name: 'Tottenham',         shortName: 'TOT',     badge: '\u26AA', color: '#132257' },
-  'barcelona':         { name: 'Barcelona',         shortName: 'BAR',     badge: '\u{1F535}\u{1F534}', color: '#A50044' },
-  'real-madrid':       { name: 'Real Madrid',       shortName: 'RMA',     badge: '\u26AA', color: '#FEBE10' },
-  'bayern-munich':     { name: 'Bayern Munich',     shortName: 'BAY',     badge: '\u{1F534}', color: '#DC052D' },
-  'juventus':          { name: 'Juventus',          shortName: 'JUV',     badge: '\u26AB', color: '#000000' },
+  'manchester-united': { name: 'Manchester United', shortName: 'MAN UTD', badge: '\u{1F534}', color: '#DA020E', logo: '/team/360.png' },
+  'liverpool':         { name: 'Liverpool',         shortName: 'LIV',     badge: '\u{1F534}', color: '#C8102E', logo: '/team/364.png' },
+  'arsenal':           { name: 'Arsenal',           shortName: 'ARS',     badge: '\u{1F534}', color: '#EF0107', logo: '/team/359.png' },
+  'chelsea':           { name: 'Chelsea',           shortName: 'CHE',     badge: '\u{1F535}', color: '#034694', logo: '/team/363.png' },
+  'manchester-city':   { name: 'Manchester City',   shortName: 'MCI',     badge: '\u{1F535}', color: '#6CABDD', logo: '/team/382.png' },
+  'tottenham':         { name: 'Tottenham',         shortName: 'TOT',     badge: '\u26AA', color: '#132257', logo: '/team/367.png' },
+  'barcelona':         { name: 'Barcelona',         shortName: 'BAR',     badge: '\u{1F535}\u{1F534}', color: '#A50044', logo: '/team/83.png' },
+  'real-madrid':       { name: 'Real Madrid',       shortName: 'RMA',     badge: '\u26AA', color: '#FEBE10', logo: '/team/86.png' },
+  'bayern-munich':     { name: 'Bayern Munich',     shortName: 'BAY',     badge: '\u{1F534}', color: '#DC052D', logo: '/team/132.png' },
+  'juventus':          { name: 'Juventus',          shortName: 'JUV',     badge: '\u26AB', color: '#000000', logo: '/team/111.png' },
 };
 
 const SQUAD_PLAYERS: Record<string, string[]> = {
@@ -26,6 +26,9 @@ const SQUAD_PLAYERS: Record<string, string[]> = {
   'bayern-munich':     ['Neuer', 'Mazraoui', 'Upamecano', 'Kim', 'Davies', 'Kimmich', 'Goretzka', 'M\u00FCller', 'Gnabry', 'Kane', 'San\u00E9'],
   'juventus':          ['Szczesny', 'Danilo', 'Bremer', 'Gatti', 'Cambiaso', 'Fagioli', 'Locatelli', 'Rabiot', 'Chiesa', 'Vlahovi\u0107', 'Kostic'],
 };
+
+const DEMO_MATCH_ID = 'demo-live-match';
+const DEMO_KICKOFF_ISO = new Date(Date.now() - 15 * 60_000).toISOString();
 
 /** Hardcoded fallback matches used when ESPN is unavailable. */
 function buildFallbackMatches(): Match[] {
@@ -55,16 +58,54 @@ function buildFallbackMatches(): Match[] {
   }));
 }
 
+function buildDemoLiveMatch(sourceMatches: Match[]): Match {
+  const seed = sourceMatches.find((m) => m.status === 'live') ?? sourceMatches[0] ?? buildFallbackMatches()[0];
+  const demoHomeTeamId = 'manchester-city';
+  const demoAwayTeamId = 'arsenal';
+  return {
+    ...seed,
+    id: DEMO_MATCH_ID,
+    // Keep kickoff stable so client effects do not retrigger on every poll.
+    kickoff: DEMO_KICKOFF_ISO,
+    status: 'live',
+    competition: `${seed.competition} (Demo)`,
+    venue: `${seed.venue} - Demo Room`,
+    clock: seed.clock || "67'",
+    homeScore: seed.homeScore ?? 2,
+    awayScore: seed.awayScore ?? 1,
+    homeTeamId: demoHomeTeamId,
+    awayTeamId: demoAwayTeamId,
+    homeTeam: TEAMS[demoHomeTeamId],
+    awayTeam: TEAMS[demoAwayTeamId],
+    teamSheet: {
+      home: {
+        formation: '4-3-3',
+        players: [...(SQUAD_PLAYERS[demoHomeTeamId] || [])],
+        confirmed: true,
+      },
+      away: {
+        formation: '4-3-3',
+        players: [...(SQUAD_PLAYERS[demoAwayTeamId] || [])],
+        confirmed: true,
+      },
+    },
+    isDemo: true,
+    events: seed.events ? [...seed.events] : undefined,
+  };
+}
+
 // ---------- Simple in-memory cache ----------
 
 let _cache: { matches: Match[]; fetchedAt: number } | null = null;
 const CACHE_TTL = 15_000; // 15 seconds — keeps live scores fresh
 
 /** Fetch matches from ESPN, falling back to hardcoded data on failure. */
-export async function getMatches(): Promise<Match[]> {
+export async function getMatches(options?: { includeDemo?: boolean }): Promise<Match[]> {
+  const includeDemo = options?.includeDemo ?? false;
   const now = Date.now();
   if (_cache && now - _cache.fetchedAt < CACHE_TTL) {
-    return _cache.matches;
+    if (!includeDemo) return _cache.matches;
+    return [buildDemoLiveMatch(_cache.matches), ..._cache.matches];
   }
 
   try {
@@ -101,7 +142,8 @@ export async function getMatches(): Promise<Match[]> {
       }
 
       _cache = { matches: espnMatches, fetchedAt: now };
-      return espnMatches;
+      if (!includeDemo) return espnMatches;
+      return [buildDemoLiveMatch(espnMatches), ...espnMatches];
     }
   } catch (err) {
     console.error('ESPN fetch failed, using fallback:', err);
@@ -110,7 +152,8 @@ export async function getMatches(): Promise<Match[]> {
   // Fallback to hardcoded
   const fallback = buildFallbackMatches();
   _cache = { matches: fallback, fetchedAt: now };
-  return fallback;
+  if (!includeDemo) return fallback;
+  return [buildDemoLiveMatch(fallback), ...fallback];
 }
 
 // Lineup cache: matchId -> { home, away } (short TTL for live matches, longer for finished)
@@ -195,6 +238,9 @@ async function ensureRoster(match: Match): Promise<void> {
 
 /** Get a single match by ID, fetching rosters on demand if needed. */
 export async function getMatch(id: string): Promise<Match | null> {
+  if (id === DEMO_MATCH_ID) {
+    return buildDemoLiveMatch(await getMatches());
+  }
   const all = await getMatches();
   const match = all.find(m => m.id === id) || null;
   if (match) {

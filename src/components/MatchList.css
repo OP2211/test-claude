@@ -44,6 +44,8 @@
 
 /* ── Grid ────────────────────────────────────────────────────── */
 .ml-grid { display: flex; flex-direction: column; gap: 12px; }
+.ml-demo-center { display: flex; justify-content: center; }
+.ml-demo-center .ml-card { max-width: 520px; }
 
 /* ── Card ────────────────────────────────────────────────────── */
 .ml-card {
