@@ -42,6 +42,7 @@ function mapProfileToUser(profile: NonNullable<ProfileResponse['profile']>): Use
     userId: profile.google_sub,
     googleSub: profile.google_sub,
     username: profile.full_name?.trim() || profile.username,
+    profileUsername: profile.username,
     email: profile.email ?? undefined,
     image: profile.image ?? undefined,
     fanTeamId: profile.fan_team_id,

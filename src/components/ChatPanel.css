@@ -207,6 +207,14 @@
   line-height: 1.45; color: var(--text-primary);
   word-break: break-word;
 }
+.cp-sys-userlink {
+  color: var(--accent-blue);
+  font-weight: 800;
+  text-decoration: none;
+}
+.cp-sys-userlink:hover {
+  text-decoration: underline;
+}
 .cp-bubble-own {
   background: color-mix(in srgb, var(--accent-yellow) 16%, transparent);
   border-color: color-mix(in srgb, var(--accent-yellow) 24%, transparent);

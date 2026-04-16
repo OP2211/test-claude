@@ -373,9 +373,9 @@
   }
 }
 @media (min-width: 768px) {
-  .mr-menu {
-    display: none;
-  }
+  /* Desktop: keep share button, hide drawer trigger (tabs replace drawer) */
+  .mr-drawer-trigger { display: none; }
+  .mr-share { display: flex; }
   .mr-desktop-tabs {
     display: block;
     flex-shrink: 0;

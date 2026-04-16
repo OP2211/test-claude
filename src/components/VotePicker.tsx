@@ -36,6 +36,7 @@ export interface VotePickerProps {
   voteHistory: VoteHistoryPoint[];
   userVote: VoteChoice | null;
   onVote: (vote: VoteChoice) => void;
+  onScoreLocked?: (homeGoals: string, awayGoals: string) => void;
 }
 
 interface VoteOption {
@@ -64,7 +65,13 @@ function UsersGlyph() {
 }
 
 /** Score prediction: two single-digit inputs with a dash between them. */
-function ScorePrediction({ match }: { match: Match }) {
+function ScorePrediction({
+  match,
+  onScoreLocked,
+}: {
+  match: Match;
+  onScoreLocked?: (homeGoals: string, awayGoals: string) => void;
+}) {
   const scoreKey = `ffc_score_${match.id}`;
   const [homeGoals, setHomeGoals] = useState<string>(() => {
     if (typeof window === 'undefined') return '';
@@ -101,6 +108,7 @@ function ScorePrediction({ match }: { match: Match }) {
     try {
       localStorage.setItem(scoreKey, JSON.stringify({ home: homeGoals, away: awayGoals, locked: true }));
     } catch {}
+    onScoreLocked?.(homeGoals, awayGoals);
   };
 
   return (
@@ -189,7 +197,15 @@ function ScorePrediction({ match }: { match: Match }) {
   );
 }
 
-export default function VotePicker({ match, votes, votersByChoice, voteHistory, userVote, onVote }: VotePickerProps) {
+export default function VotePicker({
+  match,
+  votes,
+  votersByChoice,
+  voteHistory,
+  userVote,
+  onVote,
+  onScoreLocked,
+}: VotePickerProps) {
   const total = votes.home + votes.draw + votes.away;
   const pct = (n: number): number => (total === 0 ? 0 : Math.round((n / total) * 100));
 
@@ -399,7 +415,7 @@ export default function VotePicker({ match, votes, votersByChoice, voteHistory, 
         {total === 0 && !userVote && <p className="vp-nudge">Cast your prediction!</p>}
       </div>
 
-      <ScorePrediction match={match} />
+      <ScorePrediction match={match} onScoreLocked={onScoreLocked} />
     </div>
   );
 }

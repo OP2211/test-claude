@@ -110,6 +110,7 @@ export interface Message {
 export interface User {
   userId: string;
   username: string;
+  profileUsername?: string;
   fanTeamId: TeamId | null;
   email?: string;
   image?: string;
