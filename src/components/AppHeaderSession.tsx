@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import AppHeader from '@/components/AppHeader';
-import { openGoogleSignInPopup } from '@/lib/google-signin-popup';
+import { startGoogleSignInRedirect } from '@/lib/google-signin';
 import type { User } from '@/lib/types';
 
 interface AppHeaderSessionProps {
@@ -110,7 +110,7 @@ export default function AppHeaderSession({ logoHref = '/' }: AppHeaderSessionPro
         },
         showGoogleSignIn: status === 'unauthenticated',
         onSignInWithGoogle: () => {
-          void openGoogleSignInPopup(() => update());
+          void startGoogleSignInRedirect();
         },
       }}
     />

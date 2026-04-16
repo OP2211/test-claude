@@ -9,10 +9,9 @@ import { LOGOUT_CONFIRM_VARIANTS, pickRandomLogoutVariant } from '@/lib/logout-v
 import type { User } from '@/lib/types';
 import '@/app/page.css';
 
-type ThemePreference = 'system' | 'light' | 'dark';
+type ThemePreference = 'light' | 'dark';
 
 const THEME_LABELS: Record<ThemePreference, string> = {
-  system: 'System',
   light: 'Light',
   dark: 'Dark',
 };
@@ -45,10 +44,10 @@ interface AppHeaderProps {
   profileMenu?: AppHeaderProfileMenuProps;
 }
 
-function applyThemePreference(pref: ThemePreference) {
+function applyThemePreference(pref: ThemePreference | null) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  if (pref === 'system') {
+  if (!pref) {
     root.removeAttribute('data-theme');
     return;
   }
@@ -196,25 +195,36 @@ export default function AppHeader({
   profileMenu,
 }: AppHeaderProps) {
   const logoLabel = onLogoClick ? 'Back to matches' : 'FanGround home';
-  const [themePref, setThemePref] = useState<ThemePreference>('system');
+  const [themePref, setThemePref] = useState<ThemePreference | null>(null);
+  const [systemTheme, setSystemTheme] = useState<ThemePreference>('light');
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const applySystemTheme = () => setSystemTheme(media.matches ? 'dark' : 'light');
+    applySystemTheme();
+    media.addEventListener('change', applySystemTheme);
+
     const saved = localStorage.getItem('fg-theme-preference') as ThemePreference | null;
-    const pref: ThemePreference = saved === 'light' || saved === 'dark' || saved === 'system' ? saved : 'system';
+    const pref: ThemePreference | null = saved === 'light' || saved === 'dark' ? saved : null;
     setThemePref(pref);
     applyThemePreference(pref);
+
+    return () => media.removeEventListener('change', applySystemTheme);
   }, []);
 
-  const cycleTheme = useCallback(() => {
+  const toggleTheme = useCallback(() => {
     setThemePref((current) => {
-      const next: ThemePreference = current === 'system' ? 'light' : current === 'light' ? 'dark' : 'system';
+      const activeTheme = current ?? systemTheme;
+      const next: ThemePreference = activeTheme === 'dark' ? 'light' : 'dark';
       localStorage.setItem('fg-theme-preference', next);
       applyThemePreference(next);
       return next;
     });
-  }, []);
+  }, [systemTheme]);
+
+  const effectiveTheme = themePref ?? systemTheme;
 
   return (
     <header className={`app-header ${inRoom ? 'in-room' : ''}`}>
@@ -236,25 +246,18 @@ export default function AppHeader({
             <button
               type="button"
               className="theme-toggle-btn"
-              onClick={cycleTheme}
-              aria-label={`Theme: ${THEME_LABELS[themePref]}. Click to switch theme.`}
-              title={`Theme: ${THEME_LABELS[themePref]}`}
+              onClick={toggleTheme}
+              aria-label={`Theme: ${THEME_LABELS[effectiveTheme]}. Click to switch theme.`}
+              title={`Theme: ${THEME_LABELS[effectiveTheme]}`}
             >
               <span className="theme-toggle-icon" aria-hidden>
-                {themePref === 'light' ? '☀️' : themePref === 'dark' ? '🌙' : '🖥️'}
+                {effectiveTheme === 'dark' ? '🌙' : '☀️'}
               </span>
-              <span className="theme-toggle-text">{THEME_LABELS[themePref]}</span>
             </button>
           )}
 
           {variant === 'home' && homeActions && (
             <>
-              {homeActions.installPrompt && (
-                <button className="install-btn" onClick={homeActions.onInstall} type="button">
-                  <span className="install-icon">+</span>
-                  Install
-                </button>
-              )}
               {homeActions.showGoogleSignIn && homeActions.onSignInWithGoogle && (
                 <button
                   type="button"

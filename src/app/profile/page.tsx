@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { openGoogleSignInPopup } from '@/lib/google-signin-popup';
+import { startGoogleSignInRedirect } from '@/lib/google-signin';
 import Image from 'next/image';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
@@ -156,7 +156,7 @@ export default function Profile() {
                 <button
                   type="button"
                   className="google-signin-btn google-signin-btn--wide"
-                  onClick={() => void openGoogleSignInPopup(() => updateSession())}
+                  onClick={() => void startGoogleSignInRedirect()}
                   aria-label="Sign in with Google"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>

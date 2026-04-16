@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import AppHeaderSession from '@/components/AppHeaderSession';
 import SiteFooter from '@/components/SiteFooter';
-import { openGoogleSignInPopup } from '@/lib/google-signin-popup';
+import { startGoogleSignInRedirect } from '@/lib/google-signin';
 import './debug.css';
 
 interface HealthCheckResult {
@@ -377,7 +377,7 @@ export default function DebugPage() {
               </button>
               <button
                 className="debug-btn is-accent"
-                onClick={() => void openGoogleSignInPopup(() => update())}
+                onClick={() => void startGoogleSignInRedirect()}
               >
                 Resume login
               </button>
