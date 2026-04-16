@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import type { Message, User } from '@/lib/types';
 import { TEAMS } from '@/lib/teams';
 import TeamLogoImage from './TeamLogoImage';
@@ -33,6 +34,8 @@ interface ChatPanelProps {
   fullHeight?: boolean;
   /** Denser bubbles and spacing — fits more messages on screen */
   compact?: boolean;
+  /** When true, hide the input composer (read-only feed). */
+  readOnly?: boolean;
 }
 
 export default function ChatPanel({
@@ -46,6 +49,7 @@ export default function ChatPanel({
   placeholder,
   fullHeight,
   compact,
+  readOnly = false,
 }: ChatPanelProps) {
   const [input, setInput] = useState<string>('');
   const [showEmojiFor, setShowEmojiFor] = useState<string | null>(null);
@@ -88,6 +92,19 @@ export default function ChatPanel({
     const d = new Date(ts);
     if (Number.isNaN(d.getTime())) return '--:--';
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+
+  const parseFangroundUserMention = (
+    text: string
+  ): { profileSlug: string; displayName: string; rest: string } | null => {
+    // Format: [[user|<profileSlug>|<displayName>]] <rest>
+    const m = text.match(/^\[\[user\|([^|]+)\|([^\]]+)\]\]\s*(.*)$/);
+    if (!m) return null;
+    const profileSlug = (m[1] ?? '').trim();
+    const displayName = (m[2] ?? '').trim();
+    const rest = m[3] ?? '';
+    if (!profileSlug || !displayName) return null;
+    return { profileSlug, displayName, rest };
   };
 
   return (
@@ -155,7 +172,18 @@ export default function ChatPanel({
 
                 <div className="cp-bubble-wrap">
                   <div className={`cp-bubble ${isOwn ? 'cp-bubble-own' : ''}`}>
-                    {msg.text}
+                    {msg.userId === 'fanground' ? (() => {
+                      const parsed = parseFangroundUserMention(msg.text);
+                      if (!parsed) return msg.text;
+                      return (
+                        <>
+                          <Link className="cp-sys-userlink" href={`/profile/${encodeURIComponent(parsed.profileSlug)}`}>
+                            {parsed.displayName}
+                          </Link>{' '}
+                          <span>{parsed.rest}</span>
+                        </>
+                      );
+                    })() : msg.text}
                   </div>
                   {msg.moderation?.moderated && (
                     <span
@@ -216,39 +244,41 @@ export default function ChatPanel({
       </div>
 
       {/* Input */}
-      <div className="cp-input-bar">
-        <div className="cp-input-wrap">
-          <div className="cp-input-avatar" style={{ background: teamColor(user.fanTeamId) }}>
-            {user.image ? (
-              // eslint-disable-next-line @next/next/no-img-element -- OAuth avatars use many domains
-              <img src={user.image} alt="" width={compact ? 22 : 26} height={compact ? 22 : 26} />
-            ) : (
-              user.username?.[0]?.toUpperCase()
-            )}
+      {!readOnly && (
+        <div className="cp-input-bar">
+          <div className="cp-input-wrap">
+            <div className="cp-input-avatar" style={{ background: teamColor(user.fanTeamId) }}>
+              {user.image ? (
+                // eslint-disable-next-line @next/next/no-img-element -- OAuth avatars use many domains
+                <img src={user.image} alt="" width={compact ? 22 : 26} height={compact ? 22 : 26} />
+              ) : (
+                user.username?.[0]?.toUpperCase()
+              )}
+            </div>
+            <input
+              ref={inputRef}
+              className="cp-input"
+              type="text"
+              value={input}
+              maxLength={500}
+              placeholder={placeholder || 'Message...'}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+              onFocus={scrollToBottom}
+            />
+            <button
+              className={`cp-send ${input.trim() ? 'active' : ''}`}
+              onClick={handleSend}
+              disabled={!input.trim()}
+              aria-label="Send"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
           </div>
-          <input
-            ref={inputRef}
-            className="cp-input"
-            type="text"
-            value={input}
-            maxLength={500}
-            placeholder={placeholder || 'Message...'}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
-            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            onFocus={scrollToBottom}
-          />
-          <button
-            className={`cp-send ${input.trim() ? 'active' : ''}`}
-            onClick={handleSend}
-            disabled={!input.trim()}
-            aria-label="Send"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-            </svg>
-          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }

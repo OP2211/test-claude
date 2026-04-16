@@ -548,6 +548,97 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     }
   }, [match.id, activeTab, user, upsertMessage, addNotification]);
 
+  const sendPredictionSystemMessage = useCallback(async (text: string): Promise<void> => {
+    if (!text.trim()) return;
+    try {
+      const res = await fetch('/api/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          matchId: match.id,
+          tab: 'predictions',
+          userId: 'fanground',
+          username: 'FanGround',
+          fanTeamId: null,
+          image: '/logo/fanground-256.png',
+          text,
+        }),
+      });
+      if (!res.ok) {
+        console.error('System send failed', await res.text());
+        return;
+      }
+      const payload: SendMessageResponse | Message = await res.json();
+      const msg = isSendMessageResponse(payload) ? payload.message : payload;
+      upsertMessage(msg);
+    } catch (err) {
+      console.error('System send failed', err);
+    }
+  }, [match.id, upsertMessage]);
+
+  const getStoredVote = useCallback((): VoteChoice | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem(`ffc_uservote_${match.id}`);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed === 'home' || parsed === 'draw' || parsed === 'away') return parsed;
+      return null;
+    } catch {
+      return null;
+    }
+  }, [match.id]);
+
+  const getStoredScore = useCallback((): { home: string; away: string } | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem(`ffc_score_${match.id}`);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { home?: unknown; away?: unknown; locked?: unknown };
+      if (parsed.locked !== true) return null;
+      if (typeof parsed.home !== 'string' || typeof parsed.away !== 'string') return null;
+      if (!parsed.home.trim() || !parsed.away.trim()) return null;
+      return { home: parsed.home.trim(), away: parsed.away.trim() };
+    } catch {
+      return null;
+    }
+  }, [match.id]);
+
+  const maybePostCombinedPrediction = useCallback(async (opts?: {
+    vote?: VoteChoice | null;
+    score?: { home: string; away: string } | null;
+  }) => {
+    if (typeof window === 'undefined') return;
+
+    const postedKey = `ffc_prediction_posted_v2_${match.id}_${user.userId}`;
+    try {
+      if (localStorage.getItem(postedKey) === '1') return;
+    } catch {
+      // If localStorage is unavailable, still attempt once per session
+    }
+
+    const vote = opts?.vote ?? getStoredVote();
+    const score = opts?.score ?? getStoredScore();
+    if (!vote || !score) return;
+
+    const displayName = user.username?.trim() || 'Fan';
+    const profileSlug = user.profileUsername?.trim() || 'fan';
+    const winnerLine =
+      vote === 'home'
+        ? `${match.homeTeam.shortName} to win`
+        : vote === 'away'
+          ? `${match.awayTeam.shortName} to win`
+          : 'a draw';
+    const text = `[[user|${profileSlug}|${displayName}]] predicted ${winnerLine}, predicted score ${score.home}-${score.away}`;
+
+    await sendPredictionSystemMessage(text);
+    try {
+      localStorage.setItem(postedKey, '1');
+    } catch {
+      /* ignore */
+    }
+  }, [match.id, match.homeTeam.shortName, match.awayTeam.shortName, user.userId, user.username, getStoredVote, getStoredScore, sendPredictionSystemMessage]);
+
   const reactToMessage = useCallback(async (messageId: string, tab: TabId, emoji: string): Promise<void> => {
     try {
       await fetch('/api/react', {
@@ -598,10 +689,11 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
       if (!realtime?.key) {
         addNotification(formatPredictionToast(vote, match, { self: true }), 'prediction');
       }
+      void maybePostCombinedPrediction({ vote });
     } catch (err) {
       console.error('Vote failed', err);
     }
-  }, [match.id, user.userId, user.username, match, addNotification, realtime]);
+  }, [match.id, user.userId, user.username, match, addNotification, realtime, maybePostCombinedPrediction]);
 
   const copyRoomLink = useCallback(async () => {
     if (typeof window === 'undefined') return;
@@ -818,6 +910,9 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
                   voteHistory={voteHistory}
                   userVote={userVote}
                   onVote={castVote}
+                  onScoreLocked={(home, away) => {
+                    void maybePostCombinedPrediction({ score: { home, away } });
+                  }}
                 />
               )}
               <p className="mr-drawer-section-label">Chats</p>
@@ -863,6 +958,9 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
                   voteHistory={voteHistory}
                   userVote={userVote}
                   onVote={castVote}
+                  onScoreLocked={(home, away) => {
+                    void maybePostCombinedPrediction({ score: { home, away } });
+                  }}
                 />
               </aside>
               <div className="mr-predict-chat">
@@ -876,6 +974,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
                   loadingOlder={loadingOlderByTab.predictions}
                   placeholder="Your prediction…"
                   compact
+                  readOnly
                 />
               </div>
             </div>
@@ -890,6 +989,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
               loadingOlder={loadingOlderByTab.predictions}
               placeholder="Your prediction…"
               compact
+              readOnly
             />
           ))}
         {activeTab === 'teamsheet' && (
