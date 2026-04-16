@@ -20,6 +20,19 @@ function extensionFromContentType(contentType: string | null): string {
   return 'jpg';
 }
 
+function buildProfileImageObjectPath(
+  googleSub: string,
+  buffer: Buffer,
+  contentType: string | null,
+): { objectPath: string; extension: string } {
+  const fileHash = createHash('sha1').update(buffer).digest('hex').slice(0, 12);
+  const extension = extensionFromContentType(contentType);
+  return {
+    objectPath: `${PROFILE_PICTURES_FOLDER}/${googleSub}-${fileHash}.${extension}`,
+    extension,
+  };
+}
+
 export async function persistProfileImageLocally(
   googleSub: string,
   imageUrl: string | null | undefined,
@@ -51,14 +64,47 @@ export async function persistProfileImageLocally(
     throw new Error('Profile image response was empty');
   }
 
-  const fileHash = createHash('sha1').update(buffer).digest('hex').slice(0, 12);
-  const extension = extensionFromContentType(response.headers.get('content-type'));
-  const objectPath = `${PROFILE_PICTURES_FOLDER}/${googleSub}-${fileHash}.${extension}`;
+  const { objectPath, extension } = buildProfileImageObjectPath(
+    googleSub,
+    buffer,
+    response.headers.get('content-type'),
+  );
 
   const { error: uploadError } = await supabaseAdmin.storage
     .from(PROFILE_PICTURES_BUCKET)
     .upload(objectPath, buffer, {
       contentType: response.headers.get('content-type') ?? `image/${extension}`,
+      upsert: true,
+      cacheControl: '31536000',
+    });
+
+  if (uploadError) {
+    throw new Error(uploadError.message);
+  }
+
+  const { data } = supabaseAdmin.storage.from(PROFILE_PICTURES_BUCKET).getPublicUrl(objectPath);
+  return data.publicUrl;
+}
+
+export async function uploadProfileImageFile(
+  googleSub: string,
+  fileBuffer: Buffer,
+  contentType: string | null,
+): Promise<string> {
+  if (fileBuffer.length === 0) {
+    throw new Error('Profile image file is empty');
+  }
+
+  const supabaseAdmin = getSupabaseAdmin();
+  if (!supabaseAdmin) {
+    throw new Error('Supabase admin is not configured');
+  }
+
+  const { objectPath, extension } = buildProfileImageObjectPath(googleSub, fileBuffer, contentType);
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from(PROFILE_PICTURES_BUCKET)
+    .upload(objectPath, fileBuffer, {
+      contentType: contentType ?? `image/${extension}`,
       upsert: true,
       cacheControl: '31536000',
     });

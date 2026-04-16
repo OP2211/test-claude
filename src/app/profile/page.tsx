@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { openGoogleSignInPopup } from '@/lib/google-signin-popup';
 import Image from 'next/image';
@@ -22,10 +22,20 @@ interface ProfileData {
   city: string | null;
 }
 
+function getPreferredSessionAvatar(image: string | null | undefined): string | null {
+  if (!image) return null;
+  return image.includes('/storage/v1/object/public/') ? image : null;
+}
+
 export default function Profile() {
   const { data: session, status, update: updateSession } = useSession();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [profileError, setProfileError] = useState<string>('');
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarUploadMessage, setAvatarUploadMessage] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!session) return;
@@ -47,6 +57,70 @@ export default function Profile() {
     };
     void fetchProfile();
   }, [session]);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl) {
+        URL.revokeObjectURL(avatarPreviewUrl);
+      }
+    };
+  }, [avatarPreviewUrl]);
+
+  const uploadAvatar = async (file: File) => {
+    setIsUploadingAvatar(true);
+    setAvatarUploadMessage('');
+
+    try {
+      const formData = new FormData();
+      formData.set('image', file);
+      const response = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setAvatarUploadMessage(data.error ?? 'Failed to upload profile image');
+        return;
+      }
+
+      setProfile((current) => {
+        if (!current) return current;
+        return { ...current, image: data.imageUrl ?? null };
+      });
+      setAvatarUploadMessage('Profile photo updated.');
+      setSelectedImageFile(null);
+      if (avatarPreviewUrl) {
+        URL.revokeObjectURL(avatarPreviewUrl);
+        setAvatarPreviewUrl(null);
+      }
+    } catch {
+      setAvatarUploadMessage('Failed to upload profile image');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const onPickAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const onAvatarFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) return;
+
+    setSelectedImageFile(file);
+    if (avatarPreviewUrl) {
+      URL.revokeObjectURL(avatarPreviewUrl);
+    }
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreviewUrl(previewUrl);
+    void uploadAvatar(file);
+  };
+
+  const onSaveAvatarClick = () => {
+    if (!selectedImageFile) return;
+    void uploadAvatar(selectedImageFile);
+  };
 
   if (status === 'loading') {
     return (
@@ -107,7 +181,7 @@ export default function Profile() {
   const name = profile?.full_name?.trim() || session.user?.name || 'Fan';
   const username = profile?.username ?? '—';
   const email = session.user?.email ?? '—';
-  const image = profile?.image ?? '';
+  const image = avatarPreviewUrl || profile?.image || getPreferredSessionAvatar(session.user?.image) || '';
   const selectedTeam = profile?.fan_team_id
     ? (TEAMS.find((team) => team.id === profile.fan_team_id) ?? null)
     : null;
@@ -117,7 +191,7 @@ export default function Profile() {
       <AppHeader
         variant="profile"
         profileMenu={{
-          image: profile?.image ?? null,
+          image: profile?.image ?? getPreferredSessionAvatar(session.user?.image),
           name: session.user?.name ?? 'Fan',
           onSignOut: () => {
             localStorage.removeItem('ffc_user');
@@ -165,6 +239,34 @@ export default function Profile() {
                         {selectedTeam ? `${selectedTeam.name}` : ''}
                       </span>
                     </div>
+                    <div className="profile-avatar-actions">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        className="profile-avatar-input"
+                        onChange={onAvatarFileChange}
+                      />
+                      <button
+                        type="button"
+                        className="profile-avatar-btn"
+                        onClick={onPickAvatarClick}
+                        disabled={isUploadingAvatar}
+                      >
+                        {isUploadingAvatar ? 'Uploading…' : 'Change photo'}
+                      </button>
+                      <button
+                        type="button"
+                        className="profile-avatar-btn profile-avatar-btn--secondary"
+                        onClick={onSaveAvatarClick}
+                        disabled={!selectedImageFile || isUploadingAvatar}
+                      >
+                        Save photo
+                      </button>
+                    </div>
+                    {avatarUploadMessage && (
+                      <p className="profile-avatar-status">{avatarUploadMessage}</p>
+                    )}
                   </div>
                 </div>
               </div>

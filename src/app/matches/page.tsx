@@ -36,6 +36,11 @@ interface OnboardingPayload {
   city: string | null;
 }
 
+function getPreferredSessionAvatar(image: string | null | undefined): string | undefined {
+  if (!image) return undefined;
+  return image.includes('/storage/v1/object/public/') ? image : undefined;
+}
+
 function mapProfileToUser(profile: NonNullable<ProfileResponse['profile']>): User {
   return {
     userId: profile.google_sub,
@@ -188,7 +193,12 @@ function MatchesPageContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [pendingMatchId, setPendingMatchId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<PageTab>('matches');
+  const requestedTab = searchParams.get('tab');
+  const queryTab: PageTab =
+    requestedTab === 'table' || requestedTab === 'stats' || requestedTab === 'matches'
+      ? requestedTab
+      : 'matches';
+  const [activeTab, setActiveTab] = useState<PageTab>(queryTab);
   const forceOpenMatchesForDebug =
     searchParams.get('debugOpenAll') === '1' ||
     searchParams.get('debugOpenAll') === 'true';
@@ -200,7 +210,7 @@ function MatchesPageContent() {
           username: session.user.name ?? 'Fan',
           fanTeamId: null,
           email: session.user.email ?? undefined,
-          image: undefined,
+          image: getPreferredSessionAvatar(session.user.image),
         }
       : null
   );
@@ -211,6 +221,10 @@ function MatchesPageContent() {
       router.replace('/');
     }
   }, [sessionStatus, router]);
+
+  useEffect(() => {
+    setActiveTab(queryTab);
+  }, [queryTab]);
 
   const loadProfile = useCallback(async () => {
     try {
