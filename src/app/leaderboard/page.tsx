@@ -161,7 +161,7 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
                             {profile.isTeamLeader && team && (
                               <span className="leaderboard-badge leaderboard-badge--leader" aria-label={`Badge: ${team.name} Leader`}>
                                 <TeamLogoImage src={team.logo} alt="" className="leaderboard-badge-team-logo" />
-                                {team.shortName} Leader
+                                {team.name} Leader
                               </span>
                             )}
                           </div>
