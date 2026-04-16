@@ -32,7 +32,6 @@ export default function Profile() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [profileError, setProfileError] = useState<string>('');
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
-  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarUploadMessage, setAvatarUploadMessage] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -88,7 +87,6 @@ export default function Profile() {
         return { ...current, image: data.imageUrl ?? null };
       });
       setAvatarUploadMessage('Profile photo updated.');
-      setSelectedImageFile(null);
       if (avatarPreviewUrl) {
         URL.revokeObjectURL(avatarPreviewUrl);
         setAvatarPreviewUrl(null);
@@ -108,18 +106,12 @@ export default function Profile() {
     const file = event.target.files?.[0] ?? null;
     if (!file) return;
 
-    setSelectedImageFile(file);
     if (avatarPreviewUrl) {
       URL.revokeObjectURL(avatarPreviewUrl);
     }
     const previewUrl = URL.createObjectURL(file);
     setAvatarPreviewUrl(previewUrl);
     void uploadAvatar(file);
-  };
-
-  const onSaveAvatarClick = () => {
-    if (!selectedImageFile) return;
-    void uploadAvatar(selectedImageFile);
   };
 
   if (status === 'loading') {
@@ -254,14 +246,6 @@ export default function Profile() {
                         disabled={isUploadingAvatar}
                       >
                         {isUploadingAvatar ? 'Uploading…' : 'Change photo'}
-                      </button>
-                      <button
-                        type="button"
-                        className="profile-avatar-btn profile-avatar-btn--secondary"
-                        onClick={onSaveAvatarClick}
-                        disabled={!selectedImageFile || isUploadingAvatar}
-                      >
-                        Save photo
                       </button>
                     </div>
                     {avatarUploadMessage && (
