@@ -12,6 +12,9 @@ out/
 # Vercel
 .vercel/
 
+# Git worktrees (local)
+.worktrees/
+
 # OS files
 .DS_Store
 Thumbs.db
