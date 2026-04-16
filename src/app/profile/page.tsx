@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import AppHeader from '@/components/AppHeader';
 import TeamLogoImage from '@/components/TeamLogoImage';
+import EarlyAdopterBadge from '@/components/EarlyAdopterBadge';
 import SiteFooter from '@/components/SiteFooter';
 import { TEAMS } from '@/lib/teams';
 import '../page.css';
@@ -22,6 +23,12 @@ interface ProfileData {
   city: string | null;
 }
 
+interface ProfileMeResponse {
+  profile: ProfileData | null;
+  isTeamLeader?: boolean;
+  error?: string;
+}
+
 function getPreferredSessionAvatar(image: string | null | undefined): string | null {
   if (!image) return null;
   return image.includes('/storage/v1/object/public/') ? image : null;
@@ -34,6 +41,7 @@ export default function Profile() {
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarUploadMessage, setAvatarUploadMessage] = useState<string>('');
+  const [isTeamLeader, setIsTeamLeader] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -42,15 +50,18 @@ export default function Profile() {
       setProfileError('');
       try {
         const res = await fetch('/api/profile/me');
-        const data = await res.json();
+        const data = (await res.json()) as ProfileMeResponse;
         if (!res.ok) {
           setProfile(null);
+          setIsTeamLeader(false);
           setProfileError(data.error ?? 'Failed to load profile details');
           return;
         }
         setProfile(data.profile ?? null);
+        setIsTeamLeader(Boolean(data.isTeamLeader));
       } catch {
         setProfile(null);
+        setIsTeamLeader(false);
         setProfileError('Failed to load profile details');
       }
     };
@@ -240,6 +251,15 @@ export default function Profile() {
                       >
                         {isUploadingAvatar ? 'Uploading…' : 'Change photo'}
                       </button>
+                    </div>
+                    <div className="profile-badges">
+                      <EarlyAdopterBadge />
+                      {isTeamLeader && selectedTeam && (
+                        <span className="profile-leader-badge" aria-label={`Badge: ${selectedTeam.name} Leader`}>
+                          <TeamLogoImage src={selectedTeam.logo} alt="" className="profile-leader-badge-logo" />
+                          <span>{selectedTeam.name} Leader</span>
+                        </span>
+                      )}
                     </div>
                     {avatarUploadMessage && (
                       <p className="profile-avatar-status">{avatarUploadMessage}</p>

@@ -79,6 +79,10 @@ export default async function TeamDetailPage({ params }: TeamDetailPageProps) {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>
             Teams
           </Link>
+          <Link href="/leaderboard" className="mp-tab">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10"/><path d="M17 4v3a5 5 0 0 1-10 0V4"/><path d="M5 6H3a2 2 0 0 0 2 2"/><path d="M19 6h2a2 2 0 0 1-2 2"/></svg>
+            Leaderboard
+          </Link>
         </nav>
         <div className="ml-page teams-page">
           <section className="team-detail-header" style={{ '--team-accent': team.color } as CSSProperties}>

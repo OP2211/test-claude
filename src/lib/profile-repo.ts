@@ -12,6 +12,7 @@ export interface UserProfile {
   fan_team_id: TeamId;
   dob: string | null;
   city: string | null;
+  created_at?: string | null;
 }
 
 export interface PublicProfile {
@@ -23,6 +24,12 @@ export interface PublicProfile {
   fan_team_id: TeamId;
   city: string | null;
   created_at?: string | null;
+}
+
+export interface LeaderboardProfile extends PublicProfile {
+  messagesSent: number;
+  reactionsReceived: number;
+  isTeamLeader: boolean;
 }
 
 interface UpsertProfileInput {
@@ -40,7 +47,7 @@ interface UpsertProfileInput {
 export async function getProfileByGoogleSub(googleSub: string): Promise<UserProfile | null> {
   const withFullName = await supabase
     .from('profiles')
-    .select('google_sub,full_name,email,image,username,phone,fan_team_id,dob,city')
+    .select('google_sub,full_name,email,image,username,phone,fan_team_id,dob,city,created_at')
     .eq('google_sub', googleSub)
     .maybeSingle<UserProfile>();
 
@@ -54,7 +61,7 @@ export async function getProfileByGoogleSub(googleSub: string): Promise<UserProf
 
   const legacy = await supabase
     .from('profiles')
-    .select('google_sub,email,image,username,phone,fan_team_id,dob,city')
+    .select('google_sub,email,image,username,phone,fan_team_id,dob,city,created_at')
     .eq('google_sub', googleSub)
     .maybeSingle<Omit<UserProfile, 'full_name'>>();
 
@@ -103,7 +110,7 @@ export async function upsertProfile(input: UpsertProfileInput): Promise<UserProf
       },
       { onConflict: 'google_sub' },
     )
-    .select('google_sub,full_name,email,image,username,phone,fan_team_id,dob,city')
+    .select('google_sub,full_name,email,image,username,phone,fan_team_id,dob,city,created_at')
     .single<UserProfile>();
 
   if (!withFullName.error) {
@@ -129,7 +136,7 @@ export async function upsertProfile(input: UpsertProfileInput): Promise<UserProf
       },
       { onConflict: 'google_sub' },
     )
-    .select('google_sub,email,image,username,phone,fan_team_id,dob,city')
+    .select('google_sub,email,image,username,phone,fan_team_id,dob,city,created_at')
     .single<Omit<UserProfile, 'full_name'>>();
 
   if (legacy.error) {
@@ -137,6 +144,22 @@ export async function upsertProfile(input: UpsertProfileInput): Promise<UserProf
   }
 
   return { ...legacy.data, full_name: input.fullName };
+}
+
+export async function isTeamLeaderForSupporter(googleSub: string, teamId: TeamId): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('google_sub,created_at')
+    .eq('fan_team_id', teamId)
+    .order('created_at', { ascending: true })
+    .limit(5)
+    .returns<Array<{ google_sub: string; created_at: string | null }>>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []).some((row) => row.google_sub === googleSub);
 }
 
 function isMissingColumnError(message: string, column: string): boolean {
@@ -219,4 +242,78 @@ export async function getPublicProfileByIdOrUsername(idOrUsername: string): Prom
   }
 
   return byUsername.data;
+}
+
+export async function getAllPublicProfiles(): Promise<PublicProfile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('google_sub,full_name,username,email,image,fan_team_id,city,created_at')
+    .order('created_at', { ascending: true })
+    .returns<PublicProfile[]>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data ?? [];
+}
+
+export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
+  const profiles = await getAllPublicProfiles();
+  if (profiles.length === 0) return [];
+
+  const { data: messageRows, error } = await supabase
+    .from('chat_messages')
+    .select('user_id,reactions')
+    .returns<Array<{ user_id: string; reactions: Record<string, string[]> | null }>>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const statsByUser = new Map<string, { messagesSent: number; reactionsReceived: number }>();
+  for (const row of messageRows ?? []) {
+    const current = statsByUser.get(row.user_id) ?? { messagesSent: 0, reactionsReceived: 0 };
+    current.messagesSent += 1;
+
+    const reactions = row.reactions ?? {};
+    for (const users of Object.values(reactions)) {
+      current.reactionsReceived += users.length;
+    }
+
+    statsByUser.set(row.user_id, current);
+  }
+
+  const earliestFiveByTeam = new Map<TeamId, Set<string>>();
+  const profilesByTeam = new Map<TeamId, PublicProfile[]>();
+  for (const profile of profiles) {
+    const existing = profilesByTeam.get(profile.fan_team_id) ?? [];
+    existing.push(profile);
+    profilesByTeam.set(profile.fan_team_id, existing);
+  }
+
+  for (const [teamId, teamProfiles] of profilesByTeam.entries()) {
+    const topFive = [...teamProfiles]
+      .sort((a, b) => {
+        const aTime = a.created_at ? new Date(a.created_at).getTime() : Number.POSITIVE_INFINITY;
+        const bTime = b.created_at ? new Date(b.created_at).getTime() : Number.POSITIVE_INFINITY;
+        return aTime - bTime;
+      })
+      .slice(0, 5)
+      .map((profile) => profile.google_sub);
+    earliestFiveByTeam.set(teamId, new Set(topFive));
+  }
+
+  return profiles.map((profile) => {
+    const stats = statsByUser.get(profile.google_sub);
+    const leadersForTeam = earliestFiveByTeam.get(profile.fan_team_id);
+    const isTeamLeader = leadersForTeam ? leadersForTeam.has(profile.google_sub) : false;
+
+    return {
+      ...profile,
+      messagesSent: stats?.messagesSent ?? 0,
+      reactionsReceived: stats?.reactionsReceived ?? 0,
+      isTeamLeader,
+    };
+  });
 }

@@ -175,6 +175,8 @@
 .cp-msg-body { display: flex; flex-direction: column; gap: 1px; max-width: 80%; }
 .cp-msg-meta { display: flex; align-items: baseline; gap: 6px; }
 .cp-msg-name { font-size: var(--text-xs); font-weight: 750; }
+.cp-msg-name-link { text-decoration: none; }
+.cp-msg-name-link:hover { text-decoration: underline; }
 .cp-msg-time { font-size: 0.58rem; color: var(--text-dim); flex-shrink: 0; }
 .cp-msg-cont { margin-top: -4px; }
 .cp-msg-team-row {

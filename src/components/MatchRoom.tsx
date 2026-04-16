@@ -1020,6 +1020,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
             hasMore={hasMoreByTab.banter}
             loadingOlder={loadingOlderByTab.banter}
             placeholder="Talk your talk…"
+            linkSenderProfile
             compact
           />
         )}

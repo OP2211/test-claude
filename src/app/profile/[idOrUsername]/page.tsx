@@ -3,7 +3,8 @@ import type { CSSProperties } from 'react';
 import AppHeaderSession from '@/components/AppHeaderSession';
 import SiteFooter from '@/components/SiteFooter';
 import TeamLogoImage from '@/components/TeamLogoImage';
-import { getPublicProfileByIdOrUsername } from '@/lib/profile-repo';
+import EarlyAdopterBadge from '@/components/EarlyAdopterBadge';
+import { getPublicProfileByIdOrUsername, isTeamLeaderForSupporter } from '@/lib/profile-repo';
 import { TEAMS } from '@/lib/teams';
 import '../../page.css';
 import '../profile.css';
@@ -28,6 +29,9 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
   const fullName = profile.full_name?.trim() || '—';
 
   const selectedTeam = TEAMS.find((team) => team.id === profile.fan_team_id) ?? null;
+  const isTeamLeader = selectedTeam
+    ? await isTeamLeaderForSupporter(profile.google_sub, selectedTeam.id)
+    : false;
   const avatarFallback = profile.username[0]?.toUpperCase() ?? 'F';
 
   return (
@@ -61,6 +65,15 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                         <span className="profile-team-pill-text">{selectedTeam.name}</span>
                       </div>
                     )}
+                    <div className="profile-badges">
+                      <EarlyAdopterBadge />
+                      {isTeamLeader && selectedTeam && (
+                        <span className="profile-leader-badge" aria-label={`Badge: ${selectedTeam.name} Leader`}>
+                          <TeamLogoImage src={selectedTeam.logo} alt="" className="profile-leader-badge-logo" />
+                          <span>{selectedTeam.name} Leader</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

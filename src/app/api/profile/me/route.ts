@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import { getProfileByGoogleSub } from '@/lib/profile-repo';
+import { getProfileByGoogleSub, isTeamLeaderForSupporter } from '@/lib/profile-repo';
 import { isOnboardingComplete } from '@/lib/profile-validation';
 
 export async function GET() {
@@ -14,8 +14,12 @@ export async function GET() {
 
   try {
     const profile = await getProfileByGoogleSub(googleSub);
+    const isTeamLeader = profile?.fan_team_id
+      ? await isTeamLeaderForSupporter(googleSub, profile.fan_team_id)
+      : false;
     return NextResponse.json({
       profile,
+      isTeamLeader,
       isOnboardingComplete: isOnboardingComplete(profile),
     });
   } catch (error) {

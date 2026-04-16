@@ -35,6 +35,8 @@ interface ChatPanelProps {
   compact?: boolean;
   /** When true, hide the input composer (read-only feed). */
   readOnly?: boolean;
+  /** When true, sender names link to their profile in a new tab. */
+  linkSenderProfile?: boolean;
 }
 
 export default function ChatPanel({
@@ -49,6 +51,7 @@ export default function ChatPanel({
   fullHeight,
   compact,
   readOnly = false,
+  linkSenderProfile = false,
 }: ChatPanelProps) {
   const [input, setInput] = useState<string>('');
   const [showEmojiFor, setShowEmojiFor] = useState<string | null>(null);
@@ -157,7 +160,19 @@ export default function ChatPanel({
               <div className="cp-msg-body">
                 {showSenderMeta && (
                   <div className="cp-msg-meta">
-                    <span className="cp-msg-name" style={{ color }}>{msg.username}</span>
+                    {linkSenderProfile ? (
+                      <a
+                        className="cp-msg-name cp-msg-name-link"
+                        style={{ color }}
+                        href={`/profile/${encodeURIComponent(msg.userId)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {msg.username}
+                      </a>
+                    ) : (
+                      <span className="cp-msg-name" style={{ color }}>{msg.username}</span>
+                    )}
                   </div>
                 )}
                 {showSenderMeta && teamInfo && (
