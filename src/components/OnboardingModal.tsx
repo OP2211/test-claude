@@ -192,7 +192,7 @@ export default function OnboardingModal({ onComplete, onClose }: OnboardingModal
 
             <div className="ob-hero compact">
               <h1 className="ob-title">Pick Your Club</h1>
-              <p className="ob-subtitle">Show everyone whose side you&apos;re on</p>
+              <p className="ob-subtitle">Show everyone whose side you're on</p>
             </div>
 
             <div className="ob-team-grid">
