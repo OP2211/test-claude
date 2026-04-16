@@ -76,6 +76,164 @@
   border-radius: var(--radius-md);
 }
 
+/* ── Mobile Cards ─────────────────────────────────────────── */
+.lh-cards-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lh-card {
+  border: 1px solid rgba(var(--neutral-rgb), 0.08);
+  border-radius: var(--radius-md);
+  background: rgba(var(--neutral-rgb), 0.02);
+  padding: 10px 10px 8px;
+}
+
+.lh-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(var(--neutral-rgb), 0.06);
+}
+
+.lh-card-pos {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 44px;
+}
+
+.lh-card-pos-num {
+  font-weight: 900;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.lh-card-team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.lh-card-team-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lh-card-pts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.lh-card-pts-num {
+  font-size: 0.95rem;
+  font-weight: 950;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.lh-card-pts-label {
+  font-size: 0.55rem;
+  font-weight: 800;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.lh-card-stats {
+  margin: 10px 0 8px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 10px;
+}
+
+.lh-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(var(--neutral-rgb), 0.04);
+}
+
+.lh-stat dt {
+  font-size: 0.58rem;
+  font-weight: 900;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.lh-stat dd {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.lh-stat--pts dd {
+  color: var(--text-primary);
+}
+
+.lh-card-next {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(var(--neutral-rgb), 0.06);
+}
+
+.lh-card-next-label {
+  font-size: 0.62rem;
+  font-weight: 900;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.lh-card-next-val {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.lh-card-next-opp {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lh-card-next-date {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.lh-card-next-empty {
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
 .lh-table {
   width: 100%;
   border-collapse: collapse;
@@ -315,6 +473,9 @@
 /* ── Responsive ───────────────────────────────────────────── */
 .lh-hide-sm { display: none; }
 
+/* Mobile default: cards visible, table hidden */
+.lh-table-wrap { display: none; }
+
 @media (min-width: 600px) {
   .lh-root { padding: 0 0 40px; }
   .lh-hide-sm { display: table-cell; }
@@ -322,6 +483,8 @@
   .lh-team-logo { width: 22px; height: 22px; }
   .lh-table { font-size: 0.72rem; }
   .lh-th { font-size: 0.6rem; }
+  .lh-cards-wrap { display: none; }
+  .lh-table-wrap { display: block; }
 }
 
 @media (max-width: 440px) {
@@ -329,4 +492,10 @@
   .lh-team-abbr { display: inline; font-weight: 700; color: var(--text-primary); }
   .lh-th-num { width: 22px; }
   .lh-td { padding: 5px 2px; font-size: 0.62rem; }
+}
+
+@media (max-width: 360px) {
+  .lh-card-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

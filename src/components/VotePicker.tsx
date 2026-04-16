@@ -169,7 +169,7 @@ function ScorePrediction({ match }: { match: Match }) {
       {showConfirm && !submitted && (
         <div className="vp-score-confirm">
           <p className="vp-score-confirm-text">
-            Lock <strong>{homeGoals} - {awayGoals}</strong>? This can't be changed.
+            Lock <strong>{homeGoals} - {awayGoals}</strong>? This can&apos;t be changed.
           </p>
           <div className="vp-score-confirm-actions">
             <button className="vp-score-confirm-btn cancel" onClick={() => setShowConfirm(false)}>Go Back</button>
