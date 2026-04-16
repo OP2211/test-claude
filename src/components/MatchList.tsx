@@ -91,6 +91,7 @@ interface MatchListProps {
   onSelectMatch: (match: Match) => void;
   isLoading: boolean;
   forceOpenAll?: boolean;
+  isJoinDisabled?: boolean;
 }
 
 function formatGroupDate(iso: string): string {
@@ -235,7 +236,14 @@ function RecentResults() {
   );
 }
 
-export default function MatchList({ matches, user, onSelectMatch, isLoading, forceOpenAll = false }: MatchListProps) {
+export default function MatchList({
+  matches,
+  user,
+  onSelectMatch,
+  isLoading,
+  forceOpenAll = false,
+  isJoinDisabled = false,
+}: MatchListProps) {
   const [fetchError, setFetchError] = useState<boolean>(false);
   const isMatchOpen = (match: Match) => forceOpenAll || isChatOpen(match);
   const openMatches = matches.filter(isMatchOpen);
@@ -253,6 +261,7 @@ export default function MatchList({ matches, user, onSelectMatch, isLoading, for
   const renderCard = (match: Match, index: number) => {
     const status = getMatchStatus(match);
     const open = isMatchOpen(match);
+    const canOpen = open && !isJoinDisabled;
     const kickoff = new Date(match.kickoff);
     const timeStr = kickoff.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
@@ -260,9 +269,9 @@ export default function MatchList({ matches, user, onSelectMatch, isLoading, for
       <button
         key={match.id}
         className={`ml-card ${open ? 'open' : 'locked'} ${status.type}`}
-        onClick={() => open && onSelectMatch(match)}
+        onClick={() => canOpen && onSelectMatch(match)}
         style={{ animationDelay: `${index * 70}ms` }}
-        disabled={!open}
+        disabled={!canOpen}
         aria-label={`${match.homeTeam.name} vs ${match.awayTeam.name}, ${status.label}`}
       >
         {open && <div className="ml-card-glow" />}

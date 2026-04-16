@@ -193,6 +193,7 @@ function MatchesPageContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [pendingMatchId, setPendingMatchId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
   const requestedTab = searchParams.get('tab');
   const queryTab: PageTab =
     requestedTab === 'table' || requestedTab === 'stats' || requestedTab === 'matches'
@@ -227,6 +228,7 @@ function MatchesPageContent() {
   }, [queryTab]);
 
   const loadProfile = useCallback(async () => {
+    setIsProfileLoading(true);
     try {
       const res = await fetch('/api/profile/me');
       if (!res.ok) { setUser(null); return; }
@@ -241,6 +243,8 @@ function MatchesPageContent() {
     } catch {
       setUser(null);
       setShowOnboarding(true);
+    } finally {
+      setIsProfileLoading(false);
     }
   }, []);
 
@@ -269,6 +273,7 @@ function MatchesPageContent() {
   }, [fetchMatches]);
 
   const handleSelectMatch = (match: Match) => {
+    if (isProfileLoading) return;
     if (!user || !user.fanTeamId) {
       setPendingMatchId(match.id);
       setShowOnboarding(true);
@@ -355,8 +360,9 @@ function MatchesPageContent() {
               matches={matches}
               user={user}
               onSelectMatch={handleSelectMatch}
-              isLoading={isLoading}
+              isLoading={isLoading || isProfileLoading}
               forceOpenAll={forceOpenMatchesForDebug}
+              isJoinDisabled={isProfileLoading}
             />
           )}
           {activeTab === 'table' && <LeagueHub />}

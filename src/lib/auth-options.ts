@@ -13,11 +13,17 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === 'google' && profile?.sub) {
         token.googleSub = profile.sub;
       }
+      if (!token.googleSub && typeof token.sub === 'string' && token.sub.trim()) {
+        token.googleSub = token.sub;
+      }
       return token;
     },
     async session({ session, token }) {
-      if (session.user && token.googleSub) {
-        session.user.googleSub = token.googleSub;
+      if (session.user) {
+        const googleSub = token.googleSub || token.sub;
+        if (typeof googleSub === 'string' && googleSub.trim()) {
+          session.user.googleSub = googleSub;
+        }
       }
       return session;
     },
