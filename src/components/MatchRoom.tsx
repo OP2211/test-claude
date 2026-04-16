@@ -704,7 +704,24 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
         addNotification('Room link copied.');
         return;
       }
-      addNotification('Clipboard not available on this device.', 'warning');
+
+      // Fallback: execCommand copy (works in more desktop contexts than Clipboard API)
+      const ta = document.createElement('textarea');
+      ta.value = roomUrl;
+      ta.setAttribute('readonly', 'true');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      ta.style.top = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand?.('copy') ?? false;
+      document.body.removeChild(ta);
+      if (ok) {
+        addNotification('Room link copied.');
+        return;
+      }
+
+      addNotification('Could not copy room link.', 'warning');
     } catch {
       addNotification('Could not copy room link.', 'warning');
     }
@@ -811,7 +828,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
 
         <button
           type="button"
-          className="mr-menu"
+          className="mr-menu mr-share"
           onClick={() => { void copyRoomLink(); }}
           aria-label="Share room link"
           title="Share room link"
@@ -827,7 +844,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
 
         <button
           type="button"
-          className="mr-menu"
+          className="mr-menu mr-drawer-trigger"
           onClick={() => setMenuOpen(true)}
           aria-expanded={menuOpen}
           aria-haspopup="dialog"
