@@ -8,30 +8,37 @@
 /* ── Page tabs ───────────────────────────────────────────── */
 .mp-tabs {
   display: flex;
-  gap: 2px;
-  padding: 8px 16px;
+  gap: 4px;
+  padding: 8px 8px;
   position: sticky;
   top: var(--header-h, 56px);
   z-index: 10;
   background: var(--bg-primary);
   border-bottom: 1px solid rgba(var(--neutral-rgb), 0.08);
+  justify-content: space-between;
 }
 
 .mp-tab {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  font-size: var(--text-xs);
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 4px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-muted);
   border-radius: 8px;
   transition: all 0.2s;
-  white-space: nowrap;
+  white-space: normal;
   /* Avoid UA light “pill” on iOS/WebKit in dark mode (was washing out label + icon) */
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  line-height: 1.05;
 }
 
 .mp-tab:hover {
@@ -46,10 +53,16 @@
 
 .mp-tab svg {
   opacity: 0.6;
+  flex: 0 0 auto;
 }
 
 .mp-tab.active svg {
   opacity: 1;
+}
+
+.mp-tab svg {
+  width: 13px;
+  height: 13px;
 }
 
 /* ── Loading ─────────────────────────────────────────────── */
@@ -239,7 +252,14 @@
     gap: 4px;
   }
   .mp-tab {
+    flex-direction: row;
     padding: 8px 20px;
     font-size: var(--text-sm);
+    gap: 6px;
+    flex: 0 1 auto;
+    min-width: auto;
+    white-space: nowrap;
+    line-height: 1.2;
   }
+  .mp-tab svg { width: 16px; height: 16px; }
 }
