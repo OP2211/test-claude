@@ -16,6 +16,104 @@ function formatDate(iso: string): string {
   }
 }
 
+function StandingsCards({ standings }: { standings: StandingEntry[] }) {
+  return (
+    <div className="lh-cards-wrap" aria-label="Standings (mobile cards)">
+      {standings.map((s) => {
+        const gdColor =
+          s.goalDifference > 0
+            ? 'var(--color-success)'
+            : s.goalDifference < 0
+              ? 'var(--color-live)'
+              : undefined;
+
+        return (
+          <article key={s.teamId} className="lh-card">
+            <header className="lh-card-head">
+              <div className="lh-card-pos">
+                {s.note && (
+                  <span
+                    className="lh-note-dot"
+                    style={{ background: `#${s.note.color}` }}
+                    title={s.note.description}
+                  />
+                )}
+                <span className="lh-card-pos-num">{s.position}</span>
+              </div>
+
+              <div className="lh-card-team">
+                <TeamLogoImage src={s.logo} alt="" className="lh-team-logo" />
+                <span className="lh-card-team-name">{s.teamShortName}</span>
+              </div>
+
+              <div className="lh-card-pts" aria-label="Points">
+                <span className="lh-card-pts-num">{s.points}</span>
+                <span className="lh-card-pts-label">Pts</span>
+              </div>
+            </header>
+
+            <dl className="lh-card-stats" aria-label="Team stats">
+              <div className="lh-stat">
+                <dt>P</dt>
+                <dd>{s.played}</dd>
+              </div>
+              <div className="lh-stat">
+                <dt>W</dt>
+                <dd>{s.wins}</dd>
+              </div>
+              <div className="lh-stat">
+                <dt>D</dt>
+                <dd>{s.draws}</dd>
+              </div>
+              <div className="lh-stat">
+                <dt>L</dt>
+                <dd>{s.losses}</dd>
+              </div>
+              <div className="lh-stat">
+                <dt>GF</dt>
+                <dd>{s.goalsFor}</dd>
+              </div>
+              <div className="lh-stat">
+                <dt>GA</dt>
+                <dd>{s.goalsAgainst}</dd>
+              </div>
+              <div className="lh-stat">
+                <dt>GD</dt>
+                <dd style={{ color: gdColor }}>
+                  {s.goalDifference > 0 ? `+${s.goalDifference}` : s.goalDifference}
+                </dd>
+              </div>
+              <div className="lh-stat lh-stat--pts">
+                <dt>Pts</dt>
+                <dd>{s.points}</dd>
+              </div>
+            </dl>
+
+            <div className="lh-card-next" aria-label="Next fixture">
+              <span className="lh-card-next-label">Next</span>
+              {s.nextMatch ? (
+                <span className="lh-card-next-val">
+                  <TeamLogoImage
+                    src={s.nextMatch.opponentLogo}
+                    alt=""
+                    className="lh-next-logo"
+                  />
+                  <span className="lh-card-next-opp">
+                    {s.nextMatch.isHome ? 'vs' : '@'} {s.nextMatch.opponent}
+                  </span>
+                  <span className="lh-card-next-date">{formatDate(s.nextMatch.date)}</span>
+                </span>
+              ) : (
+                <span className="lh-card-next-empty">-</span>
+              )}
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
 function StandingsTable({ standings }: { standings: StandingEntry[] }) {
   return (
     <div className="lh-table-wrap">
@@ -151,6 +249,7 @@ export default function LeagueHub() {
         </div>
       ) : (
         <>
+          <StandingsCards standings={standings} />
           <StandingsTable standings={standings} />
           
         </>
