@@ -108,13 +108,11 @@ const CACHE_TTL = 15_000; // 15 seconds — keeps live scores fresh
 
 /**
  * Fetch matches from ESPN, falling back to hardcoded fixtures if ESPN fails.
- * `includeDemo: true` (from `/api/matches?demo=1`) prepends only the demo card — it does not alter other matches.
+ * Demo room card is always prepended to the response list.
  */
-export async function getMatches(options?: { includeDemo?: boolean }): Promise<Match[]> {
-  const includeDemo = options?.includeDemo ?? false;
+export async function getMatches(): Promise<Match[]> {
   const now = Date.now();
   if (_cache && now - _cache.fetchedAt < CACHE_TTL) {
-    if (!includeDemo) return _cache.matches;
     return [buildDemoLiveMatch(_cache.matches), ..._cache.matches];
   }
 
@@ -140,7 +138,6 @@ export async function getMatches(options?: { includeDemo?: boolean }): Promise<M
       }
 
       _cache = { matches: espnMatches, fetchedAt: now };
-      if (!includeDemo) return espnMatches;
       return [buildDemoLiveMatch(espnMatches), ...espnMatches];
     }
   } catch (err) {
@@ -150,7 +147,6 @@ export async function getMatches(options?: { includeDemo?: boolean }): Promise<M
   // Fallback to hardcoded
   const fallback = buildFallbackMatches();
   _cache = { matches: fallback, fetchedAt: now };
-  if (!includeDemo) return fallback;
   return [buildDemoLiveMatch(fallback), ...fallback];
 }
 
@@ -242,15 +238,15 @@ async function ensureRoster(match: Match): Promise<void> {
 
 /**
  * Get a single match by ID, fetching rosters on demand if needed.
- * The demo room (`demo-live-match`) is only available when `includeDemo` is true (URL `?demo=1` on `/api/match`).
+ * The demo room (`demo-live-match`) is always available.
  */
-export async function getMatch(id: string, options?: { includeDemo?: boolean }): Promise<Match | null> {
-  const includeDemo = options?.includeDemo ?? false;
+export async function getMatch(id: string): Promise<Match | null> {
   if (id === DEMO_MATCH_ID) {
-    if (!includeDemo) return null;
-    return buildDemoLiveMatch(await getMatches({ includeDemo: false }));
+    const allMatches = await getMatches();
+    const sourceMatches = allMatches.filter((match) => !match.isDemo);
+    return buildDemoLiveMatch(sourceMatches);
   }
-  const all = await getMatches({ includeDemo: false });
+  const all = await getMatches();
   const match = all.find(m => m.id === id) || null;
   if (match) {
     await ensureRoster(match);

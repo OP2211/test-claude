@@ -361,7 +361,7 @@ export function getVoteTally(matchId: string): VoteTally {
 }
 
 async function seedMessages(matchId: string): Promise<void> {
-  const match = await getMatch(matchId, { includeDemo: matchId === DEMO_MATCH_ID });
+  const match = await getMatch(matchId);
   if (!match) return;
 
   const h = match.homeTeam.shortName;

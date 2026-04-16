@@ -243,10 +243,6 @@ function parseIncomingMessage(raw: unknown): Message | null {
 }
 
 export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRoomProps) {
-  const rawDemo =
-    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('demo')?.toLowerCase() ?? '' : '';
-  const demoParam =
-    rawDemo === '1' || rawDemo === 'true' || rawDemo === 'yes' ? `&demo=${rawDemo}` : '';
   const [match, setMatch] = useState<Match>(initialMatch);
   const [activeTab, setActiveTab] = useState<TabId>('predictions');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -350,7 +346,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
           fetch(`/api/messages?matchId=${match.id}&tab=teamsheet`, { cache: 'no-store' }),
           fetch(`/api/messages?matchId=${match.id}&tab=banter`, { cache: 'no-store' }),
           fetch(`/api/vote?matchId=${match.id}`, { cache: 'no-store' }),
-          fetch(`/api/match?id=${match.id}${demoParam}`, { cache: 'no-store' }),
+          fetch(`/api/match?id=${match.id}`, { cache: 'no-store' }),
         ]);
         const [predictionsPayload, teamsheetPayload, banterPayload, votePayload]: [
           MessagesResponse,
@@ -394,7 +390,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     }
     init();
 
-  }, [match.id, demoParam]);
+  }, [match.id]);
 
   // Re-fetch match data periodically so live scores, clock, and lineups stay fresh.
   useEffect(() => {
@@ -404,7 +400,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     const refreshMs = (match.status === 'live' || nearKickoff) ? 15_000 : 60_000;
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/match?id=${match.id}${demoParam}`, { cache: 'no-store' });
+        const res = await fetch(`/api/match?id=${match.id}`, { cache: 'no-store' });
         if (res.ok) {
           const enriched: Match = await res.json();
           setMatch(enriched);
@@ -414,7 +410,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
       }
     }, refreshMs);
     return () => clearInterval(interval);
-  }, [match.id, match.status, match.kickoff, demoParam]);
+  }, [match.id, match.status, match.kickoff]);
 
   const loadOlderMessages = useCallback(async (tab: TabId) => {
     const current = messages[tab];

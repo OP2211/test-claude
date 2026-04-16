@@ -203,8 +203,6 @@ function MatchesPageContent() {
   const forceOpenMatchesForDebug =
     searchParams.get('debugOpenAll') === '1' ||
     searchParams.get('debugOpenAll') === 'true';
-  const demoParam = searchParams.get('demo');
-  const demoQs = demoParam ? `?demo=${encodeURIComponent(demoParam)}` : '';
   const headerUser: User | null = user ?? (
     session?.user
       ? {
@@ -258,8 +256,7 @@ function MatchesPageContent() {
 
   const fetchMatches = useCallback(async () => {
     try {
-      const apiUrl = demoParam ? `/api/matches?demo=${encodeURIComponent(demoParam)}` : '/api/matches';
-      const res = await fetch(apiUrl);
+      const res = await fetch('/api/matches');
       const data: Match[] = await res.json();
       setMatches(data);
     } catch (err) {
@@ -267,7 +264,7 @@ function MatchesPageContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [demoParam]);
+  }, []);
 
   useEffect(() => {
     fetchMatches();
@@ -282,7 +279,7 @@ function MatchesPageContent() {
       setShowOnboarding(true);
       return;
     }
-    router.push(`/matches/${match.id}${demoQs}`);
+    router.push(`/matches/${match.id}`);
   };
 
   const handleOnboardingComplete = async (payload: OnboardingPayload) => {
@@ -299,7 +296,7 @@ function MatchesPageContent() {
     if (pendingMatchId) {
       const nextMatchId = pendingMatchId;
       setPendingMatchId(null);
-      router.push(`/matches/${nextMatchId}${demoQs}`);
+      router.push(`/matches/${nextMatchId}`);
     }
   };
 

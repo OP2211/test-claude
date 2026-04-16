@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import AppHeader from '@/components/AppHeader';
 import MatchRoom from '@/components/MatchRoom';
@@ -55,15 +55,8 @@ function mapProfileToUser(profile: NonNullable<ProfileResponse['profile']>): Use
 function MatchDetailsPageInner() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const params = useParams<{ matchId: string }>();
   const matchId = params?.matchId;
-  const rawDemo = searchParams.get('demo')?.toLowerCase() ?? '';
-  const demoForApi =
-    rawDemo === '1' || rawDemo === 'true' || rawDemo === 'yes' ? `&demo=${rawDemo}` : '';
-  const matchesListQs = searchParams.get('demo')
-    ? `?demo=${encodeURIComponent(searchParams.get('demo')!)}`
-    : '';
   const [user, setUser] = useState<User | null>(null);
   const [match, setMatch] = useState<Match | null>(null);
   const [loadingMatch, setLoadingMatch] = useState(true);
@@ -115,7 +108,7 @@ function MatchDetailsPageInner() {
     if (!matchId) return;
     setLoadingMatch(true);
     try {
-      const res = await fetch(`/api/match?id=${matchId}${demoForApi}`, { cache: 'no-store' });
+      const res = await fetch(`/api/match?id=${matchId}`, { cache: 'no-store' });
       if (!res.ok) {
         setNotFound(res.status === 404);
         return;
@@ -128,7 +121,7 @@ function MatchDetailsPageInner() {
     } finally {
       setLoadingMatch(false);
     }
-  }, [matchId, demoForApi]);
+  }, [matchId]);
 
   useEffect(() => {
     if (session?.user) {
@@ -153,7 +146,7 @@ function MatchDetailsPageInner() {
   };
 
   const handleBack = () => {
-    router.push(`/matches${matchesListQs}`);
+    router.push('/matches');
   };
 
   const handleSignOut = () => {
@@ -214,7 +207,7 @@ function MatchDetailsPageInner() {
             onComplete={handleOnboardingComplete}
             onClose={() => {
               setShowOnboarding(false);
-              router.push(`/matches${matchesListQs}`);
+              router.push('/matches');
             }}
           />
         )}
