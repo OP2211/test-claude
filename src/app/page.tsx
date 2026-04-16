@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { openGoogleSignInPopup } from '@/lib/google-signin-popup';
+import { startGoogleSignInRedirect } from '@/lib/google-signin';
 import MatchList from '@/components/MatchList';
 import MatchRoom from '@/components/MatchRoom';
 import OnboardingModal from '@/components/OnboardingModal';
@@ -135,7 +135,7 @@ export default function Home() {
 
     if (!session?.user) {
       setPendingMatch(match);
-      void openGoogleSignInPopup(() => updateSession());
+      void startGoogleSignInRedirect();
       return;
     }
 
@@ -205,7 +205,7 @@ export default function Home() {
           user,
           onSignOut: handleSignOut,
           showGoogleSignIn: sessionStatus === 'unauthenticated',
-          onSignInWithGoogle: () => void openGoogleSignInPopup(() => updateSession()),
+          onSignInWithGoogle: () => void startGoogleSignInRedirect(),
         }}
       />
 
