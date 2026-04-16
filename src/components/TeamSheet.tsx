@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { Match, Team } from '@/lib/types';
+import { horizontalRank } from '@/lib/pitchPositionOrder';
 import TeamLogoImage from './TeamLogoImage';
 import './TeamSheet.css';
 
@@ -111,22 +112,69 @@ interface PitchViewProps {
   team: Team;
   players: string[];
   positions?: string[];
+  /** Shirt numbers (same index as players); falls back to first initial when missing. */
+  numbers?: string[];
   formation: string;
 }
 
-function PitchView({ team, players, positions, formation }: PitchViewProps) {
+/** Short-sleeve kit silhouette for pitch markers (viewBox 0 0 40 44). Crew neck via cubic curves. */
+function PitchJersey({ color }: { color: string }) {
+  return (
+    <svg
+      className="ts-player-jersey"
+      viewBox="0 0 40 44"
+      aria-hidden
+      style={{ color, filter: `drop-shadow(0 2px 5px ${color}99)` }}
+    >
+      {/* Body + sleeves; neckline is a smooth round collar (not a V / point). */}
+      <path
+        fill="currentColor"
+        stroke="rgba(255,255,255,0.38)"
+        strokeWidth="1"
+        strokeLinejoin="round"
+        d="M10 40V18.5L7 21 4 18 5 14 12 8.5
+           C14.5 8.5 17 11.5 20 14.5
+           C23 11.5 25.5 8.5 28 8.5
+           L35 14 36 18 33 21 30 18.5V40H10z"
+      />
+      {/* Subtle collar ring — reads like ribbed crew neck at small size */}
+      <path
+        fill="none"
+        stroke="rgba(255,255,255,0.42)"
+        strokeWidth="0.85"
+        strokeLinecap="round"
+        d="M12.5 9.5C15 9 17.5 11.5 20 13.2C22.5 11.5 25 9 27.5 9.5"
+      />
+    </svg>
+  );
+}
+
+function PitchView({ team, players, positions, numbers, formation }: PitchViewProps) {
   const rows = parseFormation(formation);
 
   // Assign players to rows. Players array is ordered GK → DEF → MID → FWD.
   let playerIdx = 0;
   const assignedRows = rows.map(row => {
-    return row.pos.map(fallbackPos => {
+    const slots = row.pos.map(fallbackPos => {
       const player = players[playerIdx] || '?';
       // Use real ESPN position if available, otherwise fall back to formation template
       const pos = positions?.[playerIdx] || fallbackPos;
+      const rawNum = numbers?.[playerIdx];
+      const number =
+        rawNum != null && String(rawNum).trim() !== '' ? String(rawNum).trim() : '';
       playerIdx++;
-      return { player, pos };
+      return { player, pos, number };
     });
+    // Order left-to-right as on TV (own goal bottom): LB/LW on viewer's left, RB/RW on right.
+    // Raw lineup arrays may follow ESPN's tactics grid (mirrored) or bucket order.
+    return slots
+      .map((slot, orderIdx) => ({ ...slot, orderIdx }))
+      .sort((a, b) => {
+        const d = horizontalRank(a.pos) - horizontalRank(b.pos);
+        if (d !== 0) return d;
+        return a.orderIdx - b.orderIdx;
+      })
+      .map(({ orderIdx, ...slot }) => slot);
   });
 
   return (
@@ -142,13 +190,23 @@ function PitchView({ team, players, positions, formation }: PitchViewProps) {
         {[...assignedRows].reverse().map((row, ri) => (
           <div key={ri} className="ts-pitch-row">
             {row.map((slot, pi) => {
-              const surname = slot.player.split(' ').pop();
+              const kitMark =
+                slot.number !== ''
+                  ? slot.number
+                  : slot.player[0] === '?'
+                    ? '?'
+                    : slot.player[0];
               return (
                 <div key={pi} className="ts-player">
-                  <div className="ts-player-dot" style={{ background: team.color, boxShadow: `0 2px 10px ${team.color}60` }}>
-                    <span className="ts-player-initial">{slot.player[0] === '?' ? '?' : slot.player[0]}</span>
+                  <div className="ts-player-kit">
+                    <PitchJersey color={team.color} />
+                    <span
+                      className={`ts-player-number${kitMark.length > 1 ? ' ts-player-number--wide' : ''}`}
+                    >
+                      {kitMark}
+                    </span>
                   </div>
-                  <span className="ts-player-name">{surname}</span>
+                  <span className="ts-player-name">{slot.player}</span>
                   <span className="ts-player-pos">{slot.pos}</span>
                 </div>
               );
@@ -202,7 +260,7 @@ export default function TeamSheet({ match }: TeamSheetProps) {
       {/* Status */}
       {hasRealLineup && (
         <div className="ts-status">
-          <span className={`ts-confirmed ${sheetData.confirmed ? 'yes' : 'no'}`}>
+          {/* <span className={`ts-confirmed ${sheetData.confirmed ? 'yes' : 'no'}`}>
             {sheetData.confirmed ? (
               <>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -218,19 +276,45 @@ export default function TeamSheet({ match }: TeamSheetProps) {
                 Predicted
               </>
             )}
-          </span>
+          </span> */}
           <span className="ts-formation-badge">{sheetData.formation}</span>
         </div>
       )}
 
-      {/* Pitch or "not announced" message */}
+      {/* Pitch + Subs side by side */}
       {hasRealLineup ? (
-        <PitchView
-          team={teamData}
-          players={sheetData.players}
-          positions={sheetData.positions}
-          formation={sheetData.formation}
-        />
+        <div className="ts-main">
+          <div className="ts-pitch-col">
+            <PitchView
+              team={teamData}
+              players={sheetData.players}
+              positions={sheetData.positions}
+              numbers={sheetData.numbers}
+              formation={sheetData.formation}
+            />
+          </div>
+
+          {sheetData.subs && sheetData.subs.length > 0 && (
+            <div className="ts-subs-col">
+              <div className="ts-subs-header">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                  <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                </svg>
+                <span className="ts-subs-title">Bench</span>
+                <span className="ts-subs-count">{sheetData.subs.length}</span>
+              </div>
+              <div className="ts-subs-list">
+                {sheetData.subs.map((player, i) => (
+                  <div key={i} className="ts-sub-card">
+                    <span className="ts-sub-num">{i + 12}</span>
+                    <span className="ts-sub-name">{player}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
         <div className="ts-empty">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -238,28 +322,6 @@ export default function TeamSheet({ match }: TeamSheetProps) {
           </svg>
           <p className="ts-empty-title">Lineups not announced yet</p>
           <p className="ts-empty-sub">Usually confirmed 60 minutes before kickoff</p>
-        </div>
-      )}
-
-      {/* Substitutes */}
-      {sheetData.subs && sheetData.subs.length > 0 && (
-        <div className="ts-subs">
-          <div className="ts-subs-header">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
-              <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
-            </svg>
-            <span className="ts-subs-title">Bench</span>
-            <span className="ts-subs-count">{sheetData.subs.length}</span>
-          </div>
-          <div className="ts-subs-grid">
-            {sheetData.subs.map((player, i) => (
-              <div key={i} className="ts-sub-card">
-                <span className="ts-sub-num">{i + 12}</span>
-                <span className="ts-sub-name">{player}</span>
-              </div>
-            ))}
-          </div>
         </div>
       )}
     </div>

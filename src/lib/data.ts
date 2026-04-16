@@ -27,7 +27,7 @@ const SQUAD_PLAYERS: Record<string, string[]> = {
   'juventus':          ['Szczesny', 'Danilo', 'Bremer', 'Gatti', 'Cambiaso', 'Fagioli', 'Locatelli', 'Rabiot', 'Chiesa', 'Vlahovi\u0107', 'Kostic'],
 };
 
-const DEMO_MATCH_ID = 'demo-live-match';
+export const DEMO_MATCH_ID = 'demo-live-match';
 const DEMO_KICKOFF_ISO = new Date(Date.now() - 15 * 60_000).toISOString();
 
 /** Hardcoded fallback matches used when ESPN is unavailable. */
@@ -64,6 +64,7 @@ function buildDemoLiveMatch(sourceMatches: Match[]): Match {
   const demoAwayTeamId = 'arsenal';
   return {
     ...seed,
+    _espn: undefined,
     id: DEMO_MATCH_ID,
     // Keep kickoff stable so client effects do not retrigger on every poll.
     kickoff: DEMO_KICKOFF_ISO,
@@ -79,13 +80,19 @@ function buildDemoLiveMatch(sourceMatches: Match[]): Match {
     awayTeam: TEAMS[demoAwayTeamId],
     teamSheet: {
       home: {
-        formation: '4-3-3',
-        players: [...(SQUAD_PLAYERS[demoHomeTeamId] || [])],
+        formation: '4-2-3-1',
+        players: ['Donnarumma', "O'Reilly", 'Guehi', 'Khusanov', 'Nunes', 'Rodri', 'Silva', 'Doku', 'Cherki', 'Semenyo', 'Haaland'],
+        positions: ['GK', 'LB', 'LCB', 'RCB', 'RB', 'LCM', 'RCM', 'LW', 'AM', 'RW', 'ST'],
+        numbers: ['25', '82', '6', '45', '27', '16', '20', '11', '10', '19', '9'],
+        subs: ['Kovačić', 'Aït-Nouri', 'Savinho', 'Foden', 'Trafford', 'Reijnders', 'Aké', 'Marmoush', 'González'],
         confirmed: true,
       },
       away: {
-        formation: '4-3-3',
-        players: [...(SQUAD_PLAYERS[demoAwayTeamId] || [])],
+        formation: '4-2-3-1',
+        players: ['Raya', 'White', 'Saliba', 'Gabriel', 'Lewis-Skelly', 'Zubimendi', 'Rice', 'Madueke', 'Havertz', 'Martinelli', 'Gyökeres'],
+        positions: ['GK', 'RB', 'RCB', 'LCB', 'LB', 'RCM', 'LCM', 'RW', 'AM', 'LW', 'ST'],
+        numbers: ['1', '4', '2', '6', '49', '36', '41', '20', '29', '11', '14'],
+        subs: ['Mosquera', 'Jesus', 'Eze', 'Trossard', 'Dowman', 'Hincapié', 'Arrizabalaga', 'Nørgaard', 'Salmon'],
         confirmed: true,
       },
     },
@@ -99,7 +106,10 @@ function buildDemoLiveMatch(sourceMatches: Match[]): Match {
 let _cache: { matches: Match[]; fetchedAt: number } | null = null;
 const CACHE_TTL = 15_000; // 15 seconds — keeps live scores fresh
 
-/** Fetch matches from ESPN, falling back to hardcoded data on failure. */
+/**
+ * Fetch matches from ESPN, falling back to hardcoded fixtures if ESPN fails.
+ * `includeDemo: true` (from `/api/matches?demo=1`) prepends only the demo card — it does not alter other matches.
+ */
 export async function getMatches(options?: { includeDemo?: boolean }): Promise<Match[]> {
   const includeDemo = options?.includeDemo ?? false;
   const now = Date.now();
@@ -111,18 +121,6 @@ export async function getMatches(options?: { includeDemo?: boolean }): Promise<M
   try {
     const espnMatches = await fetchAllMatches();
     if (espnMatches.length > 0) {
-      // Enrich with known squad data when available
-      for (const match of espnMatches) {
-        const homePlayers = SQUAD_PLAYERS[match.homeTeamId];
-        const awayPlayers = SQUAD_PLAYERS[match.awayTeamId];
-        if (homePlayers) {
-          match.teamSheet.home.players = homePlayers;
-        }
-        if (awayPlayers) {
-          match.teamSheet.away.players = awayPlayers;
-        }
-      }
-
       // Fetch events (goal scorers) for live/finished matches in parallel
       const liveMatches = espnMatches.filter(m => m.status === 'live' || m.status === 'finished');
       if (liveMatches.length > 0) {
@@ -157,7 +155,10 @@ export async function getMatches(options?: { includeDemo?: boolean }): Promise<M
 }
 
 // Lineup cache: matchId -> { home, away } (short TTL for live matches, longer for finished)
-const _lineupCache: Record<string, { home: { formation: string; players: string[]; positions: string[]; subs: string[]; confirmed: boolean }; away: { formation: string; players: string[]; positions: string[]; subs: string[]; confirmed: boolean }; fetchedAt: number; status: Match['status'] }> = {};
+const _lineupCache: Record<
+  string,
+  { home: Match['teamSheet']['home']; away: Match['teamSheet']['away']; fetchedAt: number; status: Match['status'] }
+> = {};
 
 function lineupTtl(status: Match['status']): number {
   if (status === 'live') return 20_000;        // 20s while live (subs, formation changes)
@@ -170,8 +171,11 @@ const _rosterCache: Record<string, { players: string[]; fetchedAt: number }> = {
 const ROSTER_TTL = 3_600_000; // 1 hour
 
 async function ensureRoster(match: Match): Promise<void> {
+  // Demo card ships a full teamSheet; do not fetch ESPN (would use wrong event id from seed).
+  if (match.isDemo) return;
   if (!match._espn) return;
   const { homeTeamId, awayTeamId, leagueSlug } = match._espn;
+
   const espnEventId = extractEspnId(match.id);
 
   // 1) Always try the summary endpoint first - ESPN has predicted XI for upcoming matches too,
@@ -236,12 +240,17 @@ async function ensureRoster(match: Match): Promise<void> {
   }
 }
 
-/** Get a single match by ID, fetching rosters on demand if needed. */
-export async function getMatch(id: string): Promise<Match | null> {
+/**
+ * Get a single match by ID, fetching rosters on demand if needed.
+ * The demo room (`demo-live-match`) is only available when `includeDemo` is true (URL `?demo=1` on `/api/match`).
+ */
+export async function getMatch(id: string, options?: { includeDemo?: boolean }): Promise<Match | null> {
+  const includeDemo = options?.includeDemo ?? false;
   if (id === DEMO_MATCH_ID) {
-    return buildDemoLiveMatch(await getMatches());
+    if (!includeDemo) return null;
+    return buildDemoLiveMatch(await getMatches({ includeDemo: false }));
   }
-  const all = await getMatches();
+  const all = await getMatches({ includeDemo: false });
   const match = all.find(m => m.id === id) || null;
   if (match) {
     await ensureRoster(match);
@@ -249,4 +258,4 @@ export async function getMatch(id: string): Promise<Match | null> {
   return match;
 }
 
-export { TEAMS, SQUAD_PLAYERS };
+export { TEAMS };
