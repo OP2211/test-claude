@@ -25,6 +25,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
   if (!profile) {
     notFound();
   }
+  const fullName = profile.full_name?.trim() || '—';
 
   const selectedTeam = TEAMS.find((team) => team.id === profile.fan_team_id) ?? null;
   const avatarFallback = profile.username[0]?.toUpperCase() ?? 'F';
@@ -35,12 +36,6 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
       <main className="app-main">
         <div className="ml-page">
           <div className="profile-page">
-            <div className="profile-header">
-              <div>
-                <h1 className="profile-title">{profile.username}</h1>
-              </div>
-            </div>
-
             <section className="profile-card" aria-label="Supporter profile">
               <div className="profile-card-top">
                 <div className="profile-identity">
@@ -53,7 +48,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                     )}
                   </div>
                   <div>
-                    <div className="profile-name">{profile.username}</div>
+                    <div className="profile-name">{fullName !== '—' ? fullName : profile.username}</div>
                     <div className="profile-username">@{profile.username}</div>
                     {selectedTeam && (
                       <div
@@ -72,8 +67,12 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
 
               <div className="profile-card-body">
                 <div className="profile-row">
+                  <div className="profile-row-label">Full Name</div>
+                  <div className="profile-row-value">{fullName}</div>
+                </div>
+                <div className="profile-row">
                   <div className="profile-row-label">Username</div>
-                  <div className="profile-row-value">{profile.username}</div>
+                  <div className="profile-row-value">@{profile.username}</div>
                 </div>
                 <div className="profile-row">
                   <div className="profile-row-label">City</div>

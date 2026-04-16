@@ -195,13 +195,6 @@ export default function Profile() {
       <main className="app-main">
         <div className="ml-page">
           <div className="profile-page">
-            <div className="profile-header">
-              <div>
-                  <h1 className="profile-title">{name}</h1>
-                <p className="profile-subtitle">Manage your FanGround account.</p>
-              </div>
-            </div>
-
             <section className="profile-card" aria-label="Profile details">
               <div className="profile-card-top">
                 <div className="profile-identity">

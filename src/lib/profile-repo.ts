@@ -16,6 +16,7 @@ export interface UserProfile {
 
 export interface PublicProfile {
   google_sub: string;
+  full_name: string | null;
   username: string;
   email: string | null;
   image: string | null;
@@ -176,7 +177,7 @@ function isLegacyMissingLocalAvatar(image: string): boolean {
 export async function getSupportersByTeamId(teamId: TeamId): Promise<PublicProfile[]> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('google_sub,username,email,image,fan_team_id,city,created_at')
+    .select('google_sub,full_name,username,email,image,fan_team_id,city,created_at')
     .eq('fan_team_id', teamId)
     .order('username', { ascending: true })
     .returns<PublicProfile[]>();
@@ -194,7 +195,7 @@ export async function getPublicProfileByIdOrUsername(idOrUsername: string): Prom
 
   const byId = await supabase
     .from('profiles')
-    .select('google_sub,username,email,image,fan_team_id,city,created_at')
+    .select('google_sub,full_name,username,email,image,fan_team_id,city,created_at')
     .eq('google_sub', trimmed)
     .maybeSingle<PublicProfile>();
 
@@ -208,7 +209,7 @@ export async function getPublicProfileByIdOrUsername(idOrUsername: string): Prom
 
   const byUsername = await supabase
     .from('profiles')
-    .select('google_sub,username,email,image,fan_team_id,city,created_at')
+    .select('google_sub,full_name,username,email,image,fan_team_id,city,created_at')
     .ilike('username', trimmed)
     .limit(1)
     .maybeSingle<PublicProfile>();

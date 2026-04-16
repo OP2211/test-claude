@@ -24,6 +24,7 @@
 }
 
 .profile-card {
+  margin: 20px 0;
   background: rgba(var(--neutral-rgb),0.03);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
