@@ -177,7 +177,12 @@ export default function ChatPanel({
                       if (!parsed) return msg.text;
                       return (
                         <>
-                          <Link className="cp-sys-userlink" href={`/profile/${encodeURIComponent(parsed.profileSlug)}`}>
+                          <Link
+                            className="cp-sys-userlink"
+                            href={`/profile/${encodeURIComponent(parsed.profileSlug)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
                             {parsed.displayName}
                           </Link>{' '}
                           <span>{parsed.rest}</span>
