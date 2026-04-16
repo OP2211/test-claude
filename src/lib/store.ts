@@ -37,6 +37,31 @@ const _voteHistory = globalStore[STORE_GLOBAL_KEY]!.voteHistory;
 
 const MAX_VOTE_HISTORY = 200;
 
+async function hydrateLatestReactions(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  matchId: string,
+  tab: TabId,
+  messages: Message[],
+): Promise<Message[]> {
+  if (!supabaseAdmin || messages.length === 0) return messages;
+  const ids = messages.map((m) => m.id);
+  const { data, error } = await supabaseAdmin
+    .from('chat_messages')
+    .select('id,reactions')
+    .eq('match_id', matchId)
+    .eq('tab', tab)
+    .in('id', ids);
+  if (error || !data) return messages;
+  const reactionById = new Map<string, Reactions>();
+  for (const row of data as Array<{ id: string; reactions: Reactions | null }>) {
+    reactionById.set(row.id, row.reactions || {});
+  }
+  return messages.map((m) => ({
+    ...m,
+    reactions: reactionById.get(m.id) ?? m.reactions,
+  }));
+}
+
 async function getRoom(matchId: string): Promise<Room> {
   if (!_messages[matchId]) {
     _messages[matchId] = { predictions: [], teamsheet: [], banter: [] };
@@ -124,18 +149,46 @@ export async function getMessages(matchId: string, tab: TabId, opts: GetMessages
     }
 
     const { data, error } = await query;
-
-    if (!error && data) {
+    if (!error && data && data.length > 0) {
       const rows = data as ChatMessageRow[];
       const hasMore = rows.length > limit;
       const pageRows = (hasMore ? rows.slice(0, limit) : rows).reverse();
+      const messages = pageRows.map(fromChatMessageRow);
       return {
-        messages: pageRows.map(fromChatMessageRow),
+        messages: await hydrateLatestReactions(supabaseAdmin, normalizedMatchId, normalizedTab, messages),
         hasMore,
       };
     }
-    if (error) {
-      console.error('Supabase getMessages failed, falling back to in-memory store:', error.message);
+
+    let fallbackQuery = supabaseAdmin
+      .from('chat_messages')
+      .select('*')
+      .eq('match_id', normalizedMatchId)
+      .eq('tab', normalizedTab);
+
+    if (before) {
+      fallbackQuery = fallbackQuery.lt('timestamp', before);
+    }
+
+    const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+    if (!fallbackError && fallbackData) {
+      const rows = (fallbackData as ChatMessageRow[]).sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      );
+      const hasMore = rows.length > limit;
+      const pageRows = hasMore ? rows.slice(-limit) : rows;
+      const messages = pageRows.map(fromChatMessageRow);
+      return {
+        messages: await hydrateLatestReactions(supabaseAdmin, normalizedMatchId, normalizedTab, messages),
+        hasMore,
+      };
+    }
+
+    if (error || fallbackError) {
+      console.error(
+        'Supabase getMessages failed, falling back to in-memory store:',
+        error?.message || fallbackError?.message,
+      );
     }
   }
 

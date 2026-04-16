@@ -475,7 +475,22 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
         const updated: MessagesByTab = { predictions: [], teamsheet: [], banter: [] };
         for (const tab of ['predictions', 'teamsheet', 'banter'] as const) {
           updated[tab] = (prev[tab] || []).map(m =>
-            m.id === messageId ? { ...m, reactions } : m
+            m.id === messageId
+              ? {
+                  ...m,
+                  reactions: Object.entries(reactions || {}).reduce<Reactions>(
+                    (acc, [emoji, users]) => {
+                      if (Array.isArray(users) && users.length > 0) {
+                        acc[emoji] = users;
+                      } else {
+                        delete acc[emoji];
+                      }
+                      return acc;
+                    },
+                    { ...(m.reactions || {}) },
+                  ),
+                }
+              : m
           );
         }
         return updated;
