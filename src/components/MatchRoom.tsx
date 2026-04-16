@@ -340,11 +340,11 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
   useEffect(() => {
     async function init() {
       try {
-        const pageSize = 50;
         const [pRes, tRes, bRes, vRes, mRes] = await Promise.all([
-          fetch(`/api/messages?matchId=${match.id}&tab=predictions&limit=${pageSize}`, { cache: 'no-store' }),
-          fetch(`/api/messages?matchId=${match.id}&tab=teamsheet&limit=${pageSize}`, { cache: 'no-store' }),
-          fetch(`/api/messages?matchId=${match.id}&tab=banter&limit=${pageSize}`, { cache: 'no-store' }),
+          // Initial load fetches full tab history for this match.
+          fetch(`/api/messages?matchId=${match.id}&tab=predictions`, { cache: 'no-store' }),
+          fetch(`/api/messages?matchId=${match.id}&tab=teamsheet`, { cache: 'no-store' }),
+          fetch(`/api/messages?matchId=${match.id}&tab=banter`, { cache: 'no-store' }),
           fetch(`/api/vote?matchId=${match.id}`, { cache: 'no-store' }),
           fetch(`/api/match?id=${match.id}`, { cache: 'no-store' }),
         ]);

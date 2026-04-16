@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-export function getSupabaseAdmin() {
+export function getSupabaseAdmin(requireServiceRole = false) {
   // Read env vars at call time so local `.env` edits in dev are picked up
   // without requiring this module instance to be reloaded.
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -12,16 +12,20 @@ export function getSupabaseAdmin() {
     return null;
   }
 
-  // Prefer service-role key for server APIs. Fallback to publishable key so
-  // chat persistence can still function in local/dev environments where
-  // service-role key is not loaded yet.
-  const key = supabaseServiceRoleKey || supabasePublishableKey || supabaseAnonKey;
+  // For sensitive server APIs, require service-role explicitly.
+  // For local/dev helpers, allow publishable/anon fallback.
+  const key = requireServiceRole
+    ? supabaseServiceRoleKey
+    : (supabaseServiceRoleKey || supabasePublishableKey || supabaseAnonKey);
   if (!key) return null;
 
   return createClient(supabaseUrl, key, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
+    },
+    global: {
+      fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
     },
   });
 }

@@ -134,7 +134,7 @@ export async function getMessages(matchId: string, tab: TabId, opts: GetMessages
   const requestedLimit = Number.isFinite(opts.limit) ? Math.floor(opts.limit as number) : DEFAULT_PAGE_SIZE;
   const limit = Math.max(1, Math.min(MAX_PAGE_SIZE, requestedLimit || DEFAULT_PAGE_SIZE));
   const before = opts.before?.trim();
-  const supabaseAdmin = getSupabaseAdmin();
+  const supabaseAdmin = getSupabaseAdmin(true);
   if (supabaseAdmin) {
     let query = supabaseAdmin
       .from('chat_messages')
@@ -230,7 +230,7 @@ export async function addMessage(matchId: string, { tab, userId, username, fanTe
     moderation,
   };
 
-  const supabaseAdmin = getSupabaseAdmin();
+  const supabaseAdmin = getSupabaseAdmin(true);
   if (supabaseAdmin) {
     const { error } = await supabaseAdmin.from('chat_messages').insert(toChatMessageRow(matchId, msg));
     if (!error) {
@@ -246,7 +246,7 @@ export async function addMessage(matchId: string, { tab, userId, username, fanTe
 }
 
 export async function toggleReaction(matchId: string, tab: TabId, messageId: string, emoji: string, userId: string): Promise<Reactions | null> {
-  const supabaseAdmin = getSupabaseAdmin();
+  const supabaseAdmin = getSupabaseAdmin(true);
   if (supabaseAdmin) {
     const { data, error } = await supabaseAdmin
       .from('chat_messages')
