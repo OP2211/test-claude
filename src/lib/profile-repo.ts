@@ -143,7 +143,16 @@ function isMissingColumnError(message: string, column: string): boolean {
 }
 
 async function maybePersistLocalAvatar(profile: UserProfile | null): Promise<UserProfile | null> {
-  if (!profile?.image || profile.image.startsWith('/')) {
+  if (!profile?.image) {
+    return profile;
+  }
+
+  if (isLegacyMissingLocalAvatar(profile.image)) {
+    await supabase.from('profiles').update({ image: null }).eq('google_sub', profile.google_sub);
+    return { ...profile, image: null };
+  }
+
+  if (profile.image.startsWith('/')) {
     return profile;
   }
 
@@ -158,6 +167,10 @@ async function maybePersistLocalAvatar(profile: UserProfile | null): Promise<Use
   } catch {
     return profile;
   }
+}
+
+function isLegacyMissingLocalAvatar(image: string): boolean {
+  return image.startsWith('/profile-images/');
 }
 
 export async function getSupportersByTeamId(teamId: TeamId): Promise<PublicProfile[]> {

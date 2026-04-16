@@ -67,7 +67,12 @@ function UserAvatarMenu({
   const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [logoutCopy, setLogoutCopy] = useState<{ title: string; message: string } | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [image]);
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -127,10 +132,13 @@ function UserAvatarMenu({
           aria-haspopup="menu"
           onClick={toggleMobile}
         >
-          {image ? (
-            <Image src={image} alt="" width={32} height={32} />
-          ) : (
+          {image && !avatarFailed ? (
+            <Image src={image} alt="" width={32} height={32} onError={() => setAvatarFailed(true)} />
+          ) : avatarFailed ? (
             <span className="user-avatar-letter">{letter}</span>
+          ) : null}
+          {!image && (
+            <span className="user-avatar-empty" aria-hidden />
           )}
         </button>
 
