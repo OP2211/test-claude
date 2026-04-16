@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import type { Message, User } from '@/lib/types';
 import { TEAMS } from '@/lib/teams';
 import TeamLogoImage from './TeamLogoImage';
@@ -175,16 +174,22 @@ export default function ChatPanel({
                     {msg.userId === 'fanground' ? (() => {
                       const parsed = parseFangroundUserMention(msg.text);
                       if (!parsed) return msg.text;
+                      const profileUrl = `/profile/${encodeURIComponent(parsed.profileSlug)}`;
                       return (
                         <>
-                          <Link
+                          <a
                             className="cp-sys-userlink"
-                            href={`/profile/${encodeURIComponent(parsed.profileSlug)}`}
+                            href={profileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                              e.preventDefault();
+                              // Use a standard _blank open without window features so browsers prefer a new tab.
+                              window.open(profileUrl, '_blank');
+                            }}
                           >
                             {parsed.displayName}
-                          </Link>{' '}
+                          </a>{' '}
                           <span>{parsed.rest}</span>
                         </>
                       );

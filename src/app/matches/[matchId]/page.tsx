@@ -176,7 +176,7 @@ function MatchDetailsPageInner() {
             onSignInWithGoogle: () => {},
           }}
         />
-        <main className="app-main">
+        <main className="app-main mp-detail-main">
           <div className="mp-empty">
             <p className="ml-empty-text">Match not found</p>
             <p className="ml-empty-sub">This room may no longer be available.</p>
@@ -230,7 +230,7 @@ function MatchDetailsPageInner() {
           onSignInWithGoogle: () => {},
         }}
       />
-      <main className="app-main">
+      <main className="app-main mp-detail-main">
         <MatchRoom match={match} user={user} onBack={handleBack} />
       </main>
     </div>
