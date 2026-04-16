@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import AppHeader from '@/components/AppHeader';
 import MatchRoom from '@/components/MatchRoom';
@@ -51,11 +51,18 @@ function mapProfileToUser(profile: NonNullable<ProfileResponse['profile']>): Use
   };
 }
 
-export default function MatchDetailsPage() {
+function MatchDetailsPageInner() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const params = useParams<{ matchId: string }>();
   const matchId = params?.matchId;
+  const rawDemo = searchParams.get('demo')?.toLowerCase() ?? '';
+  const demoForApi =
+    rawDemo === '1' || rawDemo === 'true' || rawDemo === 'yes' ? `&demo=${rawDemo}` : '';
+  const matchesListQs = searchParams.get('demo')
+    ? `?demo=${encodeURIComponent(searchParams.get('demo')!)}`
+    : '';
   const [user, setUser] = useState<User | null>(null);
   const [match, setMatch] = useState<Match | null>(null);
   const [loadingMatch, setLoadingMatch] = useState(true);
@@ -107,7 +114,7 @@ export default function MatchDetailsPage() {
     if (!matchId) return;
     setLoadingMatch(true);
     try {
-      const res = await fetch(`/api/match?id=${matchId}`, { cache: 'no-store' });
+      const res = await fetch(`/api/match?id=${matchId}${demoForApi}`, { cache: 'no-store' });
       if (!res.ok) {
         setNotFound(res.status === 404);
         return;
@@ -120,7 +127,7 @@ export default function MatchDetailsPage() {
     } finally {
       setLoadingMatch(false);
     }
-  }, [matchId]);
+  }, [matchId, demoForApi]);
 
   useEffect(() => {
     if (session?.user) {
@@ -145,7 +152,7 @@ export default function MatchDetailsPage() {
   };
 
   const handleBack = () => {
-    router.push('/matches');
+    router.push(`/matches${matchesListQs}`);
   };
 
   const handleSignOut = () => {
@@ -206,7 +213,7 @@ export default function MatchDetailsPage() {
             onComplete={handleOnboardingComplete}
             onClose={() => {
               setShowOnboarding(false);
-              router.push('/matches');
+              router.push(`/matches${matchesListQs}`);
             }}
           />
         )}
@@ -233,5 +240,19 @@ export default function MatchDetailsPage() {
         <MatchRoom match={match} user={user} onBack={handleBack} />
       </main>
     </div>
+  );
+}
+
+export default function MatchDetailsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mp-loading-full">
+          <div className="mp-spinner" />
+        </div>
+      }
+    >
+      <MatchDetailsPageInner />
+    </Suspense>
   );
 }

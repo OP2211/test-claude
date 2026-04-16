@@ -1,4 +1,5 @@
 import type { Match, MatchEvent, Team } from './types';
+import { horizontalRank } from './pitchPositionOrder';
 
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
 
@@ -25,7 +26,7 @@ export interface LeagueConfig {
 export const LEAGUES: LeagueConfig[] = [
   { slug: 'eng.1', name: 'Premier League' },
   { slug: 'eng.fa', name: 'FA Cup' },
-  { slug: 'uefa.champions', name: 'Champions League' },
+  // { slug: 'uefa.champions', name: 'Champions League' },
 ];
 
 /** Map ESPN team IDs to our app's team slugs for known teams. */
@@ -309,6 +310,8 @@ export interface MatchLineup {
   formation: string;
   players: string[];
   positions: string[];
+  /** Shirt numbers aligned with players[] (empty string if API omits). */
+  numbers: string[];
   subs: string[];
   confirmed: boolean;
 }
@@ -353,6 +356,18 @@ function surnameOf(displayName: string): string {
   return parts[parts.length - 1];
 }
 
+/** Jersey / shirt number from a summary roster row (ESPN uses athlete.jersey for soccer). */
+function shirtNumberFromRosterEntry(p: {
+  athlete?: { jersey?: string | number; uniform?: { number?: string | number } };
+  jersey?: string | number;
+}): string {
+  const raw =
+    p.athlete?.jersey ?? p.athlete?.uniform?.number ?? (p as { jersey?: string | number }).jersey;
+  if (raw === undefined || raw === null) return '';
+  const s = String(raw).trim();
+  return s === '' ? '' : s;
+}
+
 /**
  * Categorize an ESPN position abbreviation into a row group.
  * Lower number = closer to own goal (GK=0, DEF=1, MID=2-3, FWD=4).
@@ -369,24 +384,6 @@ function positionGroup(posAbbr: string): number {
   // Forwards
   if (/^(F|FW|ST|CF|SS|LF|RF)/.test(p)) return 4;
   return 2; // default to midfield
-}
-
-/**
- * Returns a left-to-right rank within a row (0 = leftmost on screen).
- * ESPN's tactics view places right-side positions (RB, RW, CD-R) on the LEFT
- * of the screen and left-side positions (LB, LW, CD-L) on the RIGHT.
- * Lower rank = leftmost in the rendered row.
- */
-function horizontalRank(posAbbr: string): number {
-  const p = posAbbr.toUpperCase();
-  // Fan's perspective: left-flank players on the viewer's left, right-flank on the right
-  if (p === 'LB' || p === 'LWB' || p === 'LM' || p === 'LW' || p === 'LF') return 0;
-  if (/-L$/.test(p)) return 1;
-  // Right-flank players on the viewer's right
-  if (p === 'RB' || p === 'RWB' || p === 'RM' || p === 'RW' || p === 'RF') return 4;
-  if (/-R$/.test(p)) return 3;
-  // Centre / no flank designation
-  return 2;
 }
 
 /**
@@ -412,9 +409,10 @@ export async function fetchMatchLineups(
 
     function parseRoster(r: { formation?: string; roster?: Array<{
       starter: boolean;
-      athlete: { displayName: string; shortName: string };
+      athlete: { displayName: string; shortName: string; jersey?: string | number; uniform?: { number?: string | number } };
       position?: { abbreviation: string };
       formationPlace?: number;
+      jersey?: string | number;
     }> }): MatchLineup | null {
       const roster = r.roster || [];
       const starters = roster.filter(p => p.starter);
@@ -472,6 +470,7 @@ export async function fetchMatchLineups(
         formation,
         players: ordered.map(p => surnameOf(p.athlete.displayName)),
         positions: ordered.map(p => displayPos(p.position?.abbreviation || '')),
+        numbers: ordered.map(p => shirtNumberFromRosterEntry(p)),
         subs,
         // Confirmed only once teams are out (live/finished). Pre-match data is
         // ESPN's predicted/announced XI which may change.

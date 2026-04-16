@@ -204,6 +204,7 @@ function MatchesPageContent() {
     searchParams.get('debugOpenAll') === '1' ||
     searchParams.get('debugOpenAll') === 'true';
   const demoParam = searchParams.get('demo');
+  const demoQs = demoParam ? `?demo=${encodeURIComponent(demoParam)}` : '';
   const headerUser: User | null = user ?? (
     session?.user
       ? {
@@ -281,7 +282,7 @@ function MatchesPageContent() {
       setShowOnboarding(true);
       return;
     }
-    router.push(`/matches/${match.id}`);
+    router.push(`/matches/${match.id}${demoQs}`);
   };
 
   const handleOnboardingComplete = async (payload: OnboardingPayload) => {
@@ -298,7 +299,7 @@ function MatchesPageContent() {
     if (pendingMatchId) {
       const nextMatchId = pendingMatchId;
       setPendingMatchId(null);
-      router.push(`/matches/${nextMatchId}`);
+      router.push(`/matches/${nextMatchId}${demoQs}`);
     }
   };
 

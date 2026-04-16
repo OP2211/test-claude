@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { getMatch } from './data';
+import { getMatch, DEMO_MATCH_ID } from './data';
 import { getSupabaseAdmin } from './supabase-admin';
 import type { Message, TabId, TeamId, VoteChoice, VoteTally, VoteSnapshot, VoteVoter, VoteHistoryPoint, Reactions } from './types';
 
@@ -361,7 +361,7 @@ export function getVoteTally(matchId: string): VoteTally {
 }
 
 async function seedMessages(matchId: string): Promise<void> {
-  const match = await getMatch(matchId);
+  const match = await getMatch(matchId, { includeDemo: matchId === DEMO_MATCH_ID });
   if (!match) return;
 
   const h = match.homeTeam.shortName;
