@@ -220,6 +220,14 @@ function isTabId(v: unknown): v is TabId {
   return typeof v === 'string' && (TAB_IDS as readonly string[]).includes(v);
 }
 
+function canUseNativeShare(): boolean {
+  if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
+    return false;
+  }
+  const ua = navigator.userAgent.toLowerCase();
+  return /android|iphone|ipad|ipod|mobile/.test(ua);
+}
+
 /** Normalize Pusher payload (sometimes stringified or partial). */
 function parseIncomingMessage(raw: unknown): Message | null {
   try {
@@ -771,7 +779,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
   const shareRoomLink = useCallback(async () => {
     if (typeof window === 'undefined') return;
     const roomUrl = window.location.href;
-    if (typeof navigator === 'undefined' || !navigator.share) {
+    if (!canUseNativeShare()) {
       await copyRoomLink();
       return;
     }

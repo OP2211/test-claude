@@ -53,6 +53,14 @@ function getPreferredSessionAvatar(image: string | null | undefined): string | n
   return image.includes('/storage/v1/object/public/') ? image : null;
 }
 
+function canUseNativeShare(): boolean {
+  if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
+    return false;
+  }
+  const ua = navigator.userAgent.toLowerCase();
+  return /android|iphone|ipad|ipod|mobile/.test(ua);
+}
+
 export default function Profile() {
   const { data: session, status, update: updateSession } = useSession();
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -233,7 +241,7 @@ export default function Profile() {
 
   const shareReferralLink = async () => {
     if (!referralLink) return;
-    if (typeof navigator === 'undefined' || !navigator.share) {
+    if (!canUseNativeShare()) {
       await copyReferralLink();
       return;
     }
