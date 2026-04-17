@@ -58,6 +58,11 @@ function mapProfileToUser(profile: NonNullable<ProfileResponse['profile']>): Use
   };
 }
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 type PageTab = 'matches' | 'table' | 'stats';
 
 function StatsTab() {
@@ -196,6 +201,7 @@ function MatchesPageContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [pendingMatchId, setPendingMatchId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const requestedTab = searchParams.get('tab');
   const queryTab: PageTab =
@@ -260,6 +266,19 @@ function MatchesPageContent() {
       void loadProfile();
     }
   }, [session, loadProfile]);
+
+  useEffect(() => {
+    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e as BeforeInstallPromptEvent); };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  };
 
   const fetchMatches = useCallback(async () => {
     try {
@@ -335,8 +354,8 @@ function MatchesPageContent() {
         onLogoClick={handleBack}
         inRoom={false}
         homeActions={{
-          installPrompt: false,
-          onInstall: () => {},
+          installPrompt: !!installPrompt,
+          onInstall: handleInstall,
           user: headerUser,
           onSignOut: handleSignOut,
           showGoogleSignIn: false,

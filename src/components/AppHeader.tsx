@@ -314,6 +314,12 @@ export default function AppHeader({
 
           {variant === 'home' && homeActions && (
             <>
+              {homeActions.installPrompt && (
+                <button className="install-btn" onClick={homeActions.onInstall} type="button">
+                  <span className="install-icon">+</span>
+                  Install
+                </button>
+              )}
               {homeActions.showGoogleSignIn && homeActions.onSignInWithGoogle && (
                 <button
                   type="button"
