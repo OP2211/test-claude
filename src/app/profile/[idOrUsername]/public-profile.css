@@ -7,3 +7,53 @@
 .public-profile-id {
   word-break: break-all;
 }
+
+.public-profile-invited-cards {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.public-profile-invited-card {
+  border: 1px solid rgba(var(--neutral-rgb), 0.12);
+  background: rgba(var(--neutral-rgb), 0.03);
+  border-radius: 12px;
+  padding: 10px 8px;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.public-profile-invited-card:hover {
+  border-color: color-mix(in srgb, var(--accent-green) 40%, rgba(var(--neutral-rgb), 0.2));
+  background: rgba(var(--neutral-rgb), 0.06);
+}
+
+.public-profile-invited-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: rgba(var(--neutral-rgb), 0.18);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.public-profile-invited-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.public-profile-invited-name {
+  font-size: var(--text-xs);
+  color: rgba(var(--neutral-rgb), 0.92);
+  text-align: center;
+  line-height: 1.3;
+  word-break: break-word;
+}

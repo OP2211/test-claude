@@ -21,11 +21,24 @@ interface ProfileData {
   fan_team_id: string;
   dob: string | null;
   city: string | null;
+  referral_code?: string;
+  invited_by_google_sub?: string | null;
+}
+
+interface ReferralMember {
+  google_sub: string;
+  full_name: string | null;
+  username: string;
+  image: string | null;
 }
 
 interface ProfileMeResponse {
   profile: ProfileData | null;
-  isTeamLeader?: boolean;
+  referralCode?: string | null;
+  invitedBy?: ReferralMember | null;
+  invitedMembers?: ReferralMember[];
+  invitedCount?: number;
+  foundingFanTier?: 'founding' | 'silver' | null;
   error?: string;
 }
 
@@ -41,7 +54,11 @@ export default function Profile() {
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarUploadMessage, setAvatarUploadMessage] = useState<string>('');
-  const [isTeamLeader, setIsTeamLeader] = useState(false);
+  const [foundingFanTier, setFoundingFanTier] = useState<'founding' | 'silver' | null>(null);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [invitedBy, setInvitedBy] = useState<ReferralMember | null>(null);
+  const [invitedMembers, setInvitedMembers] = useState<ReferralMember[]>([]);
+  const [copyReferralMessage, setCopyReferralMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -53,15 +70,20 @@ export default function Profile() {
         const data = (await res.json()) as ProfileMeResponse;
         if (!res.ok) {
           setProfile(null);
-          setIsTeamLeader(false);
           setProfileError(data.error ?? 'Failed to load profile details');
           return;
         }
         setProfile(data.profile ?? null);
-        setIsTeamLeader(Boolean(data.isTeamLeader));
+        setFoundingFanTier(data.foundingFanTier ?? null);
+        setReferralCode(data.referralCode ?? null);
+        setInvitedBy(data.invitedBy ?? null);
+        setInvitedMembers(data.invitedMembers ?? []);
       } catch {
         setProfile(null);
-        setIsTeamLeader(false);
+        setFoundingFanTier(null);
+        setReferralCode(null);
+        setInvitedBy(null);
+        setInvitedMembers([]);
         setProfileError('Failed to load profile details');
       }
     };
@@ -185,9 +207,41 @@ export default function Profile() {
   const username = profile?.username ?? '—';
   const email = session.user?.email ?? '—';
   const image = avatarPreviewUrl || profile?.image || getPreferredSessionAvatar(session.user?.image) || '';
+  const referralLink =
+    referralCode && typeof window !== 'undefined'
+      ? `${window.location.origin}/?ref=${encodeURIComponent(referralCode)}`
+      : '';
   const selectedTeam = profile?.fan_team_id
     ? (TEAMS.find((team) => team.id === profile.fan_team_id) ?? null)
     : null;
+
+  const copyReferralLink = async () => {
+    if (!referralLink) return;
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setCopyReferralMessage('Referral link copied.');
+    } catch {
+      setCopyReferralMessage('Could not copy link.');
+    }
+  };
+
+  const shareReferralLink = async () => {
+    if (!referralLink) return;
+    if (typeof navigator === 'undefined' || !navigator.share) {
+      await copyReferralLink();
+      return;
+    }
+    try {
+      await navigator.share({
+        title: 'Join me on FanGround',
+        text: 'Use my referral link and join the fan community.',
+        url: referralLink,
+      });
+      setCopyReferralMessage('Referral link shared.');
+    } catch {
+      // Ignore if user cancels the native share sheet.
+    }
+  };
 
   return (
     <div className="app">
@@ -206,110 +260,174 @@ export default function Profile() {
       <main className="app-main">
         <div className="ml-page">
           <div className="profile-page">
-            <section className="profile-card" aria-label="Profile details">
-              <div className="profile-card-top">
-                <div className="profile-identity">
-                  <div className="profile-avatar" aria-label="Profile picture">
-                    {image ? (
-                      <Image src={image} alt="Profile picture" width={96} height={96} priority />
+            <section className="profile-hero-card" aria-label="Profile overview">
+              <div className="profile-identity">
+                <div className="profile-avatar" aria-label="Profile picture">
+                  {image ? (
+                    <Image src={image} alt="Profile picture" width={96} height={96} priority />
+                  ) : (
+                    <span className="profile-avatar-letter">{name?.[0]?.toUpperCase()}</span>
+                  )}
+                </div>
+                <div>
+                  <div className="profile-name">{name}</div>
+                  <div className="profile-username">@{username}</div>
+                  <div className="profile-email">{email}</div>
+                  <div
+                    className={`profile-team-pill ${selectedTeam ? '' : 'is-placeholder'}`}
+                    style={{ '--team-pill-color': selectedTeam?.color ?? '#5d6d85' } as React.CSSProperties}
+                    aria-label={selectedTeam ? `${selectedTeam.name}` : 'Support badge'}
+                  >
+                    <span className="profile-team-pill-dot" />
+                    {selectedTeam?.logo ? (
+                      <TeamLogoImage src={selectedTeam.logo} alt="" className="profile-team-pill-logo" />
                     ) : (
-                      <span className="profile-avatar-letter">{name?.[0]?.toUpperCase()}</span>
+                      <span className="profile-team-pill-logo-placeholder" aria-hidden />
                     )}
+                    <span className="profile-team-pill-text">
+                      {selectedTeam ? `${selectedTeam.name}` : ''}
+                    </span>
                   </div>
-                  <div>
-                    <div className="profile-name">{name}</div>
-                    <div className="profile-username">@{username}</div>
-                    <div className="profile-email">{email}</div>
-                    <div
-                      className={`profile-team-pill ${selectedTeam ? '' : 'is-placeholder'}`}
-                      style={{ '--team-pill-color': selectedTeam?.color ?? '#5d6d85' } as React.CSSProperties}
-                      aria-label={selectedTeam ? `${selectedTeam.name}` : 'Support badge'}
+                  <div className="profile-avatar-actions">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="profile-avatar-input"
+                      onChange={onAvatarFileChange}
+                    />
+                    <button
+                      type="button"
+                      className="profile-avatar-btn"
+                      onClick={onPickAvatarClick}
+                      disabled={isUploadingAvatar}
                     >
-                      <span className="profile-team-pill-dot" />
-                      {selectedTeam?.logo ? (
-                        <TeamLogoImage src={selectedTeam.logo} alt="" className="profile-team-pill-logo" />
-                      ) : (
-                        <span className="profile-team-pill-logo-placeholder" aria-hidden />
-                      )}
-                      <span className="profile-team-pill-text">
-                        {selectedTeam ? `${selectedTeam.name}` : ''}
-                      </span>
-                    </div>
-                    <div className="profile-avatar-actions">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp,image/gif"
-                        className="profile-avatar-input"
-                        onChange={onAvatarFileChange}
-                      />
-                      <button
-                        type="button"
-                        className="profile-avatar-btn"
-                        onClick={onPickAvatarClick}
-                        disabled={isUploadingAvatar}
-                      >
-                        {isUploadingAvatar ? 'Uploading…' : 'Change photo'}
-                      </button>
-                    </div>
-                    <div className="profile-badges">
-                      <EarlyAdopterBadge />
-                      {isTeamLeader && selectedTeam && (
-                        <span className="profile-leader-badge" aria-label={`Badge: ${selectedTeam.name} Leader`}>
+                      {isUploadingAvatar ? 'Uploading…' : 'Change photo'}
+                    </button>
+                  </div>
+                  <div className="profile-badges">
+                    <EarlyAdopterBadge />
+                      {foundingFanTier && selectedTeam && (
+                        <span
+                          className={`profile-leader-badge ${foundingFanTier === 'silver' ? 'profile-leader-badge--silver' : ''}`}
+                          aria-label={`Badge: ${selectedTeam.name} ${
+                            foundingFanTier === 'silver' ? 'Silver Founding Fan' : 'Founding Fan'
+                          }`}
+                        >
                           <TeamLogoImage src={selectedTeam.logo} alt="" className="profile-leader-badge-logo" />
-                          <span>{selectedTeam.name} Leader</span>
+                          <span>
+                            {selectedTeam.name} {foundingFanTier === 'silver' ? 'Silver Founding Fan' : 'Founding Fan'}
+                          </span>
                         </span>
                       )}
-                    </div>
-                    {avatarUploadMessage && (
-                      <p className="profile-avatar-status">{avatarUploadMessage}</p>
-                    )}
                   </div>
+                  {avatarUploadMessage && (
+                    <p className="profile-avatar-status">{avatarUploadMessage}</p>
+                  )}
                 </div>
               </div>
 
-              <div className="profile-card-body">
-                <div className="profile-row">
-                  <div className="profile-row-label">Username</div>
-                  <div className="profile-row-value">{username}</div>
-                </div>
-                <div className="profile-row">
-                  <div className="profile-row-label">Email</div>
-                  <div className="profile-row-value">{email}</div>
-                </div>
-                <div className="profile-row">
-                  <div className="profile-row-label">Phone</div>
-                  <div className="profile-row-value">{profile?.phone ?? '—'}</div>
-                </div>
-                <div className="profile-row">
-                  <div className="profile-row-label">Selected team</div>
-                  <div className="profile-row-value">
-                    {selectedTeam ? (
-                      <span className="profile-team-value">
-                        <TeamLogoImage src={selectedTeam.logo} alt={`${selectedTeam.name} logo`} className="profile-team-value-logo" />
-                        <span>{selectedTeam.name}</span>
-                      </span>
-                    ) : (
-                      '—'
-                    )}
+            </section>
+
+            <div className="profile-grid">
+              <section className="profile-panel profile-panel--wide" aria-label="Account info">
+                <h2 className="profile-panel-title">Account info</h2>
+                <div className="profile-account-grid">
+                  <div className="profile-row">
+                    <div className="profile-row-label">Username</div>
+                    <div className="profile-row-value">{username}</div>
                   </div>
-                </div>
-                <div className="profile-row">
-                  <div className="profile-row-label">Date of birth</div>
-                  <div className="profile-row-value">{profile?.dob ?? '—'}</div>
-                </div>
-                <div className="profile-row">
-                  <div className="profile-row-label">City</div>
-                  <div className="profile-row-value">{profile?.city ?? '—'}</div>
+                  <div className="profile-row">
+                    <div className="profile-row-label">Email</div>
+                    <div className="profile-row-value">{email}</div>
+                  </div>
+                  <div className="profile-row">
+                    <div className="profile-row-label">Phone</div>
+                    <div className="profile-row-value">{profile?.phone ?? '—'}</div>
+                  </div>
+                  <div className="profile-row">
+                    <div className="profile-row-label">Selected team</div>
+                    <div className="profile-row-value">
+                      {selectedTeam ? (
+                        <span className="profile-team-value">
+                          <TeamLogoImage src={selectedTeam.logo} alt={`${selectedTeam.name} logo`} className="profile-team-value-logo" />
+                          <span>{selectedTeam.name}</span>
+                        </span>
+                      ) : (
+                        '—'
+                      )}
+                    </div>
+                  </div>
+                  <div className="profile-row">
+                    <div className="profile-row-label">Date of birth</div>
+                    <div className="profile-row-value">{profile?.dob ?? '—'}</div>
+                  </div>
+                  <div className="profile-row">
+                    <div className="profile-row-label">City</div>
+                    <div className="profile-row-value">{profile?.city ?? '—'}</div>
+                  </div>
                 </div>
                 {profileError && (
-                  <div className="profile-row">
-                    <div className="profile-row-label">Status</div>
-                    <div className="profile-row-value">{profileError}</div>
-                  </div>
+                  <p className="profile-error-banner">{profileError}</p>
                 )}
-              </div>
-            </section>
+              </section>
+
+              <section className="profile-panel" aria-label="Referral link">
+                <h2 className="profile-panel-title">Your referral link</h2>
+                <p className="profile-panel-subtitle">
+                  Share this once. If a new user completes onboarding with it, it counts as your invite.
+                </p>
+                <div className="profile-referral-box">
+                  <span className="profile-referral-link">{referralLink || '—'}</span>
+                </div>
+                <div className="profile-referral-actions">
+                  <button type="button" className="profile-copy-referral-btn" onClick={() => void copyReferralLink()}>
+                    Copy link
+                  </button>
+                  <button type="button" className="profile-share-referral-btn" onClick={() => void shareReferralLink()}>
+                    Share
+                  </button>
+                </div>
+                {copyReferralMessage && <span className="profile-referral-copy-status">{copyReferralMessage}</span>}
+              </section>
+
+              <section className="profile-panel" aria-label="Referral relationships">
+                <h2 className="profile-panel-title">Referral relationships</h2>
+                <div className="profile-meta-row">
+                  <span className="profile-meta-label">Invited by</span>
+                  <span className="profile-meta-value">{invitedBy ? `@${invitedBy.username}` : '—'}</span>
+                </div>
+                <div className="profile-meta-row">
+                  <span className="profile-meta-label">Total successful invites</span>
+                  <span className="profile-meta-value">{invitedMembers.length}</span>
+                </div>
+                <div className="profile-invited-members">
+                  <div className="profile-meta-label">Invited members</div>
+                  {invitedMembers.length > 0 ? (
+                    <div className="profile-invited-cards">
+                      {invitedMembers.slice(0, 10).map((member) => (
+                        <Link
+                          key={member.google_sub}
+                          href={`/profile/${encodeURIComponent(member.username)}`}
+                          className="profile-invited-card"
+                        >
+                          <span className="profile-invited-avatar" aria-hidden>
+                            {member.image ? (
+                              <Image src={member.image} alt="" width={56} height={56} />
+                            ) : (
+                              <span>{member.username[0]?.toUpperCase() ?? 'F'}</span>
+                            )}
+                          </span>
+                          <span className="profile-invited-name">{member.full_name?.trim() || member.username}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="profile-empty-copy">No successful invites yet.</p>
+                  )}
+                </div>
+              </section>
+            </div>
           </div>
         </div>
       </main>

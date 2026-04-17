@@ -1,10 +1,15 @@
 import { notFound } from 'next/navigation';
 import type { CSSProperties } from 'react';
+import Link from 'next/link';
 import AppHeaderSession from '@/components/AppHeaderSession';
 import SiteFooter from '@/components/SiteFooter';
 import TeamLogoImage from '@/components/TeamLogoImage';
 import EarlyAdopterBadge from '@/components/EarlyAdopterBadge';
-import { getPublicProfileByIdOrUsername, isTeamLeaderForSupporter } from '@/lib/profile-repo';
+import {
+  getFoundingFanTierForSupporter,
+  getPublicProfileByIdOrUsername,
+  getReferralSnapshotByGoogleSub,
+} from '@/lib/profile-repo';
 import { TEAMS } from '@/lib/teams';
 import '../../page.css';
 import '../profile.css';
@@ -29,9 +34,11 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
   const fullName = profile.full_name?.trim() || '—';
 
   const selectedTeam = TEAMS.find((team) => team.id === profile.fan_team_id) ?? null;
-  const isTeamLeader = selectedTeam
-    ? await isTeamLeaderForSupporter(profile.google_sub, selectedTeam.id)
-    : false;
+  const foundingFanTier = selectedTeam
+    ? await getFoundingFanTierForSupporter(profile.google_sub, selectedTeam.id)
+    : null;
+  const referralSnapshot = await getReferralSnapshotByGoogleSub(profile.google_sub);
+  const invitedMembers = referralSnapshot.invitedMembers;
   const avatarFallback = profile.username[0]?.toUpperCase() ?? 'F';
 
   return (
@@ -67,10 +74,17 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                     )}
                     <div className="profile-badges">
                       <EarlyAdopterBadge />
-                      {isTeamLeader && selectedTeam && (
-                        <span className="profile-leader-badge" aria-label={`Badge: ${selectedTeam.name} Leader`}>
+                      {foundingFanTier && selectedTeam && (
+                        <span
+                          className={`profile-leader-badge ${foundingFanTier === 'silver' ? 'profile-leader-badge--silver' : ''}`}
+                          aria-label={`Badge: ${selectedTeam.name} ${
+                            foundingFanTier === 'silver' ? 'Silver Founding Fan' : 'Founding Fan'
+                          }`}
+                        >
                           <TeamLogoImage src={selectedTeam.logo} alt="" className="profile-leader-badge-logo" />
-                          <span>{selectedTeam.name} Leader</span>
+                          <span>
+                            {selectedTeam.name} {foundingFanTier === 'silver' ? 'Silver Founding Fan' : 'Founding Fan'}
+                          </span>
                         </span>
                       )}
                     </div>
@@ -98,6 +112,38 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                 <div className="profile-row">
                   <div className="profile-row-label">Supporter ID</div>
                   <div className="profile-row-value public-profile-id">{profile.google_sub}</div>
+                </div>
+                <div className="profile-row profile-row--stacked">
+                  <div className="profile-row-label">
+                    Successfully Invited Users ({invitedMembers.length})
+                  </div>
+                  <div className="profile-row-value profile-row-value--left">
+                    {invitedMembers.length > 0 ? (
+                      <div className="public-profile-invited-cards">
+                        {invitedMembers.slice(0, 10).map((member) => (
+                          <Link
+                            key={member.google_sub}
+                            href={`/profile/${encodeURIComponent(member.username)}`}
+                            className="public-profile-invited-card"
+                          >
+                            <span className="public-profile-invited-avatar" aria-hidden>
+                              {member.image ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={member.image} alt="" />
+                              ) : (
+                                <span>{member.username[0]?.toUpperCase() ?? 'F'}</span>
+                              )}
+                            </span>
+                            <span className="public-profile-invited-name">
+                              {member.full_name?.trim() || member.username}
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      'No successful invites yet.'
+                    )}
+                  </div>
                 </div>
               </div>
             </section>

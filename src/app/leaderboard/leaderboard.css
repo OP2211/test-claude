@@ -158,7 +158,10 @@
   border-radius: 999px;
   font-size: var(--text-xs);
   font-weight: 800;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.2;
+  text-align: center;
+  max-width: 220px;
   border: 1px solid #d6a739;
   background: linear-gradient(135deg, #fff4c9 0%, #f4cf62 52%, #d9a527 100%);
   color: #3b2902;
@@ -176,6 +179,13 @@
 
 .leaderboard-badge--leader {
   border-color: #b98712;
+}
+
+.leaderboard-badge--founding-silver {
+  border-color: #8f9fb2;
+  background: linear-gradient(135deg, #f5f8fc 0%, #d5deea 52%, #a9b8cc 100%);
+  color: #213247;
+  box-shadow: 0 6px 14px rgba(120, 140, 164, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .leaderboard-badge-team-logo {
@@ -211,4 +221,12 @@
   white-space: nowrap;
   box-shadow: 0 6px 14px rgba(214, 167, 57, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.55);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+@media (max-width: 640px) {
+  .leaderboard-badge {
+    max-width: 180px;
+    padding: 5px 8px;
+    font-size: 11px;
+  }
 }

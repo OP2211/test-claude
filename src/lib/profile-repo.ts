@@ -12,6 +12,8 @@ export interface UserProfile {
   fan_team_id: TeamId;
   dob: string | null;
   city: string | null;
+  referral_code: string;
+  invited_by_google_sub: string | null;
   created_at?: string | null;
 }
 
@@ -30,7 +32,10 @@ export interface LeaderboardProfile extends PublicProfile {
   messagesSent: number;
   reactionsReceived: number;
   isTeamLeader: boolean;
+  foundingFanTier: FoundingFanTier;
 }
+
+export type FoundingFanTier = 'founding' | 'silver' | null;
 
 interface UpsertProfileInput {
   googleSub: string;
@@ -42,12 +47,25 @@ interface UpsertProfileInput {
   fanTeamId: TeamId;
   dob: string | null;
   city: string | null;
+  invitedByGoogleSub?: string | null;
+}
+
+export interface ReferralUserSummary {
+  google_sub: string;
+  full_name: string | null;
+  username: string;
+  image: string | null;
+}
+
+export interface ReferralSnapshot {
+  invitedBy: ReferralUserSummary | null;
+  invitedMembers: ReferralUserSummary[];
 }
 
 export async function getProfileByGoogleSub(googleSub: string): Promise<UserProfile | null> {
   const withFullName = await supabase
     .from('profiles')
-    .select('google_sub,full_name,email,image,username,phone,fan_team_id,dob,city,created_at')
+    .select('google_sub,full_name,email,image,username,phone,fan_team_id,dob,city,referral_code,invited_by_google_sub,created_at')
     .eq('google_sub', googleSub)
     .maybeSingle<UserProfile>();
 
@@ -61,7 +79,7 @@ export async function getProfileByGoogleSub(googleSub: string): Promise<UserProf
 
   const legacy = await supabase
     .from('profiles')
-    .select('google_sub,email,image,username,phone,fan_team_id,dob,city,created_at')
+    .select('google_sub,email,image,username,phone,fan_team_id,dob,city,referral_code,invited_by_google_sub,created_at')
     .eq('google_sub', googleSub)
     .maybeSingle<Omit<UserProfile, 'full_name'>>();
 
@@ -94,23 +112,25 @@ export async function isUsernameAvailable(username: string, googleSub?: string):
 }
 
 export async function upsertProfile(input: UpsertProfileInput): Promise<UserProfile> {
+  const upsertPayload: Record<string, unknown> = {
+    google_sub: input.googleSub,
+    full_name: input.fullName,
+    email: input.email,
+    image: input.image,
+    username: input.username,
+    phone: input.phone,
+    fan_team_id: input.fanTeamId,
+    dob: input.dob,
+    city: input.city,
+  };
+  if (input.invitedByGoogleSub !== undefined) {
+    upsertPayload.invited_by_google_sub = input.invitedByGoogleSub;
+  }
+
   const withFullName = await supabase
     .from('profiles')
-    .upsert(
-      {
-        google_sub: input.googleSub,
-        full_name: input.fullName,
-        email: input.email,
-        image: input.image,
-        username: input.username,
-        phone: input.phone,
-        fan_team_id: input.fanTeamId,
-        dob: input.dob,
-        city: input.city,
-      },
-      { onConflict: 'google_sub' },
-    )
-    .select('google_sub,full_name,email,image,username,phone,fan_team_id,dob,city,created_at')
+    .upsert(upsertPayload, { onConflict: 'google_sub' })
+    .select('google_sub,full_name,email,image,username,phone,fan_team_id,dob,city,referral_code,invited_by_google_sub,created_at')
     .single<UserProfile>();
 
   if (!withFullName.error) {
@@ -133,10 +153,11 @@ export async function upsertProfile(input: UpsertProfileInput): Promise<UserProf
         fan_team_id: input.fanTeamId,
         dob: input.dob,
         city: input.city,
+        invited_by_google_sub: input.invitedByGoogleSub,
       },
       { onConflict: 'google_sub' },
     )
-    .select('google_sub,email,image,username,phone,fan_team_id,dob,city,created_at')
+    .select('google_sub,email,image,username,phone,fan_team_id,dob,city,referral_code,invited_by_google_sub,created_at')
     .single<Omit<UserProfile, 'full_name'>>();
 
   if (legacy.error) {
@@ -147,19 +168,30 @@ export async function upsertProfile(input: UpsertProfileInput): Promise<UserProf
 }
 
 export async function isTeamLeaderForSupporter(googleSub: string, teamId: TeamId): Promise<boolean> {
+  const tier = await getFoundingFanTierForSupporter(googleSub, teamId);
+  return tier === 'founding';
+}
+
+export async function getFoundingFanTierForSupporter(
+  googleSub: string,
+  teamId: TeamId,
+): Promise<FoundingFanTier> {
   const { data, error } = await supabase
     .from('profiles')
     .select('google_sub,created_at')
     .eq('fan_team_id', teamId)
     .order('created_at', { ascending: true })
-    .limit(5)
+    .limit(20)
     .returns<Array<{ google_sub: string; created_at: string | null }>>();
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return (data ?? []).some((row) => row.google_sub === googleSub);
+  const position = (data ?? []).findIndex((row) => row.google_sub === googleSub);
+  if (position === -1) return null;
+  if (position < 5) return 'founding';
+  return 'silver';
 }
 
 function isMissingColumnError(message: string, column: string): boolean {
@@ -210,6 +242,66 @@ export async function getSupportersByTeamId(teamId: TeamId): Promise<PublicProfi
   }
 
   return data ?? [];
+}
+
+export async function getGoogleSubByReferralCode(referralCode: string): Promise<string | null> {
+  const normalized = referralCode.trim();
+  if (!normalized) return null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('google_sub')
+    .eq('referral_code', normalized)
+    .limit(1)
+    .maybeSingle<{ google_sub: string }>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data?.google_sub ?? null;
+}
+
+export async function getReferralSnapshotByGoogleSub(googleSub: string): Promise<ReferralSnapshot> {
+  const inviterProfile = await supabase
+    .from('profiles')
+    .select('invited_by_google_sub')
+    .eq('google_sub', googleSub)
+    .maybeSingle<{ invited_by_google_sub: string | null }>();
+
+  if (inviterProfile.error) {
+    throw new Error(inviterProfile.error.message);
+  }
+
+  const inviterGoogleSub = inviterProfile.data?.invited_by_google_sub ?? null;
+  let invitedBy: ReferralUserSummary | null = null;
+  if (inviterGoogleSub) {
+    const inviter = await supabase
+      .from('profiles')
+      .select('google_sub,full_name,username,image')
+      .eq('google_sub', inviterGoogleSub)
+      .maybeSingle<ReferralUserSummary>();
+    if (inviter.error) {
+      throw new Error(inviter.error.message);
+    }
+    invitedBy = inviter.data ?? null;
+  }
+
+  const invitedMembersResult = await supabase
+    .from('profiles')
+    .select('google_sub,full_name,username,image')
+    .eq('invited_by_google_sub', googleSub)
+    .order('created_at', { ascending: false })
+    .returns<ReferralUserSummary[]>();
+
+  if (invitedMembersResult.error) {
+    throw new Error(invitedMembersResult.error.message);
+  }
+
+  return {
+    invitedBy,
+    invitedMembers: invitedMembersResult.data ?? [],
+  };
 }
 
 export async function getPublicProfileByIdOrUsername(idOrUsername: string): Promise<PublicProfile | null> {
@@ -285,6 +377,7 @@ export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
   }
 
   const earliestFiveByTeam = new Map<TeamId, Set<string>>();
+  const earliestTwentyByTeam = new Map<TeamId, Set<string>>();
   const profilesByTeam = new Map<TeamId, PublicProfile[]>();
   for (const profile of profiles) {
     const existing = profilesByTeam.get(profile.fan_team_id) ?? [];
@@ -293,27 +386,36 @@ export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
   }
 
   for (const [teamId, teamProfiles] of profilesByTeam.entries()) {
-    const topFive = [...teamProfiles]
+    const sorted = [...teamProfiles]
       .sort((a, b) => {
         const aTime = a.created_at ? new Date(a.created_at).getTime() : Number.POSITIVE_INFINITY;
         const bTime = b.created_at ? new Date(b.created_at).getTime() : Number.POSITIVE_INFINITY;
         return aTime - bTime;
-      })
-      .slice(0, 5)
-      .map((profile) => profile.google_sub);
+      });
+    const topFive = sorted.slice(0, 5).map((profile) => profile.google_sub);
+    const topTwenty = sorted.slice(0, 20).map((profile) => profile.google_sub);
     earliestFiveByTeam.set(teamId, new Set(topFive));
+    earliestTwentyByTeam.set(teamId, new Set(topTwenty));
   }
 
   return profiles.map((profile) => {
     const stats = statsByUser.get(profile.google_sub);
     const leadersForTeam = earliestFiveByTeam.get(profile.fan_team_id);
+    const topTwentyForTeam = earliestTwentyByTeam.get(profile.fan_team_id);
     const isTeamLeader = leadersForTeam ? leadersForTeam.has(profile.google_sub) : false;
+    const isTopTwenty = topTwentyForTeam ? topTwentyForTeam.has(profile.google_sub) : false;
+    const foundingFanTier: FoundingFanTier = isTeamLeader
+      ? 'founding'
+      : isTopTwenty
+        ? 'silver'
+        : null;
 
     return {
       ...profile,
       messagesSent: stats?.messagesSent ?? 0,
       reactionsReceived: stats?.reactionsReceived ?? 0,
       isTeamLeader,
+      foundingFanTier,
     };
   });
 }

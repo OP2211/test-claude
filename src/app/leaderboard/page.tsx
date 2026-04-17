@@ -158,10 +158,19 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
                                 Most Reactions
                               </span>
                             )}
-                            {profile.isTeamLeader && team && (
-                              <span className="leaderboard-badge leaderboard-badge--leader" aria-label={`Badge: ${team.name} Leader`}>
+                            {profile.foundingFanTier && team && (
+                              <span
+                                className={`leaderboard-badge ${
+                                  profile.foundingFanTier === 'silver'
+                                    ? 'leaderboard-badge--founding-silver'
+                                    : 'leaderboard-badge--leader'
+                                }`}
+                                aria-label={`Badge: ${team.name} ${
+                                  profile.foundingFanTier === 'silver' ? 'Silver Founding Fan' : 'Founding Fan'
+                                }`}
+                              >
                                 <TeamLogoImage src={team.logo} alt="" className="leaderboard-badge-team-logo" />
-                                {team.name} Leader
+                                {team.name} {profile.foundingFanTier === 'silver' ? 'Silver Founding Fan' : 'Founding Fan'}
                               </span>
                             )}
                           </div>
