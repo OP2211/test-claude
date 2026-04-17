@@ -53,14 +53,6 @@ function getPreferredSessionAvatar(image: string | null | undefined): string | n
   return image.includes('/storage/v1/object/public/') ? image : null;
 }
 
-function canUseNativeShare(): boolean {
-  if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
-    return false;
-  }
-  const ua = navigator.userAgent.toLowerCase();
-  return /android|iphone|ipad|ipod|mobile/.test(ua);
-}
-
 export default function Profile() {
   const { data: session, status, update: updateSession } = useSession();
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -239,24 +231,6 @@ export default function Profile() {
     }
   };
 
-  const shareReferralLink = async () => {
-    if (!referralLink) return;
-    if (!canUseNativeShare()) {
-      await copyReferralLink();
-      return;
-    }
-    try {
-      await navigator.share({
-        title: 'Join me on FanGround',
-        text: 'Use my referral link and join the fan community.',
-        url: referralLink,
-      });
-      setCopyReferralMessage('Referral link shared.');
-    } catch {
-      // Ignore if user cancels the native share sheet.
-    }
-  };
-
   return (
     <div className="app">
       <AppHeader
@@ -393,9 +367,6 @@ export default function Profile() {
                 <div className="profile-referral-actions">
                   <button type="button" className="profile-copy-referral-btn" onClick={() => void copyReferralLink()}>
                     Copy link
-                  </button>
-                  <button type="button" className="profile-share-referral-btn" onClick={() => void shareReferralLink()}>
-                    Share
                   </button>
                 </div>
                 {copyReferralMessage && <span className="profile-referral-copy-status">{copyReferralMessage}</span>}
