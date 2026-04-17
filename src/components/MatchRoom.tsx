@@ -220,14 +220,6 @@ function isTabId(v: unknown): v is TabId {
   return typeof v === 'string' && (TAB_IDS as readonly string[]).includes(v);
 }
 
-function canUseNativeShare(): boolean {
-  if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
-    return false;
-  }
-  const ua = navigator.userAgent.toLowerCase();
-  return /android|iphone|ipad|ipod|mobile/.test(ua);
-}
-
 /** Normalize Pusher payload (sometimes stringified or partial). */
 function parseIncomingMessage(raw: unknown): Message | null {
   try {
@@ -282,7 +274,6 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
   });
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isDesktop, setIsDesktop] = useState(false);
-  const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const [reactionBursts, setReactionBursts] = useState<ReactionBurst[]>([]);
   const [realtime, setRealtime] = useState<RealtimeConfig | null>(() => {
     const key = process.env.NEXT_PUBLIC_PUSHER_KEY;
@@ -291,7 +282,6 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
   });
   const pusherRef = useRef<Pusher | null>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
-  const shareMenuRef = useRef<HTMLDivElement>(null);
   const matchRef = useRef(match);
   const userRef = useRef(user);
   matchRef.current = match;
@@ -776,25 +766,6 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     }
   }, [addNotification]);
 
-  const shareRoomLink = useCallback(async () => {
-    if (typeof window === 'undefined') return;
-    const roomUrl = window.location.href;
-    if (!canUseNativeShare()) {
-      await copyRoomLink();
-      return;
-    }
-    try {
-      await navigator.share({
-        title: 'Join my FanGround match room',
-        text: 'Jump into this live match room with me.',
-        url: roomUrl,
-      });
-      addNotification('Room link shared.');
-    } catch {
-      // Ignore user-cancelled native share dialogs.
-    }
-  }, [copyRoomLink, addNotification]);
-
   const isLive = match.status === 'live';
   const kickoff = new Date(match.kickoff);
   const kickoffStr = kickoff.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -821,28 +792,6 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
       document.body.style.overflow = prevOverflow;
     };
   }, [menuOpen]);
-
-  useEffect(() => {
-    if (!shareMenuOpen) return;
-    const onPointerDown = (event: MouseEvent) => {
-      if (!shareMenuRef.current) return;
-      const target = event.target as Node;
-      if (!shareMenuRef.current.contains(target)) {
-        setShareMenuOpen(false);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setShareMenuOpen(false);
-      }
-    };
-    window.addEventListener('mousedown', onPointerDown);
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      window.removeEventListener('mousedown', onPointerDown);
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [shareMenuOpen]);
 
   return (
     <div className="mr-room">
@@ -935,15 +884,15 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
           </div>
         </div>
 
-        <div className="mr-share-wrap" ref={shareMenuRef}>
+        <div className="mr-share-wrap">
           <button
             type="button"
             className="mr-menu mr-share"
-            onClick={() => setShareMenuOpen((open) => !open)}
-            aria-label="Open share options"
-            title="Open share options"
-            aria-expanded={shareMenuOpen}
-            aria-haspopup="menu"
+            onClick={() => {
+              void copyRoomLink();
+            }}
+            aria-label="Copy room link"
+            title="Copy room link"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="18" cy="5" r="3" />
@@ -953,32 +902,6 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
               <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
             </svg>
           </button>
-          {shareMenuOpen && (
-            <div className="mr-share-menu" role="menu" aria-label="Share options">
-              <button
-                type="button"
-                className="mr-share-item"
-                role="menuitem"
-                onClick={() => {
-                  void shareRoomLink();
-                  setShareMenuOpen(false);
-                }}
-              >
-                Share room link
-              </button>
-              <button
-                type="button"
-                className="mr-share-item"
-                role="menuitem"
-                onClick={() => {
-                  void copyRoomLink();
-                  setShareMenuOpen(false);
-                }}
-              >
-                Copy room link
-              </button>
-            </div>
-          )}
         </div>
 
         <button
