@@ -33,6 +33,8 @@ export default function OnboardingModal({ onComplete, onClose }: OnboardingModal
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
 
+  const normalizedPhoneDigits = phone.replace(/\D/g, '');
+
   const checkUsernameAvailability = async () => {
     const value = username.trim();
     if (!value) {
@@ -42,6 +44,11 @@ export default function OnboardingModal({ onComplete, onClose }: OnboardingModal
     }
     if (value.length < 3) {
       setUsernameError('Username must be at least 3 characters');
+      setUsernameAvailable(null);
+      return false;
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+      setUsernameError('Username can only contain letters, numbers, and underscore');
       setUsernameAvailable(null);
       return false;
     }
@@ -80,6 +87,7 @@ export default function OnboardingModal({ onComplete, onClose }: OnboardingModal
   const handleDetailsNext = async () => {
     if (!username.trim()) { setUsernameError('Username is required'); return; }
     if (!phone.trim()) { setError('Phone number is required'); return; }
+    if (normalizedPhoneDigits.length !== 10) { setError('Phone number must have exactly 10 digits'); return; }
     const ok = await checkUsernameAvailability();
     if (!ok) return;
     setError('');
@@ -93,7 +101,7 @@ export default function OnboardingModal({ onComplete, onClose }: OnboardingModal
     try {
       await onComplete({
         username: username.trim(),
-        phone: phone.trim(),
+        phone: normalizedPhoneDigits,
         fanTeamId: selectedTeam,
         dob: dob.trim() || null,
         city: city.trim() || null,
@@ -152,7 +160,7 @@ export default function OnboardingModal({ onComplete, onClose }: OnboardingModal
               <input
                 className="ob-dev-input"
                 type="tel"
-                placeholder="Phone number"
+                placeholder="Phone number (10 digits)"
                 value={phone}
                 onChange={e => { setPhone(e.target.value); setError(''); }}
               />

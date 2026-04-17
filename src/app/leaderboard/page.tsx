@@ -12,7 +12,7 @@ import './leaderboard.css';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-type LeaderboardSort = 'latest' | 'messages' | 'reactions' | 'name';
+type LeaderboardSort = 'latest' | 'messages' | 'reactions' | 'invites' | 'name';
 
 interface LeaderboardPageProps {
   searchParams?: {
@@ -20,11 +20,21 @@ interface LeaderboardPageProps {
   };
 }
 
+const FOUNDING_FAN_TIER_CLASS: Record<'founding' | 'silver' | 'bronze', string> = {
+  founding: 'leaderboard-badge--founding-gold',
+  silver: 'leaderboard-badge--founding-silver',
+  bronze: 'leaderboard-badge--founding-bronze',
+};
+
 export default async function LeaderboardPage({ searchParams }: LeaderboardPageProps) {
   const profiles = await getLeaderboardProfiles();
   const requestedSort = searchParams?.sort;
   const sort: LeaderboardSort =
-    requestedSort === 'messages' || requestedSort === 'reactions' || requestedSort === 'name' || requestedSort === 'latest'
+    requestedSort === 'messages' ||
+    requestedSort === 'reactions' ||
+    requestedSort === 'invites' ||
+    requestedSort === 'name' ||
+    requestedSort === 'latest'
       ? requestedSort
       : 'latest';
   const mostMessages = profiles.reduce((max, profile) => Math.max(max, profile.messagesSent), 0);
@@ -35,6 +45,9 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
     }
     if (sort === 'reactions') {
       return b.reactionsReceived - a.reactionsReceived;
+    }
+    if (sort === 'invites') {
+      return b.successfulInvites - a.successfulInvites;
     }
     if (sort === 'name') {
       const nameA = (a.full_name?.trim() || a.username).toLowerCase();
@@ -88,6 +101,9 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
                 <Link href="/leaderboard?sort=reactions" className={`leaderboard-sort-link ${sort === 'reactions' ? 'is-active' : ''}`}>
                   Reactions
                 </Link>
+                <Link href="/leaderboard?sort=invites" className={`leaderboard-sort-link ${sort === 'invites' ? 'is-active' : ''}`}>
+                  Successful Invites
+                </Link>
                 <Link href="/leaderboard?sort=name" className={`leaderboard-sort-link ${sort === 'name' ? 'is-active' : ''}`}>
                   Name
                 </Link>
@@ -100,10 +116,22 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
                   <tr>
                     <th>Name</th>
                     <th>Team</th>
-                    <th>Joining date</th>
-                    <th>Messages Sent</th>
-                    <th>Reactions Received</th>
-                    <th>Successful Invites</th>
+                    <th>
+                      <span className="leaderboard-th-long">Joining date</span>
+                      <span className="leaderboard-th-short">Joined</span>
+                    </th>
+                    <th>
+                      <span className="leaderboard-th-long">Messages Sent</span>
+                      <span className="leaderboard-th-short">Msgs</span>
+                    </th>
+                    <th>
+                      <span className="leaderboard-th-long">Reactions Received</span>
+                      <span className="leaderboard-th-short">Reacts</span>
+                    </th>
+                    <th>
+                      <span className="leaderboard-th-long">Successful Invites</span>
+                      <span className="leaderboard-th-short">Invites</span>
+                    </th>
                     <th>Badges</th>
                   </tr>
                 </thead>
@@ -151,22 +179,22 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
                             {mostMessages > 0 && profile.messagesSent === mostMessages && (
                               <span className="leaderboard-badge leaderboard-badge--messages" aria-label="Badge: Most Messages">
                                 <MessageSquare size={13} aria-hidden />
-                                Most Messages
+                                <span className="leaderboard-badge-text">Most Messages</span>
                               </span>
                             )}
                             {mostReactions > 0 && profile.reactionsReceived === mostReactions && (
                               <span className="leaderboard-badge leaderboard-badge--reactions" aria-label="Badge: Most Reactions">
                                 <Heart size={13} aria-hidden />
-                                Most Reactions
+                                <span className="leaderboard-badge-text">Most Reactions</span>
                               </span>
                             )}
                             {profile.foundingFanTier && team && (
                               <span
-                                className="leaderboard-badge leaderboard-badge--leader"
+                                className={`leaderboard-badge ${FOUNDING_FAN_TIER_CLASS[profile.foundingFanTier]}`}
                                 aria-label="Badge: Founding Fan"
                               >
                                 <TeamLogoImage src={team.logo} alt="" className="leaderboard-badge-team-logo" />
-                                Founding Fan
+                                <span className="leaderboard-badge-text">Founding Fan</span>
                               </span>
                             )}
                           </div>

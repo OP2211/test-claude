@@ -15,11 +15,20 @@ import '../../page.css';
 import '../profile.css';
 import './public-profile.css';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface PublicProfilePageProps {
   params: {
     idOrUsername: string;
   };
 }
+
+const FOUNDING_FAN_BADGE_CLASS: Record<'founding' | 'silver' | 'bronze', string> = {
+  founding: '',
+  silver: 'profile-leader-badge--silver',
+  bronze: 'profile-leader-badge--bronze',
+};
 
 export default async function PublicProfilePage({ params }: PublicProfilePageProps) {
   const key = decodeURIComponent(params.idOrUsername ?? '').trim();
@@ -76,15 +85,11 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                       <EarlyAdopterBadge />
                       {foundingFanTier && selectedTeam && (
                         <span
-                          className={`profile-leader-badge ${foundingFanTier === 'silver' ? 'profile-leader-badge--silver' : ''}`}
-                          aria-label={`Badge: ${selectedTeam.name} ${
-                            foundingFanTier === 'silver' ? 'Silver Founding Fan' : 'Founding Fan'
-                          }`}
+                          className={`profile-leader-badge ${FOUNDING_FAN_BADGE_CLASS[foundingFanTier]}`.trim()}
+                          aria-label="Badge: Founding Fan"
                         >
                           <TeamLogoImage src={selectedTeam.logo} alt="" className="profile-leader-badge-logo" />
-                          <span>
-                            {selectedTeam.name} {foundingFanTier === 'silver' ? 'Silver Founding Fan' : 'Founding Fan'}
-                          </span>
+                          <span>Founding Fan</span>
                         </span>
                       )}
                     </div>

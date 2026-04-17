@@ -38,9 +38,15 @@ interface ProfileMeResponse {
   invitedBy?: ReferralMember | null;
   invitedMembers?: ReferralMember[];
   invitedCount?: number;
-  foundingFanTier?: 'founding' | 'silver' | null;
+  foundingFanTier?: 'founding' | 'silver' | 'bronze' | null;
   error?: string;
 }
+
+const FOUNDING_FAN_BADGE_CLASS: Record<'founding' | 'silver' | 'bronze', string> = {
+  founding: '',
+  silver: 'profile-leader-badge--silver',
+  bronze: 'profile-leader-badge--bronze',
+};
 
 function getPreferredSessionAvatar(image: string | null | undefined): string | null {
   if (!image) return null;
@@ -54,7 +60,7 @@ export default function Profile() {
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarUploadMessage, setAvatarUploadMessage] = useState<string>('');
-  const [foundingFanTier, setFoundingFanTier] = useState<'founding' | 'silver' | null>(null);
+  const [foundingFanTier, setFoundingFanTier] = useState<'founding' | 'silver' | 'bronze' | null>(null);
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [invitedBy, setInvitedBy] = useState<ReferralMember | null>(null);
   const [invitedMembers, setInvitedMembers] = useState<ReferralMember[]>([]);
@@ -309,15 +315,11 @@ export default function Profile() {
                     <EarlyAdopterBadge />
                       {foundingFanTier && selectedTeam && (
                         <span
-                          className={`profile-leader-badge ${foundingFanTier === 'silver' ? 'profile-leader-badge--silver' : ''}`}
-                          aria-label={`Badge: ${selectedTeam.name} ${
-                            foundingFanTier === 'silver' ? 'Silver Founding Fan' : 'Founding Fan'
-                          }`}
+                          className={`profile-leader-badge ${FOUNDING_FAN_BADGE_CLASS[foundingFanTier]}`.trim()}
+                          aria-label="Badge: Founding Fan"
                         >
                           <TeamLogoImage src={selectedTeam.logo} alt="" className="profile-leader-badge-logo" />
-                          <span>
-                            {selectedTeam.name} {foundingFanTier === 'silver' ? 'Silver Founding Fan' : 'Founding Fan'}
-                          </span>
+                          <span>Founding Fan</span>
                         </span>
                       )}
                   </div>

@@ -19,6 +19,10 @@ export function validateUsername(usernameRaw: string): { value?: string; error?:
   return { value: username };
 }
 
+function normalizePhoneDigits(phoneRaw: string): string {
+  return phoneRaw.replace(/\D/g, '');
+}
+
 export function isOnboardingComplete(profile: {
   username?: string | null;
   phone?: string | null;
@@ -37,15 +41,15 @@ export function validateProfileInput(input: unknown): { value?: ProfileInput; er
   const usernameValidation = validateUsername(String(payload.username ?? ''));
   if (!usernameValidation.value) return { error: usernameValidation.error };
   const username = usernameValidation.value;
-  const phone = String(payload.phone ?? '').trim();
+  const phoneRaw = String(payload.phone ?? '').trim();
   const fanTeamIdRaw = String(payload.fanTeamId ?? '').trim();
   const dobRaw = payload.dob;
   const cityRaw = payload.city;
 
-  if (!phone) return { error: 'Phone number is required' };
-
-  if (!/^[+0-9() -]{7,20}$/.test(phone)) {
-    return { error: 'Phone number format is invalid' };
+  if (!phoneRaw) return { error: 'Phone number is required' };
+  const phoneDigits = normalizePhoneDigits(phoneRaw);
+  if (phoneDigits.length !== 10) {
+    return { error: 'Phone number must have exactly 10 digits' };
   }
 
   if (!isValidTeamId(fanTeamIdRaw)) {
@@ -66,7 +70,7 @@ export function validateProfileInput(input: unknown): { value?: ProfileInput; er
   return {
     value: {
       username,
-      phone,
+      phone: phoneDigits,
       fanTeamId: fanTeamIdRaw,
       dob,
       city,

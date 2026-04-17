@@ -36,7 +36,14 @@ export interface LeaderboardProfile extends PublicProfile {
   foundingFanTier: FoundingFanTier;
 }
 
-export type FoundingFanTier = 'founding' | 'silver' | null;
+export type FoundingFanTier = 'founding' | 'silver' | 'bronze' | null;
+
+export const FOUNDING_FAN_GOLD_COUNT = 5;
+export const FOUNDING_FAN_SILVER_COUNT = 20;
+export const FOUNDING_FAN_BRONZE_COUNT = 50;
+
+const FOUNDING_FAN_SILVER_CUTOFF = FOUNDING_FAN_GOLD_COUNT + FOUNDING_FAN_SILVER_COUNT;
+const FOUNDING_FAN_BRONZE_CUTOFF = FOUNDING_FAN_SILVER_CUTOFF + FOUNDING_FAN_BRONZE_COUNT;
 
 interface UpsertProfileInput {
   googleSub: string;
@@ -182,7 +189,7 @@ export async function getFoundingFanTierForSupporter(
     .select('google_sub,created_at')
     .eq('fan_team_id', teamId)
     .order('created_at', { ascending: true })
-    .limit(20)
+    .limit(FOUNDING_FAN_BRONZE_CUTOFF)
     .returns<Array<{ google_sub: string; created_at: string | null }>>();
 
   if (error) {
@@ -191,8 +198,9 @@ export async function getFoundingFanTierForSupporter(
 
   const position = (data ?? []).findIndex((row) => row.google_sub === googleSub);
   if (position === -1) return null;
-  if (position < 5) return 'founding';
-  return 'silver';
+  if (position < FOUNDING_FAN_GOLD_COUNT) return 'founding';
+  if (position < FOUNDING_FAN_SILVER_CUTOFF) return 'silver';
+  return 'bronze';
 }
 
 function isMissingColumnError(message: string, column: string): boolean {
@@ -393,8 +401,9 @@ export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
     statsByUser.set(row.user_id, current);
   }
 
-  const earliestFiveByTeam = new Map<TeamId, Set<string>>();
-  const earliestTwentyByTeam = new Map<TeamId, Set<string>>();
+  const earliestGoldByTeam = new Map<TeamId, Set<string>>();
+  const earliestSilverByTeam = new Map<TeamId, Set<string>>();
+  const earliestBronzeByTeam = new Map<TeamId, Set<string>>();
   const profilesByTeam = new Map<TeamId, PublicProfile[]>();
   for (const profile of profiles) {
     const existing = profilesByTeam.get(profile.fan_team_id) ?? [];
@@ -409,22 +418,28 @@ export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
         const bTime = b.created_at ? new Date(b.created_at).getTime() : Number.POSITIVE_INFINITY;
         return aTime - bTime;
       });
-    const topFive = sorted.slice(0, 5).map((profile) => profile.google_sub);
-    const topTwenty = sorted.slice(0, 20).map((profile) => profile.google_sub);
-    earliestFiveByTeam.set(teamId, new Set(topFive));
-    earliestTwentyByTeam.set(teamId, new Set(topTwenty));
+    const goldTier = sorted.slice(0, FOUNDING_FAN_GOLD_COUNT).map((profile) => profile.google_sub);
+    const silverTier = sorted.slice(0, FOUNDING_FAN_SILVER_CUTOFF).map((profile) => profile.google_sub);
+    const bronzeTier = sorted.slice(0, FOUNDING_FAN_BRONZE_CUTOFF).map((profile) => profile.google_sub);
+    earliestGoldByTeam.set(teamId, new Set(goldTier));
+    earliestSilverByTeam.set(teamId, new Set(silverTier));
+    earliestBronzeByTeam.set(teamId, new Set(bronzeTier));
   }
 
   return profiles.map((profile) => {
     const stats = statsByUser.get(profile.google_sub);
-    const leadersForTeam = earliestFiveByTeam.get(profile.fan_team_id);
-    const topTwentyForTeam = earliestTwentyByTeam.get(profile.fan_team_id);
+    const leadersForTeam = earliestGoldByTeam.get(profile.fan_team_id);
+    const topSilverForTeam = earliestSilverByTeam.get(profile.fan_team_id);
+    const topBronzeForTeam = earliestBronzeByTeam.get(profile.fan_team_id);
     const isTeamLeader = leadersForTeam ? leadersForTeam.has(profile.google_sub) : false;
-    const isTopTwenty = topTwentyForTeam ? topTwentyForTeam.has(profile.google_sub) : false;
+    const isTopSilver = topSilverForTeam ? topSilverForTeam.has(profile.google_sub) : false;
+    const isTopBronze = topBronzeForTeam ? topBronzeForTeam.has(profile.google_sub) : false;
     const foundingFanTier: FoundingFanTier = isTeamLeader
       ? 'founding'
-      : isTopTwenty
+      : isTopSilver
         ? 'silver'
+        : isTopBronze
+          ? 'bronze'
         : null;
 
     return {
