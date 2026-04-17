@@ -31,6 +31,7 @@ export interface PublicProfile {
 export interface LeaderboardProfile extends PublicProfile {
   messagesSent: number;
   reactionsReceived: number;
+  successfulInvites: number;
   isTeamLeader: boolean;
   foundingFanTier: FoundingFanTier;
 }
@@ -354,13 +355,29 @@ export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
   const profiles = await getAllPublicProfiles();
   if (profiles.length === 0) return [];
 
-  const { data: messageRows, error } = await supabase
-    .from('chat_messages')
-    .select('user_id,reactions')
-    .returns<Array<{ user_id: string; reactions: Record<string, string[]> | null }>>();
+  const [messagesResult, referralsResult] = await Promise.all([
+    supabase
+      .from('chat_messages')
+      .select('user_id,reactions')
+      .returns<Array<{ user_id: string; reactions: Record<string, string[]> | null }>>(),
+    supabase
+      .from('profiles')
+      .select('invited_by_google_sub')
+      .not('invited_by_google_sub', 'is', null)
+      .returns<Array<{ invited_by_google_sub: string | null }>>(),
+  ]);
+  const { data: messageRows, error } = messagesResult;
+  const { data: referralRows, error: referralsError } = referralsResult;
 
-  if (error) {
-    throw new Error(error.message);
+  if (referralsError) {
+    throw new Error(referralsError.message);
+  }
+
+  const successfulInvitesByUser = new Map<string, number>();
+  for (const row of referralRows ?? []) {
+    const inviterGoogleSub = row.invited_by_google_sub;
+    if (!inviterGoogleSub) continue;
+    successfulInvitesByUser.set(inviterGoogleSub, (successfulInvitesByUser.get(inviterGoogleSub) ?? 0) + 1);
   }
 
   const statsByUser = new Map<string, { messagesSent: number; reactionsReceived: number }>();
@@ -414,6 +431,7 @@ export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
       ...profile,
       messagesSent: stats?.messagesSent ?? 0,
       reactionsReceived: stats?.reactionsReceived ?? 0,
+      successfulInvites: successfulInvitesByUser.get(profile.google_sub) ?? 0,
       isTeamLeader,
       foundingFanTier,
     };

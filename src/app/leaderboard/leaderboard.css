@@ -224,6 +224,81 @@
 }
 
 @media (max-width: 640px) {
+  .leaderboard-head {
+    padding: 14px 12px;
+  }
+
+  .leaderboard-title {
+    font-size: var(--text-xl);
+  }
+
+  .leaderboard-subtitle {
+    font-size: var(--text-xs);
+  }
+
+  .leaderboard-sort-row {
+    gap: 6px;
+  }
+
+  .leaderboard-sort-link {
+    min-height: 26px;
+    padding: 0 8px;
+  }
+
+  .leaderboard-table {
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+  }
+
+  .leaderboard-table thead {
+    display: none;
+  }
+
+  .leaderboard-table tbody,
+  .leaderboard-table tr,
+  .leaderboard-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .leaderboard-table tr {
+    background: rgba(var(--neutral-rgb), 0.03);
+    border: 1px solid rgba(var(--neutral-rgb), 0.08);
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  .leaderboard-table td {
+    border-bottom: 0;
+    padding: 6px 0;
+    font-size: 13px;
+  }
+
+  .leaderboard-table td::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12px;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+
+  .leaderboard-user-link {
+    width: auto;
+  }
+
+  .leaderboard-user-cell {
+    align-items: center;
+  }
+
+  .leaderboard-badges {
+    margin-top: 2px;
+  }
+
   .leaderboard-badge {
     max-width: 180px;
     padding: 5px 8px;

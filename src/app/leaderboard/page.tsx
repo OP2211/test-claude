@@ -103,6 +103,7 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
                     <th>Joining date</th>
                     <th>Messages Sent</th>
                     <th>Reactions Received</th>
+                    <th>Successful Invites</th>
                     <th>Badges</th>
                   </tr>
                 </thead>
@@ -112,7 +113,7 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
                     const displayName = profile.full_name?.trim() || profile.username;
                     return (
                       <tr key={profile.google_sub}>
-                        <td>
+                        <td data-label="Name">
                           <Link href={`/profile/${encodeURIComponent(profile.username)}`} className="leaderboard-user-link">
                             <span className="leaderboard-user-cell">
                               <span className="leaderboard-user-avatar" aria-hidden>
@@ -130,7 +131,7 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
                             </span>
                           </Link>
                         </td>
-                        <td>
+                        <td data-label="Team">
                           {team ? (
                             <span className="leaderboard-team">
                               <TeamLogoImage src={team.logo} alt={`${team.name} logo`} className="leaderboard-team-logo" />
@@ -140,10 +141,11 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
                             '—'
                           )}
                         </td>
-                        <td>{formatMemberSince(profile.created_at)}</td>
-                        <td>{profile.messagesSent}</td>
-                        <td>{profile.reactionsReceived}</td>
-                        <td>
+                        <td data-label="Joining date">{formatMemberSince(profile.created_at)}</td>
+                        <td data-label="Messages Sent">{profile.messagesSent}</td>
+                        <td data-label="Reactions Received">{profile.reactionsReceived}</td>
+                        <td data-label="Successful Invites">{profile.successfulInvites}</td>
+                        <td data-label="Badges">
                           <div className="leaderboard-badges">
                             <EarlyAdopterBadge />
                             {mostMessages > 0 && profile.messagesSent === mostMessages && (
@@ -160,17 +162,11 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
                             )}
                             {profile.foundingFanTier && team && (
                               <span
-                                className={`leaderboard-badge ${
-                                  profile.foundingFanTier === 'silver'
-                                    ? 'leaderboard-badge--founding-silver'
-                                    : 'leaderboard-badge--leader'
-                                }`}
-                                aria-label={`Badge: ${team.name} ${
-                                  profile.foundingFanTier === 'silver' ? 'Silver Founding Fan' : 'Founding Fan'
-                                }`}
+                                className="leaderboard-badge leaderboard-badge--leader"
+                                aria-label="Badge: Founding Fan"
                               >
                                 <TeamLogoImage src={team.logo} alt="" className="leaderboard-badge-team-logo" />
-                                {team.name} {profile.foundingFanTier === 'silver' ? 'Silver Founding Fan' : 'Founding Fan'}
+                                Founding Fan
                               </span>
                             )}
                           </div>

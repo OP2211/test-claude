@@ -7,6 +7,7 @@ import AppHeader from '@/components/AppHeader';
 import MatchRoom from '@/components/MatchRoom';
 import OnboardingModal from '@/components/OnboardingModal';
 import type { Match, User, TeamId } from '@/lib/types';
+import { clearStoredReferralCode, getStoredReferralCode, storeReferralCodeFromQuery } from '@/lib/referral-storage';
 import '../matches.css';
 
 interface ProfileResponse {
@@ -30,6 +31,7 @@ interface OnboardingPayload {
   fanTeamId: TeamId;
   dob: string | null;
   city: string | null;
+  referralCode?: string;
 }
 
 function getPreferredSessionAvatar(image: string | null | undefined): string | undefined {
@@ -75,6 +77,11 @@ function MatchDetailsPageInner() {
         }
       : null
   );
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    storeReferralCodeFromQuery(params.get('ref'));
+  }, []);
 
   useEffect(() => {
     if (sessionStatus === 'unauthenticated') {
@@ -134,13 +141,18 @@ function MatchDetailsPageInner() {
   }, [loadMatch]);
 
   const handleOnboardingComplete = async (payload: OnboardingPayload) => {
+    const referralCode = getStoredReferralCode();
     const res = await fetch('/api/profile/upsert', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        referralCode,
+      }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error ?? 'Failed to save profile');
+    clearStoredReferralCode();
     setUser(mapProfileToUser(data.profile));
     setShowOnboarding(false);
   };

@@ -10,6 +10,7 @@ import OnboardingModal from '@/components/OnboardingModal';
 import AppHeader from '@/components/AppHeader';
 import SiteFooter from '@/components/SiteFooter';
 import LandingHome from '@/components/LandingHome';
+import { clearStoredReferralCode, getStoredReferralCode, storeReferralCodeFromQuery } from '@/lib/referral-storage';
 
 import type { Match, User, TeamId } from '@/lib/types';
 import './page.css';
@@ -40,6 +41,7 @@ interface OnboardingPayload {
   fanTeamId: TeamId;
   dob: string | null;
   city: string | null;
+  referralCode?: string;
 }
 
 function mapProfileToUser(profile: NonNullable<ProfileResponse['profile']>): User {
@@ -88,6 +90,11 @@ export default function Home() {
   }, []);
 
   const router = useRouter();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    storeReferralCodeFromQuery(params.get('ref'));
+  }, []);
 
   useEffect(() => {
     if (session?.user) {
@@ -158,16 +165,21 @@ export default function Home() {
   }, [pendingMatch, session, user]);
 
   const handleOnboardingComplete = async (payload: OnboardingPayload) => {
+    const referralCode = getStoredReferralCode();
     const res = await fetch('/api/profile/upsert', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        referralCode,
+      }),
     });
     const data = await res.json();
     if (!res.ok) {
       throw new Error(data.error ?? 'Failed to save profile');
     }
     const newUser = mapProfileToUser(data.profile);
+    clearStoredReferralCode();
     setUser(newUser);
     setShowOnboarding(false);
     if (pendingMatch) {

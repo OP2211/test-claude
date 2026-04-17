@@ -9,6 +9,7 @@ import SiteFooter from '@/components/SiteFooter';
 import OnboardingModal from '@/components/OnboardingModal';
 import MatchList from '@/components/MatchList';
 import LeagueHub from '@/components/LeagueHub';
+import { clearStoredReferralCode, getStoredReferralCode, storeReferralCodeFromQuery } from '@/lib/referral-storage';
 import type { Match, User, TeamId } from '@/lib/types';
 import type { TopScorer, TopContributor } from '@/lib/espn';
 import './matches.css';
@@ -34,6 +35,7 @@ interface OnboardingPayload {
   fanTeamId: TeamId;
   dob: string | null;
   city: string | null;
+  referralCode?: string;
 }
 
 function getPreferredSessionAvatar(image: string | null | undefined): string | undefined {
@@ -227,6 +229,10 @@ function MatchesPageContent() {
     setActiveTab(queryTab);
   }, [queryTab]);
 
+  useEffect(() => {
+    storeReferralCodeFromQuery(searchParams.get('ref'));
+  }, [searchParams]);
+
   const loadProfile = useCallback(async () => {
     setIsProfileLoading(true);
     try {
@@ -283,14 +289,19 @@ function MatchesPageContent() {
   };
 
   const handleOnboardingComplete = async (payload: OnboardingPayload) => {
+    const referralCode = getStoredReferralCode();
     const res = await fetch('/api/profile/upsert', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        referralCode,
+      }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error ?? 'Failed to save profile');
     const newUser = mapProfileToUser(data.profile);
+    clearStoredReferralCode();
     setUser(newUser);
     setShowOnboarding(false);
     if (pendingMatchId) {

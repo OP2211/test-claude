@@ -5,8 +5,6 @@ import { getGoogleSubByReferralCode, getProfileByGoogleSub, isUsernameAvailable,
 import { persistProfileImageLocally } from '@/lib/profile-image';
 import { validateProfileInput } from '@/lib/profile-validation';
 
-const REFERRAL_COOKIE = 'ffc_referral_code';
-
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   const googleSub = session?.user?.googleSub;
@@ -36,9 +34,10 @@ export async function POST(request: NextRequest) {
       profileImage = session.user?.image ?? null;
     }
 
-    const referralCode = request.cookies.get(REFERRAL_COOKIE)?.value?.trim() ?? '';
+    const referralCode = typeof payload.referralCode === 'string' ? payload.referralCode.trim() : '';
     let invitedByGoogleSub: string | null | undefined = undefined;
-    if (!existingProfile && referralCode) {
+    const canAttachReferral = !existingProfile || !existingProfile.invited_by_google_sub;
+    if (canAttachReferral && referralCode) {
       const inviterGoogleSub = await getGoogleSubByReferralCode(referralCode);
       if (inviterGoogleSub && inviterGoogleSub !== googleSub) {
         invitedByGoogleSub = inviterGoogleSub;
@@ -58,15 +57,7 @@ export async function POST(request: NextRequest) {
       invitedByGoogleSub,
     });
 
-    const response = NextResponse.json({ profile });
-    response.cookies.set(REFERRAL_COOKIE, '', {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 0,
-    });
-    return response;
+    return NextResponse.json({ profile });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to save profile' },
