@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Logo from '@/components/Logo';
 import { LOGOUT_CONFIRM_VARIANTS, pickRandomLogoutVariant } from '@/lib/logout-variants';
 import type { User } from '@/lib/types';
@@ -23,6 +24,8 @@ export interface AppHeaderHomeActionsProps {
   onSignOut: () => void;
   /** When true (no OAuth session), show Sign in with Google in the header. */
   showGoogleSignIn?: boolean;
+  /** While true, show a lightweight loading treatment on the sign-in CTA. */
+  isGoogleSignInLoading?: boolean;
   onSignInWithGoogle?: () => void;
 }
 
@@ -197,10 +200,12 @@ export default function AppHeader({
   homeActions,
   profileMenu,
 }: AppHeaderProps) {
+  const pathname = usePathname();
   const logoLabel = onLogoClick ? 'Back to matches' : 'FanGround home';
   const [themePref, setThemePref] = useState<ThemePreference | null>(null);
   const [systemTheme, setSystemTheme] = useState<ThemePreference>('light');
   const [hasMounted, setHasMounted] = useState(false);
+  const headerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     setHasMounted(true);
@@ -229,8 +234,56 @@ export default function AppHeader({
 
   const effectiveTheme = themePref ?? systemTheme;
 
+  useEffect(() => {
+    const headerEl = headerRef.current;
+    if (!headerEl) return;
+
+    const computed = window.getComputedStyle(headerEl);
+    // #region agent log
+    fetch('http://127.0.0.1:7592/ingest/e89d3128-5670-4ca0-bcd9-a27a5fb2d18a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2ef162'},body:JSON.stringify({sessionId:'2ef162',runId:'initial',hypothesisId:'H1',location:'src/components/AppHeader.tsx:mount',message:'Header computed sticky styles',data:{pathname,position:computed.position,top:computed.top,zIndex:computed.zIndex,classes:headerEl.className},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+
+    const ancestorInfo: Array<{ tag: string; className: string; overflow: string; overflowY: string; transform: string; position: string }> = [];
+    let node: HTMLElement | null = headerEl.parentElement;
+    while (node && ancestorInfo.length < 6) {
+      const s = window.getComputedStyle(node);
+      ancestorInfo.push({
+        tag: node.tagName,
+        className: node.className,
+        overflow: s.overflow,
+        overflowY: s.overflowY,
+        transform: s.transform,
+        position: s.position,
+      });
+      node = node.parentElement;
+    }
+    // #region agent log
+    fetch('http://127.0.0.1:7592/ingest/e89d3128-5670-4ca0-bcd9-a27a5fb2d18a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2ef162'},body:JSON.stringify({sessionId:'2ef162',runId:'initial',hypothesisId:'H2',location:'src/components/AppHeader.tsx:mount',message:'Header ancestor layout constraints',data:{pathname,ancestors:ancestorInfo},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+
+    let scrollSamples = 0;
+    const onScroll = () => {
+      if (scrollSamples >= 4) return;
+      scrollSamples += 1;
+      const rect = headerEl.getBoundingClientRect();
+      // #region agent log
+      fetch('http://127.0.0.1:7592/ingest/e89d3128-5670-4ca0-bcd9-a27a5fb2d18a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2ef162'},body:JSON.stringify({sessionId:'2ef162',runId:'initial',hypothesisId:'H3',location:'src/components/AppHeader.tsx:scroll',message:'Header position while scrolling',data:{pathname,sample:scrollSamples,scrollY:window.scrollY,headerTop:rect.top,headerBottom:rect.bottom,viewportH:window.innerHeight},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, [pathname]);
+
   return (
-    <header className={`app-header ${inRoom ? 'in-room' : ''}`}>
+    <header
+      ref={headerRef}
+      className={`app-header ${inRoom ? 'in-room' : ''}`}
+      style={{ position: 'sticky', top: 0, zIndex: 1000 }}
+    >
       <div className="app-header-inner">
         {onLogoClick ? (
           <button type="button" className="logo-btn" onClick={onLogoClick} aria-label={logoLabel}>
@@ -264,9 +317,11 @@ export default function AppHeader({
               {homeActions.showGoogleSignIn && homeActions.onSignInWithGoogle && (
                 <button
                   type="button"
-                  className="google-signin-btn google-signin-btn--header"
+                  className={`google-signin-btn google-signin-btn--header${homeActions.isGoogleSignInLoading ? ' google-signin-btn--loading' : ''}`}
                   onClick={homeActions.onSignInWithGoogle}
                   aria-label="Sign in with Google"
+                  aria-busy={homeActions.isGoogleSignInLoading || undefined}
+                  disabled={homeActions.isGoogleSignInLoading}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>

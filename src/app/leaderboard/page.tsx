@@ -89,7 +89,7 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
           <section className="leaderboard-card" aria-label="Leaderboard users table">
             <div className="leaderboard-head">
               <h1 className="leaderboard-title">Leaderboard</h1>
-              <p className="leaderboard-subtitle">All users with teams, join dates, and badges.</p>
+              <p className="leaderboard-subtitle">All users with teams, stats, and badges.</p>
               <div className="leaderboard-sort-row" aria-label="Sort leaderboard">
                 <span className="leaderboard-sort-label">Sort:</span>
                 <Link href="/leaderboard?sort=latest" className={`leaderboard-sort-link ${sort === 'latest' ? 'is-active' : ''}`}>
@@ -116,10 +116,6 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
                   <tr>
                     <th>Name</th>
                     <th>Team</th>
-                    <th>
-                      <span className="leaderboard-th-long">Joining date</span>
-                      <span className="leaderboard-th-short">Joined</span>
-                    </th>
                     <th>
                       <span className="leaderboard-th-long">Messages Sent</span>
                       <span className="leaderboard-th-short">Msgs</span>
@@ -169,7 +165,6 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
                             '—'
                           )}
                         </td>
-                        <td data-label="Joining date">{formatMemberSince(profile.created_at)}</td>
                         <td data-label="Messages Sent">{profile.messagesSent}</td>
                         <td data-label="Reactions Received">{profile.reactionsReceived}</td>
                         <td data-label="Successful Invites">{profile.successfulInvites}</td>
@@ -211,15 +206,4 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
       <SiteFooter />
     </div>
   );
-}
-
-function formatMemberSince(value?: string | null): string {
-  if (!value) return '—';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return '—';
-  return parsed.toLocaleDateString(undefined, {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
 }

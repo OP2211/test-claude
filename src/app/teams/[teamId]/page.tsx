@@ -10,6 +10,7 @@ import { authOptions } from '@/lib/auth-options';
 import { isValidTeamId, TEAMS } from '@/lib/teams';
 import { getMatches } from '@/lib/data';
 import type { Match, TeamId } from '@/lib/types';
+import '../../page.css';
 import '../teams.css';
 
 interface TeamDetailPageProps {

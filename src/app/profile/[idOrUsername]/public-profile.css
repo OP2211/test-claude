@@ -8,6 +8,10 @@
   word-break: break-all;
 }
 
+.profile-card-body .profile-row + .profile-row {
+  margin-top: 10px;
+}
+
 .public-profile-invited-cards {
   margin-top: 10px;
   display: grid;

@@ -216,7 +216,10 @@ export default function Home() {
           onInstall: handleInstall,
           user,
           onSignOut: handleSignOut,
-          showGoogleSignIn: sessionStatus === 'unauthenticated',
+          // Show sign-in immediately unless we already know the user is authenticated.
+          // This avoids delayed CTA rendering while NextAuth is in initial "loading" state.
+          showGoogleSignIn: sessionStatus !== 'authenticated',
+          isGoogleSignInLoading: sessionStatus === 'loading',
           onSignInWithGoogle: () => void startGoogleSignInRedirect(),
         }}
       />

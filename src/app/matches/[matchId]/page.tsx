@@ -8,6 +8,7 @@ import MatchRoom from '@/components/MatchRoom';
 import OnboardingModal from '@/components/OnboardingModal';
 import type { Match, User, TeamId } from '@/lib/types';
 import { clearStoredReferralCode, getStoredReferralCode, storeReferralCodeFromQuery } from '@/lib/referral-storage';
+import '../../page.css';
 import '../matches.css';
 
 interface ProfileResponse {

@@ -5,6 +5,7 @@ import { signOut, useSession } from 'next-auth/react';
 import AppHeaderSession from '@/components/AppHeaderSession';
 import SiteFooter from '@/components/SiteFooter';
 import { startGoogleSignInRedirect } from '@/lib/google-signin';
+import '../page.css';
 import './debug.css';
 
 interface HealthCheckResult {

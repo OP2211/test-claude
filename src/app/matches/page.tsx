@@ -12,6 +12,7 @@ import LeagueHub from '@/components/LeagueHub';
 import { clearStoredReferralCode, getStoredReferralCode, storeReferralCodeFromQuery } from '@/lib/referral-storage';
 import type { Match, User, TeamId } from '@/lib/types';
 import type { TopScorer, TopContributor } from '@/lib/espn';
+import '../page.css';
 import './matches.css';
 
 interface ProfileResponse {

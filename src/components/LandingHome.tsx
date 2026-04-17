@@ -231,7 +231,7 @@ export default function LandingHome({
             </h3>
             <ul className="landing-feature-list">
               <li>Pre-match build-up, live chat, post-match analysis</li>
-              <li>Real lineups from ESPN</li>
+              <li>Real lineups</li>
               <li>Live scores updating every 30 seconds</li>
             </ul>
           </article>

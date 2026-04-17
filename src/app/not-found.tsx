@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import Logo from '@/components/Logo';
+import AppHeader from '@/components/AppHeader';
 import SiteFooter from '@/components/SiteFooter';
+import './page.css';
 import './not-found.css';
 
 export const metadata: Metadata = {
@@ -12,12 +13,7 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <div className="nf-page app">
-      <header className="nf-header">
-        <Link href="/" className="nf-logo-link">
-          <Logo size={28} className="nf-logo-mark" />
-          FanGround
-        </Link>
-      </header>
+      <AppHeader variant="simple" logoHref="/" />
 
       <main className="nf-main" id="main">
         <div className="nf-scoreboard" aria-labelledby="nf-heading">

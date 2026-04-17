@@ -79,6 +79,18 @@ interface RealtimeConfig {
   cluster: string;
 }
 
+interface ReactionActor {
+  userId: string;
+  username?: string;
+  image?: string;
+}
+
+interface ReactionBurst {
+  id: string;
+  emoji: string;
+  actor: ReactionActor;
+}
+
 interface SendMessageResponse {
   message: Message;
   moderation?: {
@@ -262,6 +274,8 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
   });
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const [reactionBursts, setReactionBursts] = useState<ReactionBurst[]>([]);
   const [realtime, setRealtime] = useState<RealtimeConfig | null>(() => {
     const key = process.env.NEXT_PUBLIC_PUSHER_KEY;
     const cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'eu';
@@ -269,6 +283,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
   });
   const pusherRef = useRef<Pusher | null>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
   const matchRef = useRef(match);
   const userRef = useRef(user);
   matchRef.current = match;
@@ -334,6 +349,15 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     setNotifications(n => [...n, { id, text, kind }]);
     setTimeout(() => setNotifications(n => n.filter(x => x.id !== id)), 4200);
+  }, []);
+
+  const triggerReactionBurst = useCallback((emoji: string, actor: ReactionActor) => {
+    if (!emoji?.trim() || !actor?.userId) return;
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+    setReactionBursts((prev) => [...prev, { id, emoji, actor }]);
+    setTimeout(() => {
+      setReactionBursts((prev) => prev.filter((burst) => burst.id !== id));
+    }, 2100);
   }, []);
 
   // Fetch initial room data when entering a match.
@@ -473,7 +497,17 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
       }
     });
 
-    channel.bind('reaction-updated', ({ messageId, reactions }: { messageId: string; reactions: Reactions }) => {
+    channel.bind('reaction-updated', ({
+      messageId,
+      reactions,
+      emoji,
+      actor,
+    }: {
+      messageId: string;
+      reactions: Reactions;
+      emoji?: string;
+      actor?: ReactionActor;
+    }) => {
       setMessages(prev => {
         const updated: MessagesByTab = { predictions: [], teamsheet: [], banter: [] };
         for (const tab of ['predictions', 'teamsheet', 'banter'] as const) {
@@ -498,6 +532,9 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
         }
         return updated;
       });
+      if (typeof emoji === 'string' && actor?.userId) {
+        triggerReactionBurst(emoji, actor);
+      }
     });
 
     channel.bind('user-event', ({ text }: { text: string }) => addNotification(text));
@@ -507,7 +544,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
       pusherRef.current?.unsubscribe(`match-${match.id}`);
       pusherRef.current?.disconnect();
     };
-  }, [match.id, upsertMessage, addNotification, realtime]);
+  }, [match.id, upsertMessage, addNotification, realtime, triggerReactionBurst]);
 
   const sendMessage = useCallback(async (text: string): Promise<void> => {
     if (!text.trim()) return;
@@ -637,7 +674,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
 
   const reactToMessage = useCallback(async (messageId: string, tab: TabId, emoji: string): Promise<void> => {
     try {
-      await fetch('/api/react', {
+      const res = await fetch('/api/react', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -646,12 +683,20 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
           messageId,
           emoji,
           userId: user.userId,
+          username: user.username,
+          image: user.image,
         }),
       });
+      if (!res.ok) return;
+      const payload = (await res.json()) as { emoji?: string; actor?: ReactionActor };
+      // Fallback for when realtime is unavailable/misconfigured.
+      if (!realtime?.key && typeof payload.emoji === 'string' && payload.actor?.userId) {
+        triggerReactionBurst(payload.emoji, payload.actor);
+      }
     } catch (err) {
       console.error('React failed', err);
     }
-  }, [match.id, user.userId]);
+  }, [match.id, user.userId, user.username, user.image, realtime, triggerReactionBurst]);
 
   const castVote = useCallback(async (vote: VoteChoice): Promise<void> => {
     try {
@@ -723,6 +768,25 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     }
   }, [addNotification]);
 
+  const shareRoomLink = useCallback(async () => {
+    if (typeof window === 'undefined') return;
+    const roomUrl = window.location.href;
+    if (typeof navigator === 'undefined' || !navigator.share) {
+      await copyRoomLink();
+      return;
+    }
+    try {
+      await navigator.share({
+        title: 'Join my FanGround match room',
+        text: 'Jump into this live match room with me.',
+        url: roomUrl,
+      });
+      addNotification('Room link shared.');
+    } catch {
+      // Ignore user-cancelled native share dialogs.
+    }
+  }, [copyRoomLink, addNotification]);
+
   const isLive = match.status === 'live';
   const kickoff = new Date(match.kickoff);
   const kickoffStr = kickoff.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -750,6 +814,28 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!shareMenuOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!shareMenuRef.current) return;
+      const target = event.target as Node;
+      if (!shareMenuRef.current.contains(target)) {
+        setShareMenuOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShareMenuOpen(false);
+      }
+    };
+    window.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('mousedown', onPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [shareMenuOpen]);
+
   return (
     <div className="mr-room">
       {/* Notifications */}
@@ -761,6 +847,25 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
             role="status"
           >
             {n.text}
+          </div>
+        ))}
+      </div>
+
+      <div className="mr-reaction-bursts" aria-hidden="true">
+        {reactionBursts.map((burst) => (
+          <div key={burst.id} className="mr-reaction-burst">
+            <div className="mr-reaction-user">
+              {burst.actor.image ? (
+                // eslint-disable-next-line @next/next/no-img-element -- dynamic avatars can originate from many OAuth hosts
+                <img src={burst.actor.image} alt="" width={24} height={24} />
+              ) : (
+                <span>{burst.actor.username?.[0]?.toUpperCase() || '?'}</span>
+              )}
+            </div>
+            <span className="mr-reaction-emoji mr-reaction-emoji--a">{burst.emoji}</span>
+            <span className="mr-reaction-emoji mr-reaction-emoji--b">{burst.emoji}</span>
+            <span className="mr-reaction-emoji mr-reaction-emoji--c">{burst.emoji}</span>
+            <span className="mr-reaction-emoji mr-reaction-emoji--d">{burst.emoji}</span>
           </div>
         ))}
       </div>
@@ -822,21 +927,51 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
           </div>
         </div>
 
-        <button
-          type="button"
-          className="mr-menu mr-share"
-          onClick={() => { void copyRoomLink(); }}
-          aria-label="Share room link"
-          title="Share room link"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="18" cy="5" r="3" />
-            <circle cx="6" cy="12" r="3" />
-            <circle cx="18" cy="19" r="3" />
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-          </svg>
-        </button>
+        <div className="mr-share-wrap" ref={shareMenuRef}>
+          <button
+            type="button"
+            className="mr-menu mr-share"
+            onClick={() => setShareMenuOpen((open) => !open)}
+            aria-label="Open share options"
+            title="Open share options"
+            aria-expanded={shareMenuOpen}
+            aria-haspopup="menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            </svg>
+          </button>
+          {shareMenuOpen && (
+            <div className="mr-share-menu" role="menu" aria-label="Share options">
+              <button
+                type="button"
+                className="mr-share-item"
+                role="menuitem"
+                onClick={() => {
+                  void shareRoomLink();
+                  setShareMenuOpen(false);
+                }}
+              >
+                Share room link
+              </button>
+              <button
+                type="button"
+                className="mr-share-item"
+                role="menuitem"
+                onClick={() => {
+                  void copyRoomLink();
+                  setShareMenuOpen(false);
+                }}
+              >
+                Copy room link
+              </button>
+            </div>
+          )}
+        </div>
 
         <button
           type="button"

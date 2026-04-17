@@ -87,6 +87,7 @@
   width: 200px;
   min-width: 200px;
   max-width: 200px;
+  padding-left: 14px;
 }
 
 .leaderboard-table th:nth-child(2),
@@ -94,31 +95,33 @@
   width: 70px;
   min-width: 70px;
   max-width: 70px;
+  text-align: center;
 }
 
 .leaderboard-table th:nth-child(3),
 .leaderboard-table td:nth-child(3) {
-  width: 110px;
-  min-width: 110px;
-  max-width: 110px;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  text-align: center;
 }
 
 .leaderboard-table th:nth-child(4),
 .leaderboard-table td:nth-child(4),
 .leaderboard-table th:nth-child(5),
-.leaderboard-table td:nth-child(5),
-.leaderboard-table th:nth-child(6),
-.leaderboard-table td:nth-child(6) {
+.leaderboard-table td:nth-child(5) {
   width: 80px;
   min-width: 80px;
   max-width: 80px;
+  text-align: center;
 }
 
-.leaderboard-table th:nth-child(7),
-.leaderboard-table td:nth-child(7) {
+.leaderboard-table th:nth-child(6),
+.leaderboard-table td:nth-child(6) {
   width: 170px;
   min-width: 170px;
   max-width: 170px;
+  text-align: center;
 }
 
 .leaderboard-table th {
@@ -192,6 +195,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  width: 100%;
+  justify-content: center;
 }
 
 .leaderboard-badge {
@@ -249,7 +254,9 @@
 .leaderboard-team {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  white-space: nowrap;
 }
 
 .leaderboard-team-logo {
@@ -328,27 +335,22 @@
     max-width: 40px;
   }
 
+  .leaderboard-table th:nth-child(3),
+  .leaderboard-table td:nth-child(3),
   .leaderboard-table th:nth-child(4),
   .leaderboard-table td:nth-child(4),
   .leaderboard-table th:nth-child(5),
-  .leaderboard-table td:nth-child(5),
-  .leaderboard-table th:nth-child(6),
-  .leaderboard-table td:nth-child(6) {
+  .leaderboard-table td:nth-child(5) {
     width: 56px;
     min-width: 56px;
     max-width: 56px;
   }
 
-  .leaderboard-table th:nth-child(7),
-  .leaderboard-table td:nth-child(7) {
+  .leaderboard-table th:nth-child(6),
+  .leaderboard-table td:nth-child(6) {
     width: 90px;
     min-width: 90px;
     max-width: 90px;
-  }
-
-  .leaderboard-table th:nth-child(3),
-  .leaderboard-table td:nth-child(3) {
-    display: none;
   }
 
   .leaderboard-user-link {

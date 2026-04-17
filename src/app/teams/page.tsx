@@ -10,6 +10,7 @@ import {
   getTeamCardsCache,
   type TeamCardData,
 } from '@/lib/team-cards-cache';
+import '../page.css';
 import './teams.css';
 
 function formatForm(team: TeamCardData): string {
