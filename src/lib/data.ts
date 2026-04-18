@@ -37,6 +37,10 @@ const SQUAD_PLAYERS: Record<string, string[]> = {
 };
 
 export const DEMO_MATCH_ID = 'demo-live-match';
+
+/** Set to `true` to prepend a synthetic demo room to match lists again (e.g. when no live data). */
+export const INCLUDE_DEMO_MATCH = false;
+
 const DEMO_KICKOFF_ISO = new Date(Date.now() - 15 * 60_000).toISOString();
 
 /** Hardcoded fallback matches used when ESPN is unavailable. */
@@ -115,14 +119,19 @@ function buildDemoLiveMatch(sourceMatches: Match[]): Match {
 let _cache: { matches: Match[]; fetchedAt: number } | null = null;
 const CACHE_TTL = 15_000; // 15 seconds — keeps live scores fresh
 
+function prependDemoIfEnabled(matches: Match[]): Match[] {
+  if (!INCLUDE_DEMO_MATCH) return matches;
+  return [buildDemoLiveMatch(matches), ...matches];
+}
+
 /**
  * Fetch matches from ESPN, falling back to hardcoded fixtures if ESPN fails.
- * Demo room card is always prepended to the response list.
+ * Optionally prepends a demo room when {@link INCLUDE_DEMO_MATCH} is true.
  */
 export async function getMatches(): Promise<Match[]> {
   const now = Date.now();
   if (_cache && now - _cache.fetchedAt < CACHE_TTL) {
-    return [buildDemoLiveMatch(_cache.matches), ..._cache.matches];
+    return prependDemoIfEnabled(_cache.matches);
   }
 
   try {
@@ -147,7 +156,7 @@ export async function getMatches(): Promise<Match[]> {
       }
 
       _cache = { matches: espnMatches, fetchedAt: now };
-      return [buildDemoLiveMatch(espnMatches), ...espnMatches];
+      return prependDemoIfEnabled(espnMatches);
     }
   } catch (err) {
     console.error('ESPN fetch failed, using fallback:', err);
@@ -156,7 +165,7 @@ export async function getMatches(): Promise<Match[]> {
   // Fallback to hardcoded
   const fallback = buildFallbackMatches();
   _cache = { matches: fallback, fetchedAt: now };
-  return [buildDemoLiveMatch(fallback), ...fallback];
+  return prependDemoIfEnabled(fallback);
 }
 
 // Lineup cache: matchId -> { home, away } (short TTL for live matches, longer for finished)
@@ -280,10 +289,11 @@ async function ensureRoster(match: Match): Promise<void> {
 
 /**
  * Get a single match by ID, fetching rosters on demand if needed.
- * The demo room (`demo-live-match`) is always available.
+ * The demo room is only available when {@link INCLUDE_DEMO_MATCH} is true.
  */
 export async function getMatch(id: string): Promise<Match | null> {
   if (id === DEMO_MATCH_ID) {
+    if (!INCLUDE_DEMO_MATCH) return null;
     const allMatches = await getMatches();
     const sourceMatches = allMatches.filter((match) => !match.isDemo);
     return buildDemoLiveMatch(sourceMatches);

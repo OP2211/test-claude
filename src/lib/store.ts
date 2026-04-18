@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { getMatch, DEMO_MATCH_ID } from './data';
+import { getMatch } from './data';
 import { getSupabaseAdmin } from './supabase-admin';
 import type { Message, TabId, TeamId, VoteChoice, VoteTally, VoteSnapshot, VoteVoter, VoteHistoryPoint, Reactions } from './types';
 
