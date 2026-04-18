@@ -10,6 +10,7 @@ import {
   getTeamCardsCache,
   type TeamCardData,
 } from '@/lib/team-cards-cache';
+import { TEAM_PROFILES } from '@/lib/team-trophies';
 import '../page.css';
 import './teams.css';
 
@@ -70,69 +71,80 @@ export default async function TeamsPage() {
 
           <section className="teams-grid" aria-label="Team list">
             {teamsSorted.map((team) => {
-              const topSupporters = team.topSupporters;
+              const profile = TEAM_PROFILES.find(p => p.id === team.teamId);
+              const trophyCount = profile?.plEraTotalCount ?? 0;
               const lastFive = team.lastFive;
+              const topSupporters = team.topSupporters;
 
               return (
                 <Link
                   key={team.teamId}
                   href={`/teams/${team.teamId}`}
-                  className="team-card"
-                  style={{ '--team-accent': team.teamColor } as CSSProperties}
+                  className="tc"
+                  style={{ '--tc-color': team.teamColor } as CSSProperties}
                 >
-                  <div className="team-card-top">
-                    <span className="team-card-logo-wrap">
-                      <TeamLogoImage src={team.teamLogo} alt={`${team.teamName} logo`} className="team-card-logo" />
-                    </span>
-                    <div className="team-card-title-wrap">
-                      <span className="team-card-name">{team.teamName}</span>
-                      <span className="team-card-rank">
-                        {team.rank ? `#${team.rank} in league` : 'League rank unavailable'}
-                      </span>
+                  {/* Color header with logo */}
+                  <div className="tc-header">
+                    <div className="tc-header-bg" />
+                    <TeamLogoImage src={team.teamLogo} alt="" className="tc-logo" />
+                    {team.rank && <span className="tc-rank">#{team.rank}</span>}
+                  </div>
+
+                  {/* Club info */}
+                  <div className="tc-body">
+                    <span className="tc-name">{team.teamName}</span>
+                    {profile && <span className="tc-nickname">{profile.nickname}</span>}
+
+                    {/* Stats row */}
+                    <div className="tc-stats">
+                      <div className="tc-stat">
+                        <span className="tc-stat-num">{formatForm(team)}</span>
+                        <span className="tc-stat-label">Form</span>
+                      </div>
+                      <div className="tc-stat">
+                        <span className="tc-stat-num">{trophyCount}</span>
+                        <span className="tc-stat-label">Trophies</span>
+                      </div>
+                      <div className="tc-stat">
+                        <span className="tc-stat-num">{team.supportersCount}</span>
+                        <span className="tc-stat-label">Fans</span>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="team-card-stats">
-                    <span className="team-stat-pill">
-                      <strong>📊 Form</strong>
-                      <span>{formatForm(team)}</span>
-                    </span>
-                    <span className="team-stat-pill">
-                      <strong>👥 Supporters</strong>
-                      <span>{team.supportersCount}</span>
-                    </span>
-                  </div>
+                    {/* Last 5 */}
+                    {lastFive.length > 0 && (
+                      <div className="tc-form-row">
+                        <span className="tc-form-label">Last 5</span>
+                        <div className="tc-form">
+                          {lastFive.map((r, i) => (
+                            <span key={i} className={`tc-form-dot is-${r.toLowerCase()}`}>{r}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                  <div className="team-last-five" aria-label="Last five results">
-                    <span className="team-last-five-label">Last 5</span>
-                    <div className="team-result-chips">
-                      {lastFive.length === 0 ? (
-                        <span className="team-last-five-empty">No recent results</span>
+                    {/* Fan avatars */}
+                    <div className="tc-fans">
+                      {topSupporters.length > 0 ? (
+                        <>
+                          <div className="tc-fans-avatars">
+                            {topSupporters.slice(0, 5).map(s => (
+                              <span key={s.google_sub} className="tc-fan-av" title={s.username}>
+                                {s.image ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={s.image} alt="" />
+                                ) : (
+                                  s.username[0]?.toUpperCase() ?? '?'
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                          {team.supportersCount > 5 && (
+                            <span className="tc-fans-more">+{team.supportersCount - 5}</span>
+                          )}
+                        </>
                       ) : (
-                        lastFive.map((result, index) => (
-                          <span key={`${team.teamId}-${index}`} className={`team-result-chip is-${result.toLowerCase()}`}>
-                            {result}
-                          </span>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="team-card-supporters">
-                    <div className="team-supporter-avatars" aria-label="Top supporters">
-                      {topSupporters.length === 0 ? (
-                        <span className="team-supporter-empty">No supporters yet</span>
-                      ) : (
-                        topSupporters.map((supporter) => (
-                          <span key={supporter.google_sub} className="team-supporter-avatar" title={supporter.username}>
-                            {supporter.image ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={supporter.image} alt="" />
-                            ) : (
-                              supporter.username[0]?.toUpperCase() ?? '?'
-                            )}
-                          </span>
-                        ))
+                        <span className="tc-fans-empty">No fans yet</span>
                       )}
                     </div>
                   </div>
