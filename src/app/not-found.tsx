@@ -34,7 +34,7 @@ export default function NotFound() {
               Back to the match
             </Link>
             <Link href="/" className="nf-btn nf-btn--ghost">
-              FanGround home
+              <span className="brand-text">FanGround</span> home
             </Link>
           </div>
         </div>

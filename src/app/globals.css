@@ -61,7 +61,8 @@
 
   /* Fonts */
   --font-sans: var(--font-instrument-sans), var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --font-display: var(--font-instrument-sans), var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-brand: var(--font-teko), var(--font-sans), sans-serif;
 
   /* Layout */
   --safe-top:    env(safe-area-inset-top, 0px);
@@ -270,4 +271,16 @@ a:focus-visible {
 /* Standalone PWA */
 @media (display-mode: standalone) {
   body { padding-top: var(--safe-top); }
+}
+
+/* Brand name styling — Teko font + gradient for "FanGround" anywhere */
+.brand-text {
+  font-family: var(--font-brand);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #c0392b 0%, #e74c3c 40%, #d4a017 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

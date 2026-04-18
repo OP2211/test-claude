@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { GoogleTagManager } from '@next/third-parties/google';
-import { Inter, Instrument_Sans, Instrument_Serif } from 'next/font/google';
+import { Inter, Instrument_Sans, Instrument_Serif, Teko } from 'next/font/google';
 import './globals.css';
 
 const inter = Inter({
@@ -22,6 +22,13 @@ const instrumentSerif = Instrument_Serif({
   weight: ['400'],
   display: 'swap',
   variable: '--font-instrument-serif',
+});
+
+const teko = Teko({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-teko',
 });
 
 export const metadata: Metadata = {
@@ -57,7 +64,7 @@ import ClientBoot from './ClientBoot';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${instrumentSans.variable} ${instrumentSerif.variable}`}>
+    <html lang="en" className={`${inter.variable} ${instrumentSans.variable} ${instrumentSerif.variable} ${teko.variable}`}>
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
