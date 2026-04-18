@@ -266,6 +266,11 @@
   z-index: 50; box-shadow: var(--shadow-3);
   animation: scaleIn 0.15s var(--ease-spring);
 }
+/* Own messages are right-aligned; left-anchored picker extends past the panel and gets clipped by .cp { overflow: hidden }. */
+.cp-msg.own .cp-emoji-picker {
+  left: auto;
+  right: 0;
+}
 .cp-emoji-btn {
   font-size: 1.15rem; background: none; padding: 4px 5px;
   border-radius: var(--radius-sm); min-height: 32px; min-width: 32px;

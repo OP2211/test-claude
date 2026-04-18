@@ -19,7 +19,7 @@ const TEAM_COLORS: Record<string, string> = {
   'juventus':          '#9a9a9a',
 };
 
-const QUICK_REACTIONS: string[] = ['😂', '🔥', '💪', '😤', '🎯', '👏'];
+const QUICK_REACTIONS: string[] = ['❤️', '😂', '🔥', '💪', '😤', '🎯', '👏'];
 
 interface ChatPanelProps {
   messages: Message[];
