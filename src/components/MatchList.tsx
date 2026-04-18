@@ -375,12 +375,12 @@ export default function MatchList({
         <Logo size={48} animate />
         <h1 className="ml-hero-title">FanGround</h1>
         <p className="ml-hero-sub">Predictions, lineups & live banter with fans worldwide</p>
-        {!user && (
-          <div className="ml-hero-hint">
-            <span className="ml-hint-dot" />
-            Tap any open match to join
-          </div>
-        )}
+        
+        <div className="ml-hero-hint">
+          <span className="ml-hint-dot" />
+          Tap any open match to join
+        </div>
+        
       </div>
 
       {/* Loading */}
