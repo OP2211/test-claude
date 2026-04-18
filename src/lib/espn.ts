@@ -37,11 +37,34 @@ const ESPN_ID_TO_SLUG: Record<string, string> = {
   '363': 'chelsea',
   '382': 'manchester-city',
   '367': 'tottenham',
+  '362': 'aston-villa',
+  '368': 'everton',
+  '361': 'newcastle-united',
+  '371': 'west-ham-united',
+  '357': 'leeds-united',
+  '393': 'nottingham-forest',
+  '380': 'wolverhampton',
+  '366': 'sunderland',
+  '379': 'burnley',
+  '370': 'fulham',
+  '384': 'crystal-palace',
+  '331': 'brighton',
+  '349': 'afc-bournemouth',
+  '337': 'brentford',
   '83':  'barcelona',
   '86':  'real-madrid',
   '132': 'bayern-munich',
   '111': 'juventus',
 };
+
+/** Reverse lookup: team slug → ESPN ID */
+const SLUG_TO_ESPN_ID: Record<string, string> = Object.fromEntries(
+  Object.entries(ESPN_ID_TO_SLUG).map(([espnId, slug]) => [slug, espnId])
+);
+
+export function getEspnTeamId(slug: string): string | null {
+  return SLUG_TO_ESPN_ID[slug] ?? null;
+}
 
 /** Default badge emojis for teams we don't have a mapping for. */
 function teamBadge(color: string): string {
@@ -835,4 +858,113 @@ export async function fetchStandingsWithNextMatch(leagueSlug: string = 'eng.1'):
   }
 
   return standings;
+}
+
+// ---------- Remaining season fixtures for a team ----------
+
+export interface TeamFixture {
+  id: string;
+  date: string;
+  opponent: string;
+  opponentLogo: string;
+  competition: string;
+  venue: string;
+  isHome: boolean;
+  status: Match['status'];
+}
+
+/** Fetch all remaining season fixtures for a team by ESPN team ID. */
+export async function fetchTeamRemainingFixtures(espnTeamId: string, leagueSlug: string = 'eng.1'): Promise<TeamFixture[]> {
+  const now = new Date();
+  const seasonEnd = new Date(now.getFullYear(), 4, 31); // May 31
+  const dateRange = `${espnDate(now)}-${espnDate(seasonEnd)}`;
+  const url = `${ESPN_BASE}/${leagueSlug}/scoreboard?dates=${dateRange}`;
+  try {
+    const res = await fetch(url, { next: { revalidate: 600 } });
+    if (!res.ok) return [];
+    const data: EspnScoreboard = await res.json();
+    const fixtures: TeamFixture[] = [];
+    for (const event of data.events || []) {
+      const comp = event.competitions?.[0];
+      if (!comp) continue;
+      const competitors = comp.competitors || [];
+      const us = competitors.find(c => c.team.id === espnTeamId);
+      if (!us) continue;
+      const them = competitors.find(c => c.team.id !== espnTeamId);
+      if (!them) continue;
+      fixtures.push({
+        id: `fanground-${event.id}`,
+        date: event.date,
+        opponent: them.team.displayName,
+        opponentLogo: toLocalTeamLogo(them.team.logo, them.team.id),
+        competition: 'Premier League',
+        venue: comp.venue?.displayName || '',
+        isHome: us.homeAway === 'home',
+        status: mapStatus(event.status.type.state),
+      });
+    }
+    return fixtures.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  } catch {
+    return [];
+  }
+}
+
+// ---------- Past results for a team ----------
+
+export interface TeamResult {
+  id: string;
+  date: string;
+  opponent: string;
+  opponentLogo: string;
+  competition: string;
+  isHome: boolean;
+  homeScore: number;
+  awayScore: number;
+}
+
+/** Fetch last N completed matches for a team from ESPN schedule endpoint. */
+export async function fetchTeamRecentResults(espnTeamId: string, leagueSlug: string = 'eng.1', limit: number = 5): Promise<TeamResult[]> {
+  const url = `${ESPN_BASE}/${leagueSlug}/teams/${espnTeamId}/schedule`;
+  try {
+    const res = await fetch(url, { next: { revalidate: 600 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const events = (data.events || []) as Array<{
+      id: string;
+      date: string;
+      competitions: Array<{
+        competitors: Array<{
+          homeAway: string;
+          team: EspnTeam;
+          score?: { displayValue?: string; value?: number };
+        }>;
+        status?: { type?: { state?: string } };
+      }>;
+    }>;
+
+    const finished = events
+      .filter(e => e.competitions?.[0]?.status?.type?.state === 'post')
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, limit);
+
+    return finished.map(e => {
+      const comp = e.competitions[0];
+      const us = comp.competitors.find(c => c.team.id === espnTeamId);
+      const them = comp.competitors.find(c => c.team.id !== espnTeamId);
+      const home = comp.competitors.find(c => c.homeAway === 'home');
+      const away = comp.competitors.find(c => c.homeAway === 'away');
+      return {
+        id: `fanground-${e.id}`,
+        date: e.date,
+        opponent: them?.team.displayName || '?',
+        opponentLogo: toLocalTeamLogo(them?.team.logo, them?.team.id || '0'),
+        competition: 'Premier League',
+        isHome: us?.homeAway === 'home',
+        homeScore: parseInt(home?.score?.displayValue || '0', 10),
+        awayScore: parseInt(away?.score?.displayValue || '0', 10),
+      };
+    });
+  } catch {
+    return [];
+  }
 }
