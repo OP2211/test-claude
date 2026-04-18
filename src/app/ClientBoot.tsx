@@ -18,14 +18,10 @@ export default function ClientBoot() {
       // Ignore localStorage/document access failures.
     }
 
+    // Register service worker immediately — don't wait for 'load' event.
+    // The browser needs the SW registered before it fires beforeinstallprompt.
     if ('serviceWorker' in navigator) {
-      window.addEventListener(
-        'load',
-        () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
-        },
-        { once: true }
-      );
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
   }, []);
 
