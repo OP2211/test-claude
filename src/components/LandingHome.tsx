@@ -74,7 +74,7 @@ export default function LandingHome({
                 onClick={onEnterFanGround}
               >
                 <span className="landing-btn-icon" aria-hidden="true"><ArrowRushIcon /></span>
-                Enter FanGround
+                Enter <span className="brand-text">FanGround</span>
               </button>
               <button
                 type="button"
@@ -182,7 +182,7 @@ export default function LandingHome({
       {/* 4. Solution */}
       <section className="landing-section landing-section--glow" aria-labelledby="landing-solution-title">
         <h2 id="landing-solution-title" className="landing-section-title">
-          FanGround is the crowd
+          <span className="brand-text">FanGround</span> is the crowd
         </h2>
         <ul className="landing-bullet-list">
           <li>Live match rooms that open 2 hours before kickoff</li>
@@ -286,7 +286,7 @@ export default function LandingHome({
             <thead>
               <tr>
                 <th scope="col">Others</th>
-                <th scope="col">FanGround</th>
+                <th scope="col"><span className="brand-text">FanGround</span></th>
               </tr>
             </thead>
             <tbody>
@@ -363,7 +363,7 @@ export default function LandingHome({
             Pick Your Club
           </button>
         </div>
-        <p className="landing-tagline">FanGround &mdash; Where Fans Feel the Match</p>
+        <p className="landing-tagline"><span className="brand-text">FanGround</span> &mdash; Where Fans Feel the Match</p>
       </section>
 
       <div className="landing-sticky">

@@ -11,12 +11,16 @@
   animation: fadeInDown 0.45s var(--ease-out);
 }
 .ml-hero-title {
-  font-family: var(--font-display);
-  font-size: clamp(2.2rem, 5.5vw, 3.1rem);
-  font-weight: 400;
-  letter-spacing: -0.6px;
-  color: rgba(var(--neutral-rgb),0.94);
-  line-height: 1.05;
+  font-family: var(--font-brand);
+  font-size: clamp(2.4rem, 6vw, 3.4rem);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #c0392b 0%, #e74c3c 40%, #d4a017 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
 }
 .ml-hero-sub {
   color: var(--text-secondary);

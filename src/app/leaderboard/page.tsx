@@ -1,64 +1,11 @@
 import Link from 'next/link';
-import { Heart, MessageSquare } from 'lucide-react';
 import AppHeaderSession from '@/components/AppHeaderSession';
 import SiteFooter from '@/components/SiteFooter';
-import TeamLogoImage from '@/components/TeamLogoImage';
-import EarlyAdopterBadge from '@/components/EarlyAdopterBadge';
-import { getLeaderboardProfiles } from '@/lib/profile-repo';
-import { TEAMS } from '@/lib/teams';
+import LeaderboardClient from '@/components/LeaderboardClient';
 import '../page.css';
 import './leaderboard.css';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
-type LeaderboardSort = 'latest' | 'messages' | 'reactions' | 'invites' | 'name';
-
-interface LeaderboardPageProps {
-  searchParams?: {
-    sort?: string;
-  };
-}
-
-const FOUNDING_FAN_TIER_CLASS: Record<'founding' | 'silver' | 'bronze', string> = {
-  founding: 'leaderboard-badge--founding-gold',
-  silver: 'leaderboard-badge--founding-silver',
-  bronze: 'leaderboard-badge--founding-bronze',
-};
-
-export default async function LeaderboardPage({ searchParams }: LeaderboardPageProps) {
-  const profiles = await getLeaderboardProfiles();
-  const requestedSort = searchParams?.sort;
-  const sort: LeaderboardSort =
-    requestedSort === 'messages' ||
-    requestedSort === 'reactions' ||
-    requestedSort === 'invites' ||
-    requestedSort === 'name' ||
-    requestedSort === 'latest'
-      ? requestedSort
-      : 'latest';
-  const mostMessages = profiles.reduce((max, profile) => Math.max(max, profile.messagesSent), 0);
-  const mostReactions = profiles.reduce((max, profile) => Math.max(max, profile.reactionsReceived), 0);
-  const sortedProfiles = [...profiles].sort((a, b) => {
-    if (sort === 'messages') {
-      return b.messagesSent - a.messagesSent;
-    }
-    if (sort === 'reactions') {
-      return b.reactionsReceived - a.reactionsReceived;
-    }
-    if (sort === 'invites') {
-      return b.successfulInvites - a.successfulInvites;
-    }
-    if (sort === 'name') {
-      const nameA = (a.full_name?.trim() || a.username).toLowerCase();
-      const nameB = (b.full_name?.trim() || b.username).toLowerCase();
-      return nameA.localeCompare(nameB);
-    }
-    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-    return timeB - timeA;
-  });
-
+export default function LeaderboardPage() {
   return (
     <div className="app">
       <AppHeaderSession />
@@ -86,121 +33,7 @@ export default async function LeaderboardPage({ searchParams }: LeaderboardPageP
           </Link>
         </nav>
         <div className="ml-page leaderboard-page">
-          <section className="leaderboard-card" aria-label="Leaderboard users table">
-            <div className="leaderboard-head">
-              <h1 className="leaderboard-title">Leaderboard</h1>
-              <p className="leaderboard-subtitle">All users with teams, stats, and badges.</p>
-              <div className="leaderboard-sort-row" aria-label="Sort leaderboard">
-                <span className="leaderboard-sort-label">Sort:</span>
-                <Link href="/leaderboard?sort=latest" className={`leaderboard-sort-link ${sort === 'latest' ? 'is-active' : ''}`}>
-                  Latest
-                </Link>
-                <Link href="/leaderboard?sort=messages" className={`leaderboard-sort-link ${sort === 'messages' ? 'is-active' : ''}`}>
-                  Messages
-                </Link>
-                <Link href="/leaderboard?sort=reactions" className={`leaderboard-sort-link ${sort === 'reactions' ? 'is-active' : ''}`}>
-                  Reactions
-                </Link>
-                <Link href="/leaderboard?sort=invites" className={`leaderboard-sort-link ${sort === 'invites' ? 'is-active' : ''}`}>
-                  Successful Invites
-                </Link>
-                <Link href="/leaderboard?sort=name" className={`leaderboard-sort-link ${sort === 'name' ? 'is-active' : ''}`}>
-                  Name
-                </Link>
-              </div>
-            </div>
-
-            <div className="leaderboard-table-wrap">
-              <table className="leaderboard-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Team</th>
-                    <th>
-                      <span className="leaderboard-th-long">Messages Sent</span>
-                      <span className="leaderboard-th-short">Msgs</span>
-                    </th>
-                    <th>
-                      <span className="leaderboard-th-long">Reactions Received</span>
-                      <span className="leaderboard-th-short">Reacts</span>
-                    </th>
-                    <th>
-                      <span className="leaderboard-th-long">Successful Invites</span>
-                      <span className="leaderboard-th-short">Invites</span>
-                    </th>
-                    <th>Badges</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedProfiles.map((profile) => {
-                    const team = TEAMS.find((item) => item.id === profile.fan_team_id) ?? null;
-                    const displayName = profile.full_name?.trim() || profile.username;
-                    return (
-                      <tr key={profile.google_sub}>
-                        <td data-label="Name">
-                          <Link href={`/profile/${encodeURIComponent(profile.username)}`} className="leaderboard-user-link">
-                            <span className="leaderboard-user-cell">
-                              <span className="leaderboard-user-avatar" aria-hidden>
-                                {profile.image ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={profile.image} alt="" />
-                                ) : (
-                                  displayName[0]?.toUpperCase() ?? '?'
-                                )}
-                              </span>
-                              <span className="leaderboard-user-meta">
-                                <span className="leaderboard-user-name">{displayName}</span>
-                                <span className="leaderboard-user-username">@{profile.username}</span>
-                              </span>
-                            </span>
-                          </Link>
-                        </td>
-                        <td data-label="Team">
-                          {team ? (
-                            <span className="leaderboard-team">
-                              <TeamLogoImage src={team.logo} alt={`${team.name} logo`} className="leaderboard-team-logo" />
-                              <span>{team.name}</span>
-                            </span>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
-                        <td data-label="Messages Sent">{profile.messagesSent}</td>
-                        <td data-label="Reactions Received">{profile.reactionsReceived}</td>
-                        <td data-label="Successful Invites">{profile.successfulInvites}</td>
-                        <td data-label="Badges">
-                          <div className="leaderboard-badges">
-                            <EarlyAdopterBadge />
-                            {mostMessages > 0 && profile.messagesSent === mostMessages && (
-                              <span className="leaderboard-badge leaderboard-badge--messages" aria-label="Badge: Most Messages">
-                                <MessageSquare size={13} aria-hidden />
-                                <span className="leaderboard-badge-text">Most Messages</span>
-                              </span>
-                            )}
-                            {mostReactions > 0 && profile.reactionsReceived === mostReactions && (
-                              <span className="leaderboard-badge leaderboard-badge--reactions" aria-label="Badge: Most Reactions">
-                                <Heart size={13} aria-hidden />
-                                <span className="leaderboard-badge-text">Most Reactions</span>
-                              </span>
-                            )}
-                            {profile.foundingFanTier && team && (
-                              <span
-                                className={`leaderboard-badge ${FOUNDING_FAN_TIER_CLASS[profile.foundingFanTier]}`}
-                                aria-label="Badge: Founding Fan"
-                              >
-                                <TeamLogoImage src={team.logo} alt="" className="leaderboard-badge-team-logo" />
-                                <span className="leaderboard-badge-text">Founding Fan</span>
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <LeaderboardClient />
         </div>
       </main>
       <SiteFooter />

@@ -57,7 +57,7 @@ export default function SiteFooter() {
         <p className="site-footer-contact">
           Contact: <a href="mailto:hello@fanground.online">hello@fanground.online</a>
         </p>
-        <p className="site-footer-copy">© {new Date().getFullYear()} FanGround</p>
+        <p className="site-footer-copy">© {new Date().getFullYear()} <span className="brand-text">FanGround</span></p>
       </div>
     </footer>
   );
