@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import AppHeader from '@/components/AppHeader';
 import { startGoogleSignInRedirect } from '@/lib/google-signin';
+import { fetchProfileMeShared } from '@/lib/fetch-profile-me-client';
 import type { User } from '@/lib/types';
 
 interface AppHeaderSessionProps {
@@ -65,14 +66,12 @@ export default function AppHeaderSession({ logoHref = '/' }: AppHeaderSessionPro
 
   useEffect(() => {
     if (!session?.user) return;
-    const controller = new AbortController();
 
     const loadProfileImage = async () => {
       try {
-        const res = await fetch('/api/profile/me', { signal: controller.signal });
-        if (!res.ok) return;
-        const data = (await res.json()) as ProfileMeResponse;
-        const preferredImage = getPreferredSessionAvatar(data.profile?.image);
+        const { ok, data } = await fetchProfileMeShared();
+        if (!ok) return;
+        const preferredImage = getPreferredSessionAvatar((data.profile as ProfileMeResponse['profile'])?.image ?? null);
         if (!preferredImage) return;
         prefetchProfileImage(preferredImage);
         cacheProfileImage(preferredImage);
@@ -83,7 +82,6 @@ export default function AppHeaderSession({ logoHref = '/' }: AppHeaderSessionPro
     };
 
     void loadProfileImage();
-    return () => controller.abort();
   }, [session?.user]);
 
   const user: User | null = session?.user

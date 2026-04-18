@@ -9,6 +9,7 @@ import SiteFooter from '@/components/SiteFooter';
 import OnboardingModal from '@/components/OnboardingModal';
 import MatchList from '@/components/MatchList';
 import LeagueHub from '@/components/LeagueHub';
+import { fetchProfileMeShared } from '@/lib/fetch-profile-me-client';
 import { clearStoredReferralCode, getStoredReferralCode, storeReferralCodeFromQuery } from '@/lib/referral-storage';
 import type { Match, User, TeamId } from '@/lib/types';
 import type { TopScorer, TopContributor } from '@/lib/espn';
@@ -243,12 +244,12 @@ function MatchesPageContent() {
   const loadProfile = useCallback(async () => {
     setIsProfileLoading(true);
     try {
-      const res = await fetch('/api/profile/me');
-      if (!res.ok) { setUser(null); return; }
-      const data: ProfileResponse = await res.json();
-      if (data.profile) {
-        setUser(mapProfileToUser(data.profile));
-        if (!data.isOnboardingComplete) setShowOnboarding(true);
+      const { ok, data } = await fetchProfileMeShared();
+      if (!ok) { setUser(null); return; }
+      const profileData = data as ProfileResponse;
+      if (profileData.profile) {
+        setUser(mapProfileToUser(profileData.profile));
+        if (!profileData.isOnboardingComplete) setShowOnboarding(true);
       } else {
         setUser(null);
         setShowOnboarding(true);

@@ -10,12 +10,12 @@ export interface TrophyWin {
 }
 
 const TROPHY_IMAGES: Record<TrophyWin['type'], string> = {
-  'Premier League': '/trophies/premier-league.jpg', // red default
-  'FA Cup': '/trophies/fa-cup.jpg',
-  'League Cup': '/trophies/league-cup.jpg',
-  'Champions League': '/trophies/champions-league.jpg',
-  'Europa League': '/trophies/europa-league.jpg',
-  'Club World Cup': '/trophies/club-world-cup.jpg',
+  'Premier League': '/trophies/premier-league.webp', // red default
+  'FA Cup': '/trophies/fa-cup.webp',
+  'League Cup': '/trophies/league-cup.webp',
+  'Champions League': '/trophies/champions-league.webp',
+  'Europa League': '/trophies/europa-league.webp',
+  'Club World Cup': '/trophies/club-world-cup.webp',
 };
 
 /** Determine if a hex color is "blue-ish" to pick the right PL trophy image. */
@@ -55,7 +55,7 @@ function profile(
   const withImages: TrophyWin[] = trophies.map(t => ({
     ...t,
     image: t.type === 'Premier League' && blue
-      ? '/trophies/premier-league-blue.jpg'
+      ? '/trophies/premier-league-blue.webp'
       : TROPHY_IMAGES[t.type],
   }));
   const total = withImages.reduce((sum, t) => sum + t.years.length, 0);

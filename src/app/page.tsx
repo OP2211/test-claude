@@ -10,6 +10,7 @@ import OnboardingModal from '@/components/OnboardingModal';
 import AppHeader from '@/components/AppHeader';
 import SiteFooter from '@/components/SiteFooter';
 import LandingHome from '@/components/LandingHome';
+import { fetchProfileMeShared } from '@/lib/fetch-profile-me-client';
 import { clearStoredReferralCode, getStoredReferralCode, storeReferralCodeFromQuery } from '@/lib/referral-storage';
 
 import type { Match, User, TeamId } from '@/lib/types';
@@ -70,15 +71,15 @@ export default function Home() {
 
   const loadProfile = useCallback(async () => {
     try {
-      const res = await fetch('/api/profile/me');
-      if (!res.ok) {
+      const { ok, data } = await fetchProfileMeShared();
+      if (!ok) {
         setUser(null);
         return;
       }
-      const data: ProfileResponse = await res.json();
-      if (data.profile) {
-        setUser(mapProfileToUser(data.profile));
-        setShowOnboarding(!data.isOnboardingComplete);
+      const profileData = data as ProfileResponse;
+      if (profileData.profile) {
+        setUser(mapProfileToUser(profileData.profile));
+        setShowOnboarding(!profileData.isOnboardingComplete);
       } else {
         setUser(null);
         setShowOnboarding(true);

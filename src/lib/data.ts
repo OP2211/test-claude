@@ -1,5 +1,14 @@
 import type { Team, Match } from './types';
-import { fetchAllMatches, fetchMatchLineups, fetchMatchEvents, fetchTeamRoster, extractEspnId } from './espn';
+import {
+  fetchAllMatches,
+  fetchEspnMatchSummaryData,
+  fetchMatchLineups,
+  fetchMatchEvents,
+  fetchTeamRoster,
+  extractEspnId,
+  parseMatchEventsFromSummaryData,
+  parseMatchLineupsFromSummaryData,
+} from './espn';
 
 const TEAMS: Record<string, Team> = {
   'manchester-united': { name: 'Manchester United', shortName: 'MAN UTD', badge: '\u{1F534}', color: '#DA020E', logo: '/team/360.png' },
@@ -177,18 +186,48 @@ async function ensureRoster(match: Match): Promise<void> {
   // 1) Always try the summary endpoint first - ESPN has predicted XI for upcoming matches too,
   //    actual XI once announced (~1hr before kickoff), and live updates for sub changes.
   if (espnEventId) {
-    // Always fetch events for live/finished matches (goals can happen any time)
-    if (match.status === 'live' || match.status === 'finished') {
-      const events = await fetchMatchEvents(espnEventId, leagueSlug, match.homeTeam.name);
-      if (events.length > 0) {
-        match.events = events;
-      }
-    }
-
-    // Lineup cache — reuse if fresh
     const cached = _lineupCache[match.id];
     const ttl = lineupTtl(match.status);
-    if (cached && cached.status === match.status && Date.now() - cached.fetchedAt < ttl) {
+    const lineupsCacheHit =
+      cached && cached.status === match.status && Date.now() - cached.fetchedAt < ttl;
+
+    if (match.status === 'live' || match.status === 'finished') {
+      // Cache hit: only need events (separate request); lineups unchanged.
+      if (lineupsCacheHit) {
+        match.teamSheet.home = { ...cached.home };
+        match.teamSheet.away = { ...cached.away };
+        const events = await fetchMatchEvents(espnEventId, leagueSlug, match.homeTeam.name);
+        if (events.length > 0) {
+          match.events = events;
+        }
+        return;
+      }
+      // One summary fetch fills both events and lineups (avoids duplicate summary HTTP).
+      const summary = await fetchEspnMatchSummaryData(espnEventId, leagueSlug, match.status);
+      if (summary) {
+        const events = parseMatchEventsFromSummaryData(summary, match.homeTeam.name);
+        if (events.length > 0) {
+          match.events = events;
+        }
+        const lineups = parseMatchLineupsFromSummaryData(summary, match.status);
+        if (lineups) {
+          match.teamSheet.home = lineups.home;
+          match.teamSheet.away = lineups.away;
+          _lineupCache[match.id] = {
+            home: { ...lineups.home },
+            away: { ...lineups.away },
+            fetchedAt: Date.now(),
+            status: match.status,
+          };
+          return;
+        }
+      } else {
+        const events = await fetchMatchEvents(espnEventId, leagueSlug, match.homeTeam.name);
+        if (events.length > 0) {
+          match.events = events;
+        }
+      }
+    } else if (lineupsCacheHit) {
       match.teamSheet.home = { ...cached.home };
       match.teamSheet.away = { ...cached.away };
       return;
@@ -209,31 +248,34 @@ async function ensureRoster(match: Match): Promise<void> {
   }
 
   // 2) Fallback: full squad roster (for upcoming matches or if summary has no lineups)
-  if (match.teamSheet.home.players.length === 0) {
-    const cached = _rosterCache[homeTeamId];
-    if (cached && Date.now() - cached.fetchedAt < ROSTER_TTL) {
-      match.teamSheet.home.players = cached.players;
-    } else {
+  await Promise.all([
+    (async () => {
+      if (match.teamSheet.home.players.length !== 0) return;
+      const cached = _rosterCache[homeTeamId];
+      if (cached && Date.now() - cached.fetchedAt < ROSTER_TTL) {
+        match.teamSheet.home.players = cached.players;
+        return;
+      }
       const players = await fetchTeamRoster(homeTeamId, leagueSlug);
       if (players.length > 0) {
         _rosterCache[homeTeamId] = { players, fetchedAt: Date.now() };
         match.teamSheet.home.players = players;
       }
-    }
-  }
-
-  if (match.teamSheet.away.players.length === 0) {
-    const cached = _rosterCache[awayTeamId];
-    if (cached && Date.now() - cached.fetchedAt < ROSTER_TTL) {
-      match.teamSheet.away.players = cached.players;
-    } else {
+    })(),
+    (async () => {
+      if (match.teamSheet.away.players.length !== 0) return;
+      const cached = _rosterCache[awayTeamId];
+      if (cached && Date.now() - cached.fetchedAt < ROSTER_TTL) {
+        match.teamSheet.away.players = cached.players;
+        return;
+      }
       const players = await fetchTeamRoster(awayTeamId, leagueSlug);
       if (players.length > 0) {
         _rosterCache[awayTeamId] = { players, fetchedAt: Date.now() };
         match.teamSheet.away.players = players;
       }
-    }
-  }
+    })(),
+  ]);
 }
 
 /**

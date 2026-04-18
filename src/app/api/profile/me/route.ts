@@ -2,12 +2,18 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import {
+  type FoundingFanTier,
   getFoundingFanTierForSupporter,
   getProfileByGoogleSub,
   getReferralSnapshotByGoogleSub,
-  isTeamLeaderForSupporter,
 } from '@/lib/profile-repo';
 import { isOnboardingComplete } from '@/lib/profile-validation';
+
+/** Browser may reuse the response briefly on repeat navigations (user-specific: private + Vary). */
+const PROFILE_ME_CACHE_HEADERS = {
+  'Cache-Control': 'private, max-age=10, stale-while-revalidate=30',
+  Vary: 'Cookie',
+} as const;
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -19,25 +25,44 @@ export async function GET() {
 
   try {
     const profile = await getProfileByGoogleSub(googleSub);
-    const referralSnapshot = profile
-      ? await getReferralSnapshotByGoogleSub(googleSub)
-      : { invitedBy: null, invitedMembers: [] };
-    const isTeamLeader = profile?.fan_team_id
-      ? await isTeamLeaderForSupporter(googleSub, profile.fan_team_id)
-      : false;
-    const foundingFanTier = profile?.fan_team_id
-      ? await getFoundingFanTierForSupporter(googleSub, profile.fan_team_id)
-      : null;
-    return NextResponse.json({
-      profile,
-      referralCode: profile?.referral_code ?? null,
-      invitedBy: referralSnapshot.invitedBy,
-      invitedMembers: referralSnapshot.invitedMembers,
-      invitedCount: referralSnapshot.invitedMembers.length,
-      isTeamLeader,
-      foundingFanTier,
-      isOnboardingComplete: isOnboardingComplete(profile),
-    });
+    if (!profile) {
+      return NextResponse.json(
+        {
+          profile: null,
+          referralCode: null,
+          invitedBy: null,
+          invitedMembers: [],
+          invitedCount: 0,
+          isTeamLeader: false,
+          foundingFanTier: null,
+          isOnboardingComplete: isOnboardingComplete(null),
+        },
+        { headers: PROFILE_ME_CACHE_HEADERS },
+      );
+    }
+
+    const [referralSnapshot, foundingFanTier] = await Promise.all([
+      getReferralSnapshotByGoogleSub(googleSub),
+      profile.fan_team_id
+        ? getFoundingFanTierForSupporter(googleSub, profile.fan_team_id)
+        : Promise.resolve(null as FoundingFanTier),
+    ]);
+
+    const isTeamLeader = foundingFanTier === 'founding';
+
+    return NextResponse.json(
+      {
+        profile,
+        referralCode: profile.referral_code ?? null,
+        invitedBy: referralSnapshot.invitedBy,
+        invitedMembers: referralSnapshot.invitedMembers,
+        invitedCount: referralSnapshot.invitedMembers.length,
+        isTeamLeader,
+        foundingFanTier,
+        isOnboardingComplete: isOnboardingComplete(profile),
+      },
+      { headers: PROFILE_ME_CACHE_HEADERS },
+    );
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch profile' },

@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "migrate:profile-images": "node scripts/migrate-profile-images.mjs"
+    "migrate:profile-images": "node scripts/migrate-profile-images.mjs",
+    "optimize:trophies": "node scripts/optimize-trophies.mjs"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.2",
@@ -27,6 +28,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^9.0.8",
+    "sharp": "^0.34.5",
     "typescript": "^6.0.2"
   }
 }

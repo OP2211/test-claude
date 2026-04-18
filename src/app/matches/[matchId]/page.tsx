@@ -7,6 +7,7 @@ import AppHeader from '@/components/AppHeader';
 import MatchRoom from '@/components/MatchRoom';
 import OnboardingModal from '@/components/OnboardingModal';
 import type { Match, User, TeamId } from '@/lib/types';
+import { fetchProfileMeShared } from '@/lib/fetch-profile-me-client';
 import { clearStoredReferralCode, getStoredReferralCode, storeReferralCodeFromQuery } from '@/lib/referral-storage';
 import '../../page.css';
 import '../matches.css';
@@ -92,16 +93,16 @@ function MatchDetailsPageInner() {
 
   const loadProfile = useCallback(async () => {
     try {
-      const res = await fetch('/api/profile/me');
-      if (!res.ok) {
+      const { ok, data } = await fetchProfileMeShared();
+      if (!ok) {
         setUser(null);
         setShowOnboarding(true);
         return;
       }
-      const data: ProfileResponse = await res.json();
-      if (data.profile) {
-        setUser(mapProfileToUser(data.profile));
-        if (!data.isOnboardingComplete) setShowOnboarding(true);
+      const profileData = data as ProfileResponse;
+      if (profileData.profile) {
+        setUser(mapProfileToUser(profileData.profile));
+        if (!profileData.isOnboardingComplete) setShowOnboarding(true);
       } else {
         setUser(null);
         setShowOnboarding(true);

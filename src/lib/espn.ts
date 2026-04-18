@@ -410,24 +410,15 @@ function positionGroup(posAbbr: string): number {
 }
 
 /**
- * Fetch actual match-day lineups from the ESPN summary endpoint.
- * Returns { home, away } lineups with real starting 11 and formation.
- * Players are ordered GK → DEF → MID → FWD to match pitch layout.
- * Only available for live/completed matches (returns null for upcoming).
+ * Parse lineups from an ESPN summary JSON payload (same document as keyEvents).
+ * Used to avoid a second HTTP request when we already fetched the summary.
  */
-export async function fetchMatchLineups(
-  espnEventId: string,
-  leagueSlug: string,
-  matchStatus: Match['status'] = 'upcoming'
-): Promise<{ home: MatchLineup; away: MatchLineup } | null> {
-  const url = `${ESPN_BASE}/${leagueSlug}/summary?event=${espnEventId}`;
+export function parseMatchLineupsFromSummaryData(
+  data: unknown,
+  matchStatus: Match['status'] = 'upcoming',
+): { home: MatchLineup; away: MatchLineup } | null {
   try {
-    // Tighter revalidate for live matches so subs propagate quickly
-    const revalidate = matchStatus === 'live' ? 20 : matchStatus === 'finished' ? 3600 : 60;
-    const res = await fetch(url, { next: { revalidate } });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const rosters = data.rosters;
+    const rosters = (data as { rosters?: unknown }).rosters;
     if (!Array.isArray(rosters) || rosters.length < 2) return null;
 
     function parseRoster(r: { formation?: string; roster?: Array<{
@@ -505,6 +496,30 @@ export async function fetchMatchLineups(
     const away = parseRoster(rosters[1]);
     if (!home || !away) return null;
     return { home, away };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch actual match-day lineups from the ESPN summary endpoint.
+ * Returns { home, away } lineups with real starting 11 and formation.
+ * Players are ordered GK → DEF → MID → FWD to match pitch layout.
+ * Only available for live/completed matches (returns null for upcoming).
+ */
+export async function fetchMatchLineups(
+  espnEventId: string,
+  leagueSlug: string,
+  matchStatus: Match['status'] = 'upcoming',
+): Promise<{ home: MatchLineup; away: MatchLineup } | null> {
+  const url = `${ESPN_BASE}/${leagueSlug}/summary?event=${espnEventId}`;
+  try {
+    // Tighter revalidate for live matches so subs propagate quickly
+    const revalidate = matchStatus === 'live' ? 20 : matchStatus === 'finished' ? 3600 : 60;
+    const res = await fetch(url, { next: { revalidate } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return parseMatchLineupsFromSummaryData(data, matchStatus);
   } catch {
     return null;
   }
@@ -768,17 +783,10 @@ export async function fetchTopContributors(leagueSlug: string = 'eng.1'): Promis
 
 // ---------- Match events (goals, cards) ----------
 
-export async function fetchMatchEvents(
-  espnEventId: string,
-  leagueSlug: string,
-  homeTeamName: string
-): Promise<MatchEvent[]> {
-  const url = `${ESPN_BASE}/${leagueSlug}/summary?event=${espnEventId}`;
+/** Parse keyEvents from an ESPN summary JSON payload. */
+export function parseMatchEventsFromSummaryData(data: unknown, homeTeamName: string): MatchEvent[] {
   try {
-    const res = await fetch(url, { next: { revalidate: 15 } });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const keyEvents = data.keyEvents;
+    const keyEvents = (data as { keyEvents?: unknown }).keyEvents;
     if (!Array.isArray(keyEvents)) return [];
 
     const events: MatchEvent[] = [];
@@ -807,6 +815,42 @@ export async function fetchMatchEvents(
       });
     }
     return events;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Single ESPN summary fetch (events + lineups share this document).
+ * Revalidate policy aligned with fetchMatchLineups for cache coherence.
+ */
+export async function fetchEspnMatchSummaryData(
+  espnEventId: string,
+  leagueSlug: string,
+  matchStatus: Match['status'],
+): Promise<unknown | null> {
+  const url = `${ESPN_BASE}/${leagueSlug}/summary?event=${espnEventId}`;
+  try {
+    const revalidate = matchStatus === 'live' ? 20 : matchStatus === 'finished' ? 3600 : 60;
+    const res = await fetch(url, { next: { revalidate } });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchMatchEvents(
+  espnEventId: string,
+  leagueSlug: string,
+  homeTeamName: string
+): Promise<MatchEvent[]> {
+  const url = `${ESPN_BASE}/${leagueSlug}/summary?event=${espnEventId}`;
+  try {
+    const res = await fetch(url, { next: { revalidate: 15 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return parseMatchEventsFromSummaryData(data, homeTeamName);
   } catch {
     return [];
   }

@@ -272,14 +272,25 @@ export async function getGoogleSubByReferralCode(referralCode: string): Promise<
 }
 
 export async function getReferralSnapshotByGoogleSub(googleSub: string): Promise<ReferralSnapshot> {
-  const inviterProfile = await supabase
-    .from('profiles')
-    .select('invited_by_google_sub')
-    .eq('google_sub', googleSub)
-    .maybeSingle<{ invited_by_google_sub: string | null }>();
+  const [inviterProfile, invitedMembersResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('invited_by_google_sub')
+      .eq('google_sub', googleSub)
+      .maybeSingle<{ invited_by_google_sub: string | null }>(),
+    supabase
+      .from('profiles')
+      .select('google_sub,full_name,username,image')
+      .eq('invited_by_google_sub', googleSub)
+      .order('created_at', { ascending: false })
+      .returns<ReferralUserSummary[]>(),
+  ]);
 
   if (inviterProfile.error) {
     throw new Error(inviterProfile.error.message);
+  }
+  if (invitedMembersResult.error) {
+    throw new Error(invitedMembersResult.error.message);
   }
 
   const inviterGoogleSub = inviterProfile.data?.invited_by_google_sub ?? null;
@@ -294,17 +305,6 @@ export async function getReferralSnapshotByGoogleSub(googleSub: string): Promise
       throw new Error(inviter.error.message);
     }
     invitedBy = inviter.data ?? null;
-  }
-
-  const invitedMembersResult = await supabase
-    .from('profiles')
-    .select('google_sub,full_name,username,image')
-    .eq('invited_by_google_sub', googleSub)
-    .order('created_at', { ascending: false })
-    .returns<ReferralUserSummary[]>();
-
-  if (invitedMembersResult.error) {
-    throw new Error(invitedMembersResult.error.message);
   }
 
   return {
