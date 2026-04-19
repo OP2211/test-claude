@@ -39,6 +39,7 @@ interface ProfileMeResponse {
   invitedMembers?: ReferralMember[];
   invitedCount?: number;
   foundingFanTier?: 'founding' | 'silver' | 'bronze' | null;
+  isEarlyAdopter?: boolean;
   error?: string;
 }
 
@@ -61,6 +62,7 @@ export default function Profile() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarUploadMessage, setAvatarUploadMessage] = useState<string>('');
   const [foundingFanTier, setFoundingFanTier] = useState<'founding' | 'silver' | 'bronze' | null>(null);
+  const [isEarlyAdopter, setIsEarlyAdopter] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [invitedBy, setInvitedBy] = useState<ReferralMember | null>(null);
   const [invitedMembers, setInvitedMembers] = useState<ReferralMember[]>([]);
@@ -76,17 +78,20 @@ export default function Profile() {
         const data = (await res.json()) as ProfileMeResponse;
         if (!res.ok) {
           setProfile(null);
+          setIsEarlyAdopter(false);
           setProfileError(data.error ?? 'Failed to load profile details');
           return;
         }
         setProfile(data.profile ?? null);
         setFoundingFanTier(data.foundingFanTier ?? null);
+        setIsEarlyAdopter(Boolean(data.isEarlyAdopter));
         setReferralCode(data.referralCode ?? null);
         setInvitedBy(data.invitedBy ?? null);
         setInvitedMembers(data.invitedMembers ?? []);
       } catch {
         setProfile(null);
         setFoundingFanTier(null);
+        setIsEarlyAdopter(false);
         setReferralCode(null);
         setInvitedBy(null);
         setInvitedMembers([]);
@@ -294,7 +299,7 @@ export default function Profile() {
                     </button>
                   </div>
                   <div className="profile-badges">
-                    <EarlyAdopterBadge />
+                    <EarlyAdopterBadge eligible={isEarlyAdopter} />
                       {foundingFanTier && selectedTeam && (
                         <span
                           className={`profile-leader-badge ${FOUNDING_FAN_BADGE_CLASS[foundingFanTier]}`.trim()}

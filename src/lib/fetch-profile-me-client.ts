@@ -10,6 +10,7 @@ export interface ProfileMeClientPayload {
   invitedCount?: number;
   isTeamLeader?: boolean;
   foundingFanTier?: unknown;
+  isEarlyAdopter?: boolean;
   isOnboardingComplete?: boolean;
   error?: string;
 }

@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { Heart, MessageSquare } from 'lucide-react';
 import TeamLogoImage from '@/components/TeamLogoImage';
-import EarlyAdopterBadge from '@/components/EarlyAdopterBadge';
 import { TEAMS } from '@/lib/teams';
 import type { LeaderboardProfile } from '@/lib/profile-repo';
 
@@ -16,12 +14,6 @@ interface ApiResponse {
   hasMore: boolean;
   page: number;
 }
-
-const FOUNDING_FAN_TIER_CLASS: Record<'founding' | 'silver' | 'bronze', string> = {
-  founding: 'leaderboard-badge--founding-gold',
-  silver: 'leaderboard-badge--founding-silver',
-  bronze: 'leaderboard-badge--founding-bronze',
-};
 
 export default function LeaderboardClient() {
   const [profiles, setProfiles] = useState<LeaderboardProfile[]>([]);
@@ -113,15 +105,16 @@ export default function LeaderboardClient() {
     setSort(newSort);
   };
 
-  // Compute badges
-  const mostMessages = profiles.reduce((max, p) => Math.max(max, p.messagesSent), 0);
-  const mostReactions = profiles.reduce((max, p) => Math.max(max, p.reactionsReceived), 0);
-
   return (
     <section className="leaderboard-card" aria-label="Leaderboard">
       <div className="leaderboard-head">
         <h1 className="leaderboard-title">Leaderboard</h1>
-        <p className="leaderboard-subtitle">All users with teams, stats, and badges.</p>
+        <p className="leaderboard-subtitle">
+          All users with teams and stats.{' '}
+          <Link href="/badges" className="leaderboard-badges-link">
+            Badges directory
+          </Link>
+        </p>
 
         {/* Search */}
         <div className="lb-search-wrap">
@@ -201,7 +194,6 @@ export default function LeaderboardClient() {
                   <span className="leaderboard-th-long">Referrals</span>
                   <span className="leaderboard-th-short">Referrals</span>
                 </th>
-                <th>Badges</th>
               </tr>
             </thead>
             <tbody>
@@ -241,32 +233,6 @@ export default function LeaderboardClient() {
                     <td data-label="Messages Sent">{profile.messagesSent}</td>
                     <td data-label="Reactions Received">{profile.reactionsReceived}</td>
                     <td data-label="Referrals">{profile.successfulInvites}</td>
-                    <td data-label="Badges">
-                      <div className="leaderboard-badges">
-                        <EarlyAdopterBadge />
-                        {mostMessages > 0 && profile.messagesSent === mostMessages && (
-                          <span className="leaderboard-badge leaderboard-badge--messages" aria-label="Badge: Most Messages">
-                            <MessageSquare size={13} aria-hidden />
-                            <span className="leaderboard-badge-text">Most Messages</span>
-                          </span>
-                        )}
-                        {mostReactions > 0 && profile.reactionsReceived === mostReactions && (
-                          <span className="leaderboard-badge leaderboard-badge--reactions" aria-label="Badge: Most Reactions">
-                            <Heart size={13} aria-hidden />
-                            <span className="leaderboard-badge-text">Most Reactions</span>
-                          </span>
-                        )}
-                        {profile.foundingFanTier && team && (
-                          <span
-                            className={`leaderboard-badge ${FOUNDING_FAN_TIER_CLASS[profile.foundingFanTier]}`}
-                            aria-label="Badge: Founding Fan"
-                          >
-                            <TeamLogoImage src={team.logo} alt="" className="leaderboard-badge-team-logo" />
-                            <span className="leaderboard-badge-text">Founding Fan</span>
-                          </span>
-                        )}
-                      </div>
-                    </td>
                   </tr>
                 );
               })}

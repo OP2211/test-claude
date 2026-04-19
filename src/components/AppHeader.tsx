@@ -148,6 +148,9 @@ function UserAvatarMenu({
           <Link href="/leaderboard" className="user-menu-item" role="menuitem" onClick={() => setMobileOpen(false)}>
             Leaderboard
           </Link>
+          <Link href="/badges" className="user-menu-item" role="menuitem" onClick={() => setMobileOpen(false)}>
+            Badges
+          </Link>
           <Link href="/profile" className="user-menu-item" role="menuitem" onClick={() => setMobileOpen(false)}>
             Profile
           </Link>

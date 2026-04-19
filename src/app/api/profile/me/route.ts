@@ -6,6 +6,7 @@ import {
   getFoundingFanTierForSupporter,
   getProfileByGoogleSub,
   getReferralSnapshotByGoogleSub,
+  isEarlyAdopterGoogleSub,
 } from '@/lib/profile-repo';
 import { isOnboardingComplete } from '@/lib/profile-validation';
 
@@ -35,17 +36,19 @@ export async function GET() {
           invitedCount: 0,
           isTeamLeader: false,
           foundingFanTier: null,
+          isEarlyAdopter: false,
           isOnboardingComplete: isOnboardingComplete(null),
         },
         { headers: PROFILE_ME_CACHE_HEADERS },
       );
     }
 
-    const [referralSnapshot, foundingFanTier] = await Promise.all([
+    const [referralSnapshot, foundingFanTier, isEarlyAdopter] = await Promise.all([
       getReferralSnapshotByGoogleSub(googleSub),
       profile.fan_team_id
         ? getFoundingFanTierForSupporter(googleSub, profile.fan_team_id)
         : Promise.resolve(null as FoundingFanTier),
+      isEarlyAdopterGoogleSub(googleSub),
     ]);
 
     const isTeamLeader = foundingFanTier === 'founding';
@@ -59,6 +62,7 @@ export async function GET() {
         invitedCount: referralSnapshot.invitedMembers.length,
         isTeamLeader,
         foundingFanTier,
+        isEarlyAdopter,
         isOnboardingComplete: isOnboardingComplete(profile),
       },
       { headers: PROFILE_ME_CACHE_HEADERS },

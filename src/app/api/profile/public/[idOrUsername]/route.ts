@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getFoundingFanTierForSupporter, getPublicProfileByIdOrUsername, getReferralSnapshotByGoogleSub } from '@/lib/profile-repo';
+import {
+  getFoundingFanTierForSupporter,
+  getPublicProfileByIdOrUsername,
+  getReferralSnapshotByGoogleSub,
+  isEarlyAdopterGoogleSub,
+} from '@/lib/profile-repo';
 
 interface RouteContext {
   params: {
@@ -20,10 +25,13 @@ export async function GET(_request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    const referralSnapshot = await getReferralSnapshotByGoogleSub(profile.google_sub);
-    const foundingFanTier = profile.fan_team_id
-      ? await getFoundingFanTierForSupporter(profile.google_sub, profile.fan_team_id)
-      : null;
+    const [referralSnapshot, foundingFanTier, isEarlyAdopter] = await Promise.all([
+      getReferralSnapshotByGoogleSub(profile.google_sub),
+      profile.fan_team_id
+        ? getFoundingFanTierForSupporter(profile.google_sub, profile.fan_team_id)
+        : Promise.resolve(null),
+      isEarlyAdopterGoogleSub(profile.google_sub),
+    ]);
 
     return NextResponse.json({
       profile,
@@ -31,6 +39,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
       invitedMembers: referralSnapshot.invitedMembers,
       invitedCount: referralSnapshot.invitedMembers.length,
       foundingFanTier,
+      isEarlyAdopter,
     });
   } catch (error) {
     return NextResponse.json(

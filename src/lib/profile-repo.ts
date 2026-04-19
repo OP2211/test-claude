@@ -28,15 +28,19 @@ export interface PublicProfile {
   created_at?: string | null;
 }
 
+export type FoundingFanTier = 'founding' | 'silver' | 'bronze' | null;
+
 export interface LeaderboardProfile extends PublicProfile {
   messagesSent: number;
   reactionsReceived: number;
   successfulInvites: number;
   isTeamLeader: boolean;
   foundingFanTier: FoundingFanTier;
+  isEarlyAdopter: boolean;
 }
 
-export type FoundingFanTier = 'founding' | 'silver' | 'bronze' | null;
+/** First N accounts by member-since time (then `google_sub`) qualify for the Early Adopter badge. */
+export const EARLY_ADOPTER_MAX = 100;
 
 export const FOUNDING_FAN_GOLD_COUNT = 5;
 export const FOUNDING_FAN_SILVER_COUNT = 20;
@@ -44,6 +48,80 @@ export const FOUNDING_FAN_BRONZE_COUNT = 50;
 
 const FOUNDING_FAN_SILVER_CUTOFF = FOUNDING_FAN_GOLD_COUNT + FOUNDING_FAN_SILVER_COUNT;
 const FOUNDING_FAN_BRONZE_CUTOFF = FOUNDING_FAN_SILVER_CUTOFF + FOUNDING_FAN_BRONZE_COUNT;
+
+function compareEarlyAdopterOrder(
+  a: { created_at?: string | null; google_sub: string },
+  b: { created_at?: string | null; google_sub: string },
+): number {
+  const aTime = a.created_at ? new Date(a.created_at).getTime() : Number.POSITIVE_INFINITY;
+  const bTime = b.created_at ? new Date(b.created_at).getTime() : Number.POSITIVE_INFINITY;
+  if (aTime !== bTime) return aTime - bTime;
+  return a.google_sub.localeCompare(b.google_sub);
+}
+
+export function earlyAdopterGoogleSubSetFromProfiles(
+  profiles: Array<{ google_sub: string; created_at?: string | null }>,
+): Set<string> {
+  const sorted = [...profiles].sort(compareEarlyAdopterOrder);
+  return new Set(sorted.slice(0, EARLY_ADOPTER_MAX).map((p) => p.google_sub));
+}
+
+/** Subset of `google_sub` values that qualify as Early Adopters (same ordering as leaderboard). */
+export async function getEarlyAdopterGoogleSubs(): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('google_sub')
+    .order('created_at', { ascending: true, nullsFirst: false })
+    .order('google_sub', { ascending: true })
+    .limit(EARLY_ADOPTER_MAX);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return new Set((data ?? []).map((r) => r.google_sub));
+}
+
+export async function isEarlyAdopterGoogleSub(googleSub: string): Promise<boolean> {
+  const subs = await getEarlyAdopterGoogleSubs();
+  return subs.has(googleSub);
+}
+
+export interface BadgesPageData {
+  earlyAdopters: LeaderboardProfile[];
+  foundingGold: LeaderboardProfile[];
+  foundingSilver: LeaderboardProfile[];
+  foundingBronze: LeaderboardProfile[];
+  /** Everyone tied for the global maximum messages sent (empty if max is 0). */
+  mostMessagesLeaders: LeaderboardProfile[];
+  /** Everyone tied for the global maximum reactions received (empty if max is 0). */
+  mostReactionsLeaders: LeaderboardProfile[];
+}
+
+/** One leaderboard build: all badge rosters for the badges directory page. */
+export async function getBadgesPageData(): Promise<BadgesPageData> {
+  const leaderboard = await getLeaderboardProfiles();
+  const earlySorted = [...leaderboard].sort(compareEarlyAdopterOrder).slice(0, EARLY_ADOPTER_MAX);
+  const foundingGold = leaderboard.filter((p) => p.foundingFanTier === 'founding');
+  const foundingSilver = leaderboard.filter((p) => p.foundingFanTier === 'silver');
+  const foundingBronze = leaderboard.filter((p) => p.foundingFanTier === 'bronze');
+
+  const maxMessages = leaderboard.reduce((m, p) => Math.max(m, p.messagesSent), 0);
+  const maxReactions = leaderboard.reduce((m, p) => Math.max(m, p.reactionsReceived), 0);
+  const mostMessagesLeaders =
+    maxMessages > 0 ? leaderboard.filter((p) => p.messagesSent === maxMessages) : [];
+  const mostReactionsLeaders =
+    maxReactions > 0 ? leaderboard.filter((p) => p.reactionsReceived === maxReactions) : [];
+
+  return {
+    earlyAdopters: earlySorted,
+    foundingGold,
+    foundingSilver,
+    foundingBronze,
+    mostMessagesLeaders,
+    mostReactionsLeaders,
+  };
+}
 
 /** PostgREST default max rows per request; paginate past this so the leaderboard includes every profile. */
 const PROFILE_FETCH_PAGE_SIZE = 1000;
@@ -356,7 +434,8 @@ export async function getAllPublicProfiles(): Promise<PublicProfile[]> {
     const { data, error } = await supabase
       .from('profiles')
       .select('google_sub,full_name,username,email,image,fan_team_id,city,created_at')
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: true, nullsFirst: false })
+      .order('google_sub', { ascending: true })
       .range(offset, offset + PROFILE_FETCH_PAGE_SIZE - 1)
       .returns<PublicProfile[]>();
 
@@ -376,6 +455,8 @@ export async function getAllPublicProfiles(): Promise<PublicProfile[]> {
 export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
   const profiles = await getAllPublicProfiles();
   if (profiles.length === 0) return [];
+
+  const earlyAdopterSubs = earlyAdopterGoogleSubSetFromProfiles(profiles);
 
   const [messagesResult, referralsResult] = await Promise.all([
     supabase
@@ -463,6 +544,7 @@ export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
       successfulInvites: successfulInvitesByUser.get(profile.google_sub) ?? 0,
       isTeamLeader,
       foundingFanTier,
+      isEarlyAdopter: earlyAdopterSubs.has(profile.google_sub),
     };
   });
 }

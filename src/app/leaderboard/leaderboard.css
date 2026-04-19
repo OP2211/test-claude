@@ -31,6 +31,16 @@
   font-size: var(--text-sm);
 }
 
+a.leaderboard-badges-link {
+  color: var(--accent, #3b82f6);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a.leaderboard-badges-link:hover {
+  text-decoration: underline;
+}
+
 .leaderboard-sort-row {
   margin-top: 10px;
   display: flex;

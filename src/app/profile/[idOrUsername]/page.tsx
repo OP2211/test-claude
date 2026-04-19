@@ -9,6 +9,7 @@ import {
   getFoundingFanTierForSupporter,
   getPublicProfileByIdOrUsername,
   getReferralSnapshotByGoogleSub,
+  isEarlyAdopterGoogleSub,
 } from '@/lib/profile-repo';
 import { TEAMS } from '@/lib/teams';
 import '../../page.css';
@@ -43,9 +44,10 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
   const fullName = profile.full_name?.trim() || '—';
 
   const selectedTeam = TEAMS.find((team) => team.id === profile.fan_team_id) ?? null;
-  const foundingFanTier = selectedTeam
-    ? await getFoundingFanTierForSupporter(profile.google_sub, selectedTeam.id)
-    : null;
+  const [foundingFanTier, isEarlyAdopter] = await Promise.all([
+    selectedTeam ? getFoundingFanTierForSupporter(profile.google_sub, selectedTeam.id) : Promise.resolve(null),
+    isEarlyAdopterGoogleSub(profile.google_sub),
+  ]);
   const referralSnapshot = await getReferralSnapshotByGoogleSub(profile.google_sub);
   const invitedMembers = referralSnapshot.invitedMembers;
   const avatarFallback = profile.username[0]?.toUpperCase() ?? 'F';
@@ -82,7 +84,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                       </div>
                     )}
                     <div className="profile-badges">
-                      <EarlyAdopterBadge />
+                      <EarlyAdopterBadge eligible={isEarlyAdopter} />
                       {foundingFanTier && selectedTeam && (
                         <span
                           className={`profile-leader-badge ${FOUNDING_FAN_BADGE_CLASS[foundingFanTier]}`.trim()}

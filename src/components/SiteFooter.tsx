@@ -53,6 +53,10 @@ export default function SiteFooter() {
             ·
           </span>
           <Link href="/privacy">Privacy</Link>
+          <span className="site-footer-sep" aria-hidden>
+            ·
+          </span>
+          <Link href="/badges">Badges</Link>
         </div>
         <p className="site-footer-contact">
           Contact: <a href="mailto:hello@fanground.online">hello@fanground.online</a>
