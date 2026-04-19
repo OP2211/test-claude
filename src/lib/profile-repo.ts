@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { persistProfileImageLocally } from '@/lib/profile-image';
 import type { TeamId } from '@/lib/types';
 
@@ -47,6 +48,11 @@ const FOUNDING_FAN_BRONZE_CUTOFF = FOUNDING_FAN_SILVER_CUTOFF + FOUNDING_FAN_BRO
 
 /** PostgREST default max rows per request; paginate past this so the leaderboard includes every profile. */
 const PROFILE_FETCH_PAGE_SIZE = 1000;
+
+/** Prefer service role on the server so RLS cannot hide profiles from the leaderboard. */
+function getLeaderboardDb() {
+  return getSupabaseAdmin(false) ?? supabase;
+}
 
 interface UpsertProfileInput {
   googleSub: string;
@@ -349,11 +355,12 @@ export async function getPublicProfileByIdOrUsername(idOrUsername: string): Prom
 }
 
 export async function getAllPublicProfiles(): Promise<PublicProfile[]> {
+  const db = getLeaderboardDb();
   const all: PublicProfile[] = [];
   let offset = 0;
 
   for (;;) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('profiles')
       .select('google_sub,full_name,username,email,image,fan_team_id,city,created_at')
       .order('created_at', { ascending: true })
@@ -377,20 +384,24 @@ export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
   const profiles = await getAllPublicProfiles();
   if (profiles.length === 0) return [];
 
+  const db = getLeaderboardDb();
   const [messagesResult, referralsResult] = await Promise.all([
-    supabase
+    db
       .from('chat_messages')
       .select('user_id,reactions')
       .returns<Array<{ user_id: string; reactions: Record<string, string[]> | null }>>(),
-    supabase
+    db
       .from('profiles')
       .select('invited_by_google_sub')
       .not('invited_by_google_sub', 'is', null)
       .returns<Array<{ invited_by_google_sub: string | null }>>(),
   ]);
-  const { data: messageRows, error } = messagesResult;
+  const { data: messageRows, error: messagesError } = messagesResult;
   const { data: referralRows, error: referralsError } = referralsResult;
 
+  if (messagesError) {
+    console.error('[leaderboard] chat_messages fetch failed:', messagesError.message);
+  }
   if (referralsError) {
     throw new Error(referralsError.message);
   }
@@ -403,7 +414,7 @@ export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
   }
 
   const statsByUser = new Map<string, { messagesSent: number; reactionsReceived: number }>();
-  for (const row of messageRows ?? []) {
+  for (const row of (messagesError ? [] : messageRows) ?? []) {
     const current = statsByUser.get(row.user_id) ?? { messagesSent: 0, reactionsReceived: 0 };
     current.messagesSent += 1;
 

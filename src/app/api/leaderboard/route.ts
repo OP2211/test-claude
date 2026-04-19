@@ -11,6 +11,12 @@ const NO_STORE_HEADERS = {
 
 const PAGE_SIZE = 15;
 
+function createdAtSortKey(iso: string | null | undefined): number {
+  if (!iso) return Number.NEGATIVE_INFINITY;
+  const t = new Date(iso).getTime();
+  return Number.isFinite(t) ? t : Number.NEGATIVE_INFINITY;
+}
+
 export async function GET(request: NextRequest) {
   const search = (request.nextUrl.searchParams.get('search') || '').trim().toLowerCase();
   const page = Math.max(1, parseInt(request.nextUrl.searchParams.get('page') || '1', 10));
@@ -37,10 +43,8 @@ export async function GET(request: NextRequest) {
       const nameB = (b.full_name?.trim() || b.username).toLowerCase();
       return nameA.localeCompare(nameB);
     }
-    // default: latest
-    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-    return timeB - timeA;
+    // default: latest (missing/invalid created_at sorts last)
+    return createdAtSortKey(b.created_at) - createdAtSortKey(a.created_at);
   });
 
   const total = sorted.length;

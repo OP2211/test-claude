@@ -35,6 +35,8 @@ export default function LeaderboardClient() {
   const [loadingMore, setLoadingMore] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  /** After sort/search changes, skip one "load more" effect — state `page` may still be stale until next paint. */
+  const skipLoadMoreAfterFilterChange = useRef(false);
 
   // Debounce search input
   useEffect(() => {
@@ -44,12 +46,6 @@ export default function LeaderboardClient() {
     }, 300);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [search]);
-
-  // Reset to page 1 when search or sort changes
-  useEffect(() => {
-    setPage(1);
-    setProfiles([]);
-  }, [debouncedSearch, sort]);
 
   // Fetch data (min 400ms loading for skeleton visibility)
   const fetchData = useCallback(async (pageNum: number, append: boolean) => {
@@ -89,8 +85,25 @@ export default function LeaderboardClient() {
     }
   }, [sort, debouncedSearch]);
 
+  /**
+   * Sort/search changed: always reload page 1 with replace (not append).
+   * We also set `skipLoadMoreAfterFilterChange` so the load-more effect does not
+   * run in the same tick with a stale `page` (e.g. still 5) before `setPage(1)` applies.
+   */
   useEffect(() => {
-    void fetchData(page, page > 1);
+    skipLoadMoreAfterFilterChange.current = true;
+    setPage(1);
+    void fetchData(1, false);
+  }, [sort, debouncedSearch, fetchData]);
+
+  /** Infinite scroll: next pages only; not right after a filter reset (see ref above). */
+  useEffect(() => {
+    if (skipLoadMoreAfterFilterChange.current) {
+      skipLoadMoreAfterFilterChange.current = false;
+      return;
+    }
+    if (page <= 1) return;
+    void fetchData(page, true);
   }, [page, fetchData]);
 
   // Infinite scroll — observe sentinel element
