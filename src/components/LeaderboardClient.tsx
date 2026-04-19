@@ -63,7 +63,9 @@ export default function LeaderboardClient() {
         sort,
         ...(debouncedSearch ? { search: debouncedSearch } : {}),
       });
-      const res = await fetch(`/api/leaderboard?${params}`);
+      const res = await fetch(`/api/leaderboard?${params}`, {
+        cache: 'no-store',
+      });
       const data: ApiResponse = await res.json();
 
       // Ensure skeleton shows for at least 400ms so it doesn't flash

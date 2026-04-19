@@ -45,6 +45,9 @@ export const FOUNDING_FAN_BRONZE_COUNT = 50;
 const FOUNDING_FAN_SILVER_CUTOFF = FOUNDING_FAN_GOLD_COUNT + FOUNDING_FAN_SILVER_COUNT;
 const FOUNDING_FAN_BRONZE_CUTOFF = FOUNDING_FAN_SILVER_CUTOFF + FOUNDING_FAN_BRONZE_COUNT;
 
+/** PostgREST default max rows per request; paginate past this so the leaderboard includes every profile. */
+const PROFILE_FETCH_PAGE_SIZE = 1000;
+
 interface UpsertProfileInput {
   googleSub: string;
   fullName: string | null;
@@ -346,17 +349,28 @@ export async function getPublicProfileByIdOrUsername(idOrUsername: string): Prom
 }
 
 export async function getAllPublicProfiles(): Promise<PublicProfile[]> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('google_sub,full_name,username,email,image,fan_team_id,city,created_at')
-    .order('created_at', { ascending: true })
-    .returns<PublicProfile[]>();
+  const all: PublicProfile[] = [];
+  let offset = 0;
 
-  if (error) {
-    throw new Error(error.message);
+  for (;;) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('google_sub,full_name,username,email,image,fan_team_id,city,created_at')
+      .order('created_at', { ascending: true })
+      .range(offset, offset + PROFILE_FETCH_PAGE_SIZE - 1)
+      .returns<PublicProfile[]>();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const batch = data ?? [];
+    all.push(...batch);
+    if (batch.length < PROFILE_FETCH_PAGE_SIZE) break;
+    offset += PROFILE_FETCH_PAGE_SIZE;
   }
 
-  return data ?? [];
+  return all;
 }
 
 export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {

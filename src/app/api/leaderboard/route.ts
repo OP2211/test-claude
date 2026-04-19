@@ -3,6 +3,12 @@ import { getLeaderboardProfiles } from '@/lib/profile-repo';
 
 export const dynamic = 'force-dynamic';
 
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'private, no-store, max-age=0, must-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+} as const;
+
 const PAGE_SIZE = 15;
 
 export async function GET(request: NextRequest) {
@@ -43,5 +49,8 @@ export async function GET(request: NextRequest) {
   const users = sorted.slice(start, end);
   const hasMore = end < total;
 
-  return NextResponse.json({ users, total, hasMore, page });
+  return NextResponse.json(
+    { users, total, hasMore, page },
+    { headers: NO_STORE_HEADERS }
+  );
 }
