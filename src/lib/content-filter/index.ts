@@ -61,14 +61,17 @@ function buildTermSet(files: FilterLexiconFile[]): { blockedTerms: Set<string>; 
 
 const { blockedTerms, safeTerms } = buildTermSet(lexicons);
 
-function collectMatchSpans(text: string, regex: RegExp, spans: Span[]): void {
-  let match: RegExpExecArray | null = null;
-  while ((match = regex.exec(text)) !== null) {
+function collectMatchSpans(text: string, pattern: RegExp, spans: Span[]): void {
+  const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+  const regex = new RegExp(pattern.source, flags);
+  for (const match of text.matchAll(regex)) {
     const raw = match[0];
     const normalized = normalizeToken(raw);
     if (!normalized || safeTerms.has(normalized)) continue;
     if (blockedTerms.has(normalized)) {
-      spans.push({ start: match.index, end: match.index + raw.length });
+      const start = match.index ?? -1;
+      if (start < 0) continue;
+      spans.push({ start, end: start + raw.length });
     }
   }
 }
@@ -106,8 +109,8 @@ export function maskOffensiveText(text: string): MaskResult {
   }
 
   const spans: Span[] = [];
-  collectMatchSpans(text, new RegExp(TOKEN_RE), spans);
-  collectMatchSpans(text, new RegExp(SPLIT_LETTER_RE), spans);
+  collectMatchSpans(text, TOKEN_RE, spans);
+  collectMatchSpans(text, SPLIT_LETTER_RE, spans);
 
   const merged = mergeSpans(spans);
   if (merged.length === 0) {
