@@ -1,4 +1,5 @@
 import type { TeamId } from '@/lib/types';
+import { CRICKET_TEAMS } from '@/lib/cricket/teams';
 
 export interface TeamOption {
   id: TeamId;
@@ -30,8 +31,24 @@ export const TEAMS: TeamOption[] = [
   { id: 'wolverhampton', name: 'Wolves', color: '#fdb913', logo: '/team/380.png' },
 ];
 
-const TEAM_IDS = new Set<TeamId>(TEAMS.map((team) => team.id));
+/** Combined registry used for sport-agnostic lookups (chat badges, fan team validation). */
+const CRICKET_OPTIONS: TeamOption[] = CRICKET_TEAMS.map((t) => ({
+  id: t.id,
+  name: t.shortName,
+  color: t.color,
+  logo: t.logo ?? '',
+}));
+
+export const ALL_TEAMS: TeamOption[] = [...TEAMS, ...CRICKET_OPTIONS];
+
+const TEAM_IDS = new Set<TeamId>(ALL_TEAMS.map((team) => team.id));
 
 export function isValidTeamId(teamId: string): teamId is TeamId {
   return TEAM_IDS.has(teamId);
+}
+
+/** Sport-agnostic lookup. Use this in chat/profile code instead of `TEAMS.find(...)`. */
+export function getTeamInfo(teamId: string | null | undefined): TeamOption | null {
+  if (!teamId) return null;
+  return ALL_TEAMS.find((t) => t.id === teamId) ?? null;
 }

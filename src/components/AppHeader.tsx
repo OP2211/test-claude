@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Logo from '@/components/Logo';
+import SportSelector from '@/components/SportSelector';
 import { LOGOUT_CONFIRM_VARIANTS, pickRandomLogoutVariant } from '@/lib/logout-variants';
 import type { User } from '@/lib/types';
 import '@/app/page.css';
@@ -295,6 +296,12 @@ export default function AppHeader({
             <Logo size={30} />
             <span className="logo-text">FanGround</span>
           </Link>
+        )}
+
+        {!inRoom && (
+          <div className="app-header-center">
+            <SportSelector />
+          </div>
         )}
 
         <div className="header-right">

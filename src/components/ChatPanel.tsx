@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { Message, User } from '@/lib/types';
-import { TEAMS } from '@/lib/teams';
+import { getTeamInfo } from '@/lib/teams';
 import TeamLogoImage from './TeamLogoImage';
 import './ChatPanel.css';
 
@@ -82,13 +82,6 @@ export default function ChatPanel({
 
   const teamColor = (fanTeamId: string | null): string =>
     fanTeamId ? TEAM_COLORS[fanTeamId] || 'var(--accent-blue)' : 'var(--accent-blue)';
-
-  const getTeamInfo = (fanTeamId: string | null) => {
-    if (!fanTeamId) return null;
-    const team = TEAMS.find((item) => item.id === fanTeamId);
-    if (!team) return null;
-    return team;
-  };
 
   const formatTime = (ts: string): string => {
     const d = new Date(ts);
