@@ -114,12 +114,12 @@ function toInnings(
       const runs = typeof ls.runs === 'number' ? ls.runs : 0;
       const wickets = typeof ls.wickets === 'number' ? ls.wickets : 0;
       const overs = typeof ls.overs === 'number' ? ls.overs : 0;
-      // ESPN sends a placeholder linescore for the fielding/yet-to-bat team that
-      // mirrors the live match overs (so overs > 0 even though the team hasn't
-      // batted). Treat the innings as real only if the team has a non-empty
-      // score string, is currently batting, or actually scored runs/lost wickets.
+      // ESPN sends a placeholder linescore for the innings each team didn't bat in
+      // (e.g. period=1 for the chasing side, period=2 for the side that batted first).
+      // We can't trust `c.score` here — it's the competitor-level current score and
+      // gets attached to ALL of that team's linescores, not just the real one. So we
+      // detect a real innings purely by the linescore values themselves.
       const hasRealInnings =
-        Boolean(c.score && c.score.trim().length > 0) ||
         ls.isBatting === true ||
         runs > 0 ||
         wickets > 0;
@@ -130,19 +130,28 @@ function toInnings(
         runs,
         wickets,
         overs,
-        isBatting: Boolean(ls.isBatting) || Boolean(c.score && c.score.trim().length > 0),
+        isBatting: Boolean(ls.isBatting),
         display: c.score && c.score.trim() ? c.score : undefined,
       });
     }
   }
   // Deduplicate by (teamId, period)
   const seen = new Set<string>();
-  return out.filter((i) => {
+  const real = out.filter((i) => {
     const k = `${i.teamId}-${i.period}`;
     if (seen.has(k)) return false;
     seen.add(k);
     return true;
   });
+
+  // ESPN sometimes leaves `isBatting=true` on a completed earlier innings. Only the
+  // highest-period innings can possibly be live; force every earlier one to false so
+  // the UI doesn't show MI as "batting" once CSK has started chasing.
+  if (real.length === 0) return real;
+  const maxPeriod = Math.max(...real.map((i) => i.period));
+  return real.map((i) =>
+    i.period === maxPeriod ? i : { ...i, isBatting: false }
+  );
 }
 
 function toLeaders(
