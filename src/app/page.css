@@ -52,6 +52,18 @@
 
 .header-right { display: flex; align-items: center; gap: 8px; }
 
+.app-header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  padding: 0 12px;
+}
+@media (max-width: 520px) {
+  .app-header-center { padding: 0 6px; }
+}
+
 .theme-toggle-btn {
   display: inline-flex;
   align-items: center;

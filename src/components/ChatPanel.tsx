@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { Message, User } from '@/lib/types';
-import { TEAMS } from '@/lib/teams';
+import { getTeamInfo } from '@/lib/teams';
 import TeamLogoImage from './TeamLogoImage';
 import './ChatPanel.css';
 
@@ -37,6 +37,8 @@ interface ChatPanelProps {
   readOnly?: boolean;
   /** When true, sender names link to their profile in a new tab. */
   linkSenderProfile?: boolean;
+  /** When true, hide the team logo/name row under sender (e.g. cricket rooms where football fan-team flair would be off-topic). */
+  hideTeamFlair?: boolean;
 }
 
 export default function ChatPanel({
@@ -52,6 +54,7 @@ export default function ChatPanel({
   compact,
   readOnly = false,
   linkSenderProfile = false,
+  hideTeamFlair = false,
 }: ChatPanelProps) {
   const [input, setInput] = useState<string>('');
   const [showEmojiFor, setShowEmojiFor] = useState<string | null>(null);
@@ -82,13 +85,6 @@ export default function ChatPanel({
 
   const teamColor = (fanTeamId: string | null): string =>
     fanTeamId ? TEAM_COLORS[fanTeamId] || 'var(--accent-blue)' : 'var(--accent-blue)';
-
-  const getTeamInfo = (fanTeamId: string | null) => {
-    if (!fanTeamId) return null;
-    const team = TEAMS.find((item) => item.id === fanTeamId);
-    if (!team) return null;
-    return team;
-  };
 
   const formatTime = (ts: string): string => {
     const d = new Date(ts);
@@ -175,7 +171,7 @@ export default function ChatPanel({
                     )}
                   </div>
                 )}
-                {showSenderMeta && teamInfo && (
+                {showSenderMeta && teamInfo && !hideTeamFlair && (
                   <div className="cp-msg-team-row">
                     <span className="cp-msg-team">
                       <TeamLogoImage src={teamInfo.logo} alt="" className="cp-msg-team-logo" />
