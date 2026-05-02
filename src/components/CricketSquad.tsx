@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import type {
   CricketMatch,
   CricketTeamInfo,
@@ -12,32 +13,62 @@ interface Props {
   match: CricketMatch;
 }
 
-const ROLE_ORDER: PlayerRole[] = ['batter', 'wicketkeeper', 'allrounder', 'bowler', 'unknown'];
-
-const ROLE_LABEL: Record<PlayerRole, string> = {
-  batter: 'Batters',
-  wicketkeeper: 'Wicket-keeper',
-  allrounder: 'All-rounders',
-  bowler: 'Bowlers',
-  unknown: 'Squad',
+const ROLE_TAG: Record<PlayerRole, string> = {
+  batter: 'Batter',
+  wicketkeeper: 'Keeper',
+  allrounder: 'All-rounder',
+  bowler: 'Bowler',
+  unknown: '',
 };
 
-const ROLE_ICON: Record<PlayerRole, string> = {
-  batter: '🏏',
-  wicketkeeper: '🧤',
-  allrounder: '⚡',
-  bowler: '🎯',
-  unknown: '•',
-};
+function PlayerAvatar({
+  name, headshot, color,
+}: { name: string; headshot?: string; color?: string }) {
+  // Headshots from ESPN's CDN frequently 404 — fall back silently to initials.
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [headshot]);
 
-function groupByRole(players: SquadPlayer[]): Map<PlayerRole, SquadPlayer[]> {
-  const groups = new Map<PlayerRole, SquadPlayer[]>();
-  for (const p of players) {
-    const arr = groups.get(p.role) ?? [];
-    arr.push(p);
-    groups.set(p.role, arr);
-  }
-  return groups;
+  const initials = name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+  const showImg = Boolean(headshot) && !failed;
+  return (
+    <span className="cksq-avatar" style={{ background: color || 'var(--bg-elevated)' }}>
+      {showImg ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={headshot} alt="" loading="lazy" onError={() => setFailed(true)} />
+      ) : (
+        <span className="cksq-avatar-initials">{initials}</span>
+      )}
+    </span>
+  );
+}
+
+function PlayerRow({
+  index, player, color,
+}: {
+  index: number;
+  player: SquadPlayer;
+  color: string;
+}) {
+  const roleTag = ROLE_TAG[player.role];
+  return (
+    <li className="cksq-row">
+      <span className="cksq-row-num">{index + 1}</span>
+      <PlayerAvatar name={player.name} headshot={player.headshot} color={color} />
+      <div className="cksq-row-text">
+        <div className="cksq-row-name-line">
+          <span className="cksq-row-name">{player.name}</span>
+          {player.isCaptain && <span className="cksq-row-tag cksq-row-tag--lead">C</span>}
+          {player.isWicketKeeper && <span className="cksq-row-tag cksq-row-tag--lead">WK</span>}
+        </div>
+        {roleTag && <div className="cksq-row-role">{roleTag}</div>}
+      </div>
+    </li>
+  );
 }
 
 function TeamColumn({
@@ -47,8 +78,6 @@ function TeamColumn({
   players: SquadPlayer[];
 }) {
   const color = team.color || '#334779';
-  const groups = groupByRole(players);
-  const hasPlayers = players.length > 0;
 
   return (
     <div className="cksq-col" style={{ borderTopColor: color }}>
@@ -68,33 +97,12 @@ function TeamColumn({
         <span className="cksq-col-count">{players.length}/11</span>
       </div>
 
-      {hasPlayers ? (
-        <div className="cksq-groups">
-          {ROLE_ORDER.map((role) => {
-            const list = groups.get(role);
-            if (!list || list.length === 0) return null;
-            return (
-              <div key={role} className="cksq-group">
-                <h4 className="cksq-group-title">
-                  <span className="cksq-group-icon" aria-hidden>{ROLE_ICON[role]}</span>
-                  {ROLE_LABEL[role]}
-                  <span className="cksq-group-count">{list.length}</span>
-                </h4>
-                <ul className="cksq-list">
-                  {list.map((p) => (
-                    <li key={p.id || p.name} className="cksq-player">
-                      <span className="cksq-player-avatar" style={{ background: color }}>
-                        {p.name.charAt(0).toUpperCase()}
-                      </span>
-                      <span className="cksq-player-name">{p.name}</span>
-                      {p.badge && <span className="cksq-player-badge">{p.badge}</span>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
-        </div>
+      {players.length > 0 ? (
+        <ol className="cksq-list">
+          {players.map((p, i) => (
+            <PlayerRow key={p.id || p.name} index={i} player={p} color={color} />
+          ))}
+        </ol>
       ) : (
         <div className="cksq-empty">
           <div className="cksq-empty-title">Playing XI not announced</div>

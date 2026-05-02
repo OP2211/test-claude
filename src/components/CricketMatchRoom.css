@@ -172,6 +172,49 @@
 }
 .ckr-tab-icon svg { display: block; }
 
+.ckr-tab--locked {
+  color: var(--text-dim);
+  cursor: not-allowed;
+}
+.ckr-tab--locked:hover {
+  color: var(--text-dim);
+  background: transparent;
+}
+.ckr-tab-lock {
+  margin-left: 2px;
+  opacity: 0.85;
+}
+
+.ckr-banter-locked {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.ckr-banter-locked svg {
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.ckr-banter-locked h3 {
+  font-family: var(--font-brand);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+.ckr-banter-locked p {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
 /* Content area */
 .ckr-content {
   flex: 1;

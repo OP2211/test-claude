@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Pusher from 'pusher-js';
 import type { CricketMatch } from '@/lib/cricket/types';
+import { isCricketChatOpen } from '@/lib/cricket/types';
 import type { Message, User, VoteChoice, VoteTally, TabId, Reactions } from '@/lib/types';
 import ChatPanel from './ChatPanel';
 import CricketScorecard from './CricketScorecard';
@@ -333,6 +334,12 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
   }, [match.id, user]);
 
   const isLive = match.status === 'live';
+  const chatOpen = isCricketChatOpen(match);
+
+  // If user lands on the banter tab while chat is closed, bounce them to predictions.
+  useEffect(() => {
+    if (activeTab === 'banter' && !chatOpen) setActiveTab('predictions');
+  }, [activeTab, chatOpen]);
 
   return (
     <div className="ckr-room">
@@ -407,16 +414,26 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
       <nav className="ckr-tabs" aria-label="Match sections">
         {TABS.map((t) => {
           const active = activeTab === t.id;
+          const isLocked = t.id === 'banter' && !chatOpen;
           return (
             <button
               key={t.id}
               type="button"
-              className={`ckr-tab ${active ? 'active' : ''}`}
-              onClick={() => setActiveTab(t.id)}
+              className={`ckr-tab ${active ? 'active' : ''} ${isLocked ? 'ckr-tab--locked' : ''}`}
+              onClick={() => { if (!isLocked) setActiveTab(t.id); }}
               aria-current={active ? 'page' : undefined}
+              aria-disabled={isLocked || undefined}
+              disabled={isLocked}
+              title={isLocked ? 'Banter opens once the match goes live' : undefined}
             >
               <span className="ckr-tab-icon">{t.icon}</span>
               <span className="ckr-tab-label">{t.label}</span>
+              {isLocked && (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="ckr-tab-lock" aria-hidden>
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              )}
             </button>
           );
         })}
@@ -448,15 +465,27 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
         )}
 
         {activeTab === 'banter' && (
-          <ChatPanel
-            messages={messages.banter}
-            user={user}
-            onSendMessage={sendMessage}
-            onReact={(id: string, emoji: string) => reactToMessage(id, 'banter', emoji)}
-            placeholder="Talk your talk…"
-            linkSenderProfile
-            compact
-          />
+          chatOpen ? (
+            <ChatPanel
+              messages={messages.banter}
+              user={user}
+              onSendMessage={sendMessage}
+              onReact={(id: string, emoji: string) => reactToMessage(id, 'banter', emoji)}
+              placeholder="Talk your talk…"
+              linkSenderProfile
+              compact
+              hideTeamFlair
+            />
+          ) : (
+            <div className="ckr-banter-locked">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <h3>Banter opens at match start</h3>
+              <p>Predictions and squad info are available now. Come back when the action begins.</p>
+            </div>
+          )
         )}
       </div>
     </div>

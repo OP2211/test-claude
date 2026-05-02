@@ -33,6 +33,18 @@ function scoreLine(match: CricketMatch, team: CricketTeamInfo): ScoreLine {
   };
 }
 
+/** ESPN's `description` is "44th Match (N), Indian Premier League at Chennai, May 2 2026".
+ *  Strip the league/venue/date tail so we just keep "44th Match (N)". */
+function shortMatchTitle(description: string | undefined, leagueName: string): string {
+  if (!description) return '';
+  // Stop at first comma (everything after duplicates league/venue/date elsewhere).
+  const head = description.split(',')[0].trim();
+  if (!head) return '';
+  // Avoid showing the league name twice when ESPN packs it into the head somehow.
+  const without = head.replace(new RegExp(`\\s*${leagueName}\\s*`, 'i'), ' ').trim();
+  return without || head;
+}
+
 function dateLabel(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
@@ -72,18 +84,24 @@ function Countdown({ iso }: { iso: string }) {
 }
 
 function TeamRow({
-  team, line, batting, isWinner,
+  team, line, batting, isWinner, isLive,
 }: {
   team: CricketTeamInfo;
   line: ScoreLine;
   batting: boolean;
   isWinner: boolean;
+  isLive: boolean;
 }) {
   const color = team.color || '#334779';
   const initials = team.shortName.slice(0, 3);
   return (
     <div
-      className={`ckl-team-row ${batting ? 'ckl-team-row--batting' : ''} ${isWinner ? 'ckl-team-row--winner' : ''}`}
+      className={[
+        'ckl-team-row',
+        batting ? 'ckl-team-row--batting' : '',
+        isWinner ? 'ckl-team-row--winner' : '',
+        !line.hasScore ? 'ckl-team-row--idle' : '',
+      ].filter(Boolean).join(' ')}
       style={{ '--team-color': color } as React.CSSProperties}
     >
       <div className="ckl-team-crest" style={{ background: color }}>
@@ -101,11 +119,16 @@ function TeamRow({
       <div className="ckl-team-score">
         {line.hasScore ? (
           <>
+            {batting && isLive && (
+              <span className="ckl-team-batting-pill" aria-label="Currently batting">
+                <span className="ckl-team-batting-dot" /> Batting
+              </span>
+            )}
             <span className="ckl-team-runs">{line.score}</span>
             <span className="ckl-team-overs">{line.overs}</span>
           </>
         ) : (
-          <span className="ckl-team-yetbat">—</span>
+          <span className="ckl-team-yetbat">Yet to bat</span>
         )}
       </div>
     </div>
@@ -122,7 +145,6 @@ function CricketCard({ match, onClick, disabled }: {
   const homeBatting = match.innings.some((i) => i.teamId === match.home.id && i.isBatting);
   const awayBatting = match.innings.some((i) => i.teamId === match.away.id && i.isBatting);
 
-  // Detect winner from result text
   const result = match.result || '';
   const homeWinner = match.status === 'finished' && new RegExp(`\\b${match.home.shortName}\\b`, 'i').test(result);
   const awayWinner = match.status === 'finished' && new RegExp(`\\b${match.away.shortName}\\b`, 'i').test(result);
@@ -131,17 +153,34 @@ function CricketCard({ match, onClick, disabled }: {
     match.status === 'live' ? 'live' :
     match.status === 'finished' ? 'finished' : 'upcoming';
 
+  const isLive = match.status === 'live';
+  const isUpcoming = match.status === 'upcoming';
+  // Upcoming matches are entirely disabled until they go live, regardless of when chat would open.
+  const cardDisabled = disabled || isUpcoming;
+
+  // CTA copy by state.
+  const ctaText = isLive ? 'Join the room' : isUpcoming ? 'Opens when live' : 'View room';
+
+  const matchTitle = shortMatchTitle(match.description, match.leagueName);
+
   return (
     <button
       type="button"
-      className={`ckl-card ckl-card--${statusKind}`}
+      className={`ckl-card ckl-card--${statusKind} ${cardDisabled ? 'ckl-card--locked' : ''}`}
       onClick={onClick}
-      disabled={disabled}
+      disabled={cardDisabled}
+      style={{
+        '--home-color': match.home.color || '#334779',
+        '--away-color': match.away.color || '#334779',
+      } as React.CSSProperties}
     >
-      {/* Top: status + meta + time */}
+      {/* Top-edge stripe (live: animated red→amber; recent: subtle; upcoming: blue tint) */}
+      <span className="ckl-card-stripe" aria-hidden />
+
+      {/* Head: status + match title + time/countdown */}
       <div className="ckl-card-head">
         <div className="ckl-head-left">
-          {match.status === 'live' ? (
+          {isLive ? (
             <span className="ckl-pill ckl-pill--live">
               <span className="ckl-pill-dot" aria-hidden />
               LIVE
@@ -151,9 +190,8 @@ function CricketCard({ match, onClick, disabled }: {
           ) : (
             <span className="ckl-pill ckl-pill--up">UPCOMING</span>
           )}
-          <span className="ckl-head-meta">
-            {match.description ? `${match.description} · ` : ''}{match.leagueName}
-          </span>
+          <span className="ckl-head-league">IPL</span>
+          {matchTitle && <span className="ckl-head-title">{matchTitle}</span>}
         </div>
         <div className="ckl-head-right">
           {match.status === 'upcoming' ? (
@@ -164,13 +202,13 @@ function CricketCard({ match, onClick, disabled }: {
         </div>
       </div>
 
-      {/* Body: two stacked team rows */}
+      {/* Body: stacked team rows */}
       <div className="ckl-card-body">
-        <TeamRow team={match.home} line={home} batting={homeBatting} isWinner={homeWinner} />
-        <TeamRow team={match.away} line={away} batting={awayBatting} isWinner={awayWinner} />
+        <TeamRow team={match.home} line={home} batting={homeBatting} isWinner={homeWinner} isLive={isLive} />
+        <TeamRow team={match.away} line={away} batting={awayBatting} isWinner={awayWinner} isLive={isLive} />
       </div>
 
-      {/* Bottom strip: result/toss/venue + CTA */}
+      {/* Foot: result/toss/venue + CTA */}
       <div className="ckl-card-foot">
         <div className="ckl-foot-text">
           {match.result ? (
@@ -195,14 +233,23 @@ function CricketCard({ match, onClick, disabled }: {
               {match.venue}
             </span>
           )}
+          {isUpcoming && (
+            <span className="ckl-foot-hint">· Opens when the match goes live</span>
+          )}
         </div>
         <span className="ckl-foot-cta">
-          {match.status === 'live' ? 'Join the room' :
-           match.status === 'upcoming' ? 'Predict & chat' : 'View room'}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
+          {ctaText}
+          {isUpcoming ? (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          )}
         </span>
       </div>
     </button>
@@ -235,7 +282,10 @@ export default function CricketMatchList({
     );
   }
 
-  if (matches.length === 0) {
+  const live = matches.filter((m) => m.status === 'live');
+  const upcoming = matches.filter((m) => m.status === 'upcoming');
+
+  if (live.length === 0 && upcoming.length === 0) {
     return (
       <div className="ckl-page">
         <div className="ckl-empty">
@@ -246,13 +296,9 @@ export default function CricketMatchList({
     );
   }
 
-  const live = matches.filter((m) => m.status === 'live');
-  const upcoming = matches.filter((m) => m.status === 'upcoming');
-  const finished = matches.filter((m) => m.status === 'finished');
-
   const Section = ({
     title, list, tone,
-  }: { title: string; list: CricketMatch[]; tone: 'live' | 'upcoming' | 'finished' }) => (
+  }: { title: string; list: CricketMatch[]; tone: 'live' | 'upcoming' }) => (
     list.length === 0 ? null : (
       <section className="ckl-section">
         <header className="ckl-section-header">
@@ -278,7 +324,6 @@ export default function CricketMatchList({
     <div className="ckl-page">
       <Section title="Live now" list={live} tone="live" />
       <Section title="Upcoming" list={upcoming} tone="upcoming" />
-      <Section title="Recent" list={finished} tone="finished" />
     </div>
   );
 }

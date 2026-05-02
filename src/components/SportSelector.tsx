@@ -18,9 +18,9 @@ export interface SportEntry {
 export const SPORTS: SportEntry[] = [
   { id: 'football', name: 'Football', icon: '⚽', route: '/matches',          available: true,  subtitle: 'Premier League · FA Cup' },
   { id: 'cricket',  name: 'Cricket',  icon: '🏏', route: '/cricket/matches',  available: true,  subtitle: 'Indian Premier League' },
-  { id: 'tennis',   name: 'Tennis',   icon: '🎾', route: '#',                 available: false, subtitle: 'Coming soon' },
-  { id: 'f1',       name: 'Formula 1', icon: '🏎️', route: '#',                available: false, subtitle: 'Coming soon' },
-  { id: 'nba',      name: 'Basketball', icon: '🏀', route: '#',               available: false, subtitle: 'Coming soon' },
+  // { id: 'tennis',   name: 'Tennis',   icon: '🎾', route: '#',                 available: false, subtitle: 'Coming soon' },
+  // { id: 'f1',       name: 'Formula 1', icon: '🏎️', route: '#',                available: false, subtitle: 'Coming soon' },
+  // { id: 'nba',      name: 'Basketball', icon: '🏀', route: '#',               available: false, subtitle: 'Coming soon' },
 ];
 
 function activeSport(pathname: string | null | undefined): SportEntry {
