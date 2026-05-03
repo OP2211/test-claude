@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Heart, MessageSquare } from 'lucide-react';
 import TeamLogoImage from '@/components/TeamLogoImage';
 import EarlyAdopterBadge from '@/components/EarlyAdopterBadge';
-import { TEAMS } from '@/lib/teams';
+import { getTeamInfo } from '@/lib/teams';
 import type { LeaderboardProfile } from '@/lib/profile-repo';
 
 type LeaderboardSort = 'latest' | 'messages' | 'reactions' | 'invites' | 'name';
+type LeaderboardSport = 'football' | 'cricket';
 
 interface ApiResponse {
   users: LeaderboardProfile[];
@@ -23,7 +25,14 @@ const FOUNDING_FAN_TIER_CLASS: Record<'founding' | 'silver' | 'bronze', string> 
   bronze: 'leaderboard-badge--founding-bronze',
 };
 
+function readSportParam(raw: string | null): LeaderboardSport {
+  return raw === 'cricket' ? 'cricket' : 'football';
+}
+
 export default function LeaderboardClient() {
+  const searchParams = useSearchParams();
+  const initialSport = readSportParam(searchParams.get('sport'));
+  const [sport, setSport] = useState<LeaderboardSport>(initialSport);
   const [profiles, setProfiles] = useState<LeaderboardProfile[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -35,7 +44,7 @@ export default function LeaderboardClient() {
   const [loadingMore, setLoadingMore] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  /** After sort/search changes, skip one "load more" effect — state `page` may still be stale until next paint. */
+  /** After sort/search/sport changes, skip one "load more" effect — state `page` may still be stale until next paint. */
   const skipLoadMoreAfterFilterChange = useRef(false);
 
   // Debounce search input
@@ -57,6 +66,7 @@ export default function LeaderboardClient() {
       const params = new URLSearchParams({
         page: String(pageNum),
         sort,
+        sport,
         ...(debouncedSearch ? { search: debouncedSearch } : {}),
       });
       const res = await fetch(`/api/leaderboard?${params}`, {
@@ -83,7 +93,7 @@ export default function LeaderboardClient() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [sort, debouncedSearch]);
+  }, [sort, debouncedSearch, sport]);
 
   /**
    * Sort/search changed: always reload page 1 with replace (not append).
@@ -94,7 +104,7 @@ export default function LeaderboardClient() {
     skipLoadMoreAfterFilterChange.current = true;
     setPage(1);
     void fetchData(1, false);
-  }, [sort, debouncedSearch, fetchData]);
+  }, [sort, debouncedSearch, sport, fetchData]);
 
   /** Infinite scroll: next pages only; not right after a filter reset (see ref above). */
   useEffect(() => {
@@ -126,6 +136,13 @@ export default function LeaderboardClient() {
     setSort(newSort);
   };
 
+  // Sport now comes from the global SportSelector via the ?sport= URL param. Keep
+  // the local state in sync if the URL changes (e.g. user clicks the dropdown).
+  useEffect(() => {
+    const fromUrl = readSportParam(searchParams.get('sport'));
+    if (fromUrl !== sport) setSport(fromUrl);
+  }, [searchParams, sport]);
+
   // Compute badges
   const mostMessages = profiles.reduce((max, p) => Math.max(max, p.messagesSent), 0);
   const mostReactions = profiles.reduce((max, p) => Math.max(max, p.reactionsReceived), 0);
@@ -134,7 +151,11 @@ export default function LeaderboardClient() {
     <section className="leaderboard-card" aria-label="Leaderboard">
       <div className="leaderboard-head">
         <h1 className="leaderboard-title">Leaderboard</h1>
-        <p className="leaderboard-subtitle">All users with teams, stats, and badges.</p>
+        <p className="leaderboard-subtitle">
+          {sport === 'cricket'
+            ? 'IPL fans ranked by cricket-room activity.'
+            : 'All users with teams, stats, and badges.'}
+        </p>
 
         {/* Search */}
         <div className="lb-search-wrap">
@@ -219,7 +240,8 @@ export default function LeaderboardClient() {
             </thead>
             <tbody>
               {profiles.map((profile) => {
-                const team = TEAMS.find((item) => item.id === profile.fan_team_id) ?? null;
+                const teamId = sport === 'cricket' ? profile.cricket_fan_team_id : profile.fan_team_id;
+                const team = getTeamInfo(teamId);
                 const displayName = profile.full_name?.trim() || profile.username;
                 return (
                   <tr key={profile.google_sub}>

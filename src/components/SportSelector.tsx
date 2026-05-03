@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import './SportSelector.css';
 
@@ -23,15 +23,38 @@ export const SPORTS: SportEntry[] = [
   // { id: 'nba',      name: 'Basketball', icon: '🏀', route: '#',               available: false, subtitle: 'Coming soon' },
 ];
 
-function activeSport(pathname: string | null | undefined): SportEntry {
+function activeSport(
+  pathname: string | null | undefined,
+  searchParams: URLSearchParams | null,
+): SportEntry {
   if (!pathname) return SPORTS[0];
+  // /leaderboard is sport-neutral routing-wise — sport lives in the ?sport query param.
+  if (pathname.startsWith('/leaderboard')) {
+    const sportParam = searchParams?.get('sport');
+    return sportParam === 'cricket'
+      ? SPORTS.find((s) => s.id === 'cricket') ?? SPORTS[0]
+      : SPORTS.find((s) => s.id === 'football') ?? SPORTS[0];
+  }
   if (pathname.startsWith('/cricket')) return SPORTS.find((s) => s.id === 'cricket') ?? SPORTS[0];
   return SPORTS.find((s) => s.id === 'football') ?? SPORTS[0];
 }
 
+/**
+ * Where to send the user when they pick a sport from the dropdown.
+ * On /leaderboard we toggle the ?sport= param so the user stays on the leaderboard;
+ * everywhere else we navigate to that sport's matches page.
+ */
+function targetRouteFor(sport: SportEntry, pathname: string | null | undefined): string {
+  if (pathname?.startsWith('/leaderboard')) {
+    return sport.id === 'cricket' ? '/leaderboard?sport=cricket' : '/leaderboard';
+  }
+  return sport.route;
+}
+
 export default function SportSelector() {
   const pathname = usePathname();
-  const current = activeSport(pathname);
+  const searchParams = useSearchParams();
+  const current = activeSport(pathname, searchParams);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -103,7 +126,7 @@ export default function SportSelector() {
                 <li key={sport.id} role="none">
                   {sport.available ? (
                     <Link
-                      href={sport.route}
+                      href={targetRouteFor(sport, pathname)}
                       prefetch={false}
                       className={className}
                       role="menuitem"

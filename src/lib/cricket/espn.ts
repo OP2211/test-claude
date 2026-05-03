@@ -184,7 +184,23 @@ function toLeaders(
 
 function resultFromStatus(event: EspnEvent): string | undefined {
   if (event.status.type.state !== 'post') return undefined;
-  return event.status.type.detail || event.status.summary;
+  // For cricket, status.summary holds the human-readable result ("MI won by 99 runs"),
+  // while status.type.detail is just a stage label like "Final". Prefer the summary.
+  return event.status.summary || event.status.type.detail;
+}
+
+function winnerTeamIdFor(
+  competitors: EspnCompetitor[],
+  home: CricketTeamInfo,
+  away: CricketTeamInfo,
+): string | null {
+  // ESPN ships winner as the string "true" / "false" on each competitor.
+  for (const c of competitors) {
+    if (String(c.winner).toLowerCase() === 'true') {
+      return c.homeAway === 'home' ? home.id : away.id;
+    }
+  }
+  return null;
 }
 
 function normaliseEvent(event: EspnEvent, leagueKey: 'ipl', leagueName: string): CricketMatch | null {
@@ -223,6 +239,7 @@ function normaliseEvent(event: EspnEvent, leagueKey: 'ipl', leagueName: string):
     innings: toInnings(competitors, homeFull, awayFull),
     toss: event.status.summary,
     result: resultFromStatus(event),
+    winnerTeamId: winnerTeamIdFor(competitors, homeFull, awayFull),
     leaders: toLeaders(competitors, homeFull, awayFull),
     _espn: { eventId: event.id },
   };
@@ -259,20 +276,26 @@ function buildDateWindow(daysBefore: number, daysAfter: number): string[] {
 }
 
 /**
- * ESPN's /scoreboard endpoint returns only the "featured" event, so we fan out
- * across a date window to collect all IPL fixtures currently visible to ESPN.
- * Each call is cheap and cached upstream by ESPN; results are deduped by event id.
+ * Fan out across a list of date params, collect every distinct event, normalise.
+ * Pulled out as a helper so we can use a narrow window for the live match list
+ * and a wide window for season-wide aggregates (standings + season leaders).
  */
-export async function fetchCricketMatches(): Promise<CricketMatch[]> {
+async function fetchMatchesForDates(dates: string[]): Promise<CricketMatch[]> {
   const byId = new Map<string, CricketMatch>();
-  const dates = buildDateWindow(3, 7);
 
   for (const league of CRICKET_LEAGUES) {
     // Kick off all date fetches in parallel, plus the bare /scoreboard (live-featured event).
     const urls: Array<string | undefined> = [undefined, ...dates];
-    const results = await Promise.allSettled(
-      urls.map((d) => fetchScoreboardForDate(league.slug, d))
-    );
+    // Run in batches to avoid socket exhaustion on large windows.
+    const batchSize = 12;
+    const results: PromiseSettledResult<EspnScoreboard>[] = [];
+    for (let i = 0; i < urls.length; i += batchSize) {
+      const batch = urls.slice(i, i + batchSize);
+      const batchResults = await Promise.allSettled(
+        batch.map((d) => fetchScoreboardForDate(league.slug, d))
+      );
+      results.push(...batchResults);
+    }
 
     for (const r of results) {
       if (r.status !== 'fulfilled') continue;
@@ -288,6 +311,39 @@ export async function fetchCricketMatches(): Promise<CricketMatch[]> {
   const all = Array.from(byId.values());
   all.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
   return all;
+}
+
+/**
+ * ESPN's /scoreboard endpoint returns only the "featured" event, so we fan out
+ * across a small recent window to collect every IPL fixture currently visible.
+ * Used by the live match list — narrow on purpose so it polls cheaply.
+ */
+export async function fetchCricketMatches(): Promise<CricketMatch[]> {
+  return fetchMatchesForDates(buildDateWindow(3, 7));
+}
+
+/**
+ * Season-wide match fan-out — covers the full IPL window (~90 days back,
+ * 30 days forward). Cached server-side for 5 minutes so repeated requests
+ * (standings refresh, leaders aggregator) don't re-fan-out every time.
+ */
+let seasonCache: { matches: CricketMatch[]; expires: number } | null = null;
+let seasonInflight: Promise<CricketMatch[]> | null = null;
+const SEASON_TTL_MS = 5 * 60_000;
+
+export async function fetchCricketSeasonMatches(): Promise<CricketMatch[]> {
+  if (seasonCache && seasonCache.expires > Date.now()) return seasonCache.matches;
+  if (seasonInflight) return seasonInflight;
+  seasonInflight = (async () => {
+    try {
+      const matches = await fetchMatchesForDates(buildDateWindow(90, 30));
+      seasonCache = { matches, expires: Date.now() + SEASON_TTL_MS };
+      return matches;
+    } finally {
+      seasonInflight = null;
+    }
+  })();
+  return seasonInflight;
 }
 
 export async function fetchCricketMatch(matchId: string): Promise<CricketMatch | null> {

@@ -190,6 +190,10 @@ export interface CricketMatch {
   innings: CricketInnings[];
   toss?: string;
   result?: string;
+  /** Winning team's id when the match has finished, otherwise null. Sourced from
+   *  ESPN's structured `competitor.winner` flag — far more reliable than parsing
+   *  the result text. */
+  winnerTeamId?: string | null;
   leaders?: CricketLeader[];
   /** Detailed per-innings data, populated when /summary has been fetched. */
   inningsDetail?: InningsDetail[];

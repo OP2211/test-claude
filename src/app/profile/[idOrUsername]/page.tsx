@@ -10,7 +10,7 @@ import {
   getPublicProfileByIdOrUsername,
   getReferralSnapshotByGoogleSub,
 } from '@/lib/profile-repo';
-import { TEAMS } from '@/lib/teams';
+import { getTeamInfo, TEAMS } from '@/lib/teams';
 import '../../page.css';
 import '../profile.css';
 import './public-profile.css';
@@ -43,6 +43,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
   const fullName = profile.full_name?.trim() || '—';
 
   const selectedTeam = TEAMS.find((team) => team.id === profile.fan_team_id) ?? null;
+  const cricketTeam = profile.cricket_fan_team_id ? getTeamInfo(profile.cricket_fan_team_id) : null;
   const foundingFanTier = selectedTeam
     ? await getFoundingFanTierForSupporter(profile.google_sub, selectedTeam.id)
     : null;
@@ -74,11 +75,24 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                       <div
                         className="profile-team-pill"
                         style={{ '--team-pill-color': selectedTeam.color } as CSSProperties}
-                        aria-label={selectedTeam.name}
+                        aria-label={`Football: ${selectedTeam.name}`}
                       >
-                        <span className="profile-team-pill-dot" />
+                        <span className="profile-team-pill-dot" aria-hidden>⚽</span>
                         <TeamLogoImage src={selectedTeam.logo} alt="" className="profile-team-pill-logo" />
                         <span className="profile-team-pill-text">{selectedTeam.name}</span>
+                      </div>
+                    )}
+                    {cricketTeam && (
+                      <div
+                        className="profile-team-pill"
+                        style={{ '--team-pill-color': cricketTeam.color } as CSSProperties}
+                        aria-label={`Cricket: ${cricketTeam.name}`}
+                      >
+                        <span className="profile-team-pill-dot" aria-hidden>🏏</span>
+                        {cricketTeam.logo
+                          ? <TeamLogoImage src={cricketTeam.logo} alt="" className="profile-team-pill-logo" />
+                          : null}
+                        <span className="profile-team-pill-text">{cricketTeam.name}</span>
                       </div>
                     )}
                     <div className="profile-badges">

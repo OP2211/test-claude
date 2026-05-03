@@ -1,23 +1,29 @@
 import type { TeamId } from '@/lib/types';
 import type { CricketTeamInfo } from './types';
 
+/** ESPN cricket logo CDN URL pattern. Returns a 200 PNG for known team ids. */
+function espnLogoUrl(espnId: string): string {
+  return `https://a.espncdn.com/i/teamlogos/cricket/500/${espnId}.png`;
+}
+
 /**
  * Static IPL franchise registry. ESPN's /teams cricket endpoint returns empty,
- * so we keep our own canonical list and match ESPN events to it by displayName
- * (and espnId when stable). `espnId` is best-effort; a name fallback is used
- * when ESPN returns a previously-unseen id.
+ * so we keep our own canonical list and match ESPN events to it by displayName.
+ * espnIds, colors, and logos here were harvested from ESPN's IPL scoreboard so the
+ * picker UI shows real franchise crests instead of initials. The match-detail
+ * adapter will still override `logo` when ESPN ships a per-event variant.
  */
 export const CRICKET_TEAMS: CricketTeamInfo[] = [
-  { id: 'chennai-super-kings',         espnId: '4343',    name: 'Chennai Super Kings',         shortName: 'CSK',  color: '#F9CD05' },
-  { id: 'mumbai-indians',              espnId: '335978',  name: 'Mumbai Indians',              shortName: 'MI',   color: '#004B8D' },
-  { id: 'royal-challengers-bengaluru', espnId: '4341',    name: 'Royal Challengers Bengaluru', shortName: 'RCB',  color: '#DA1818' },
-  { id: 'kolkata-knight-riders',       espnId: '4335',    name: 'Kolkata Knight Riders',       shortName: 'KKR',  color: '#3A225D' },
-  { id: 'sunrisers-hyderabad',         espnId: '4342',    name: 'Sunrisers Hyderabad',         shortName: 'SRH',  color: '#F26522' },
-  { id: 'delhi-capitals',              espnId: '4344',    name: 'Delhi Capitals',              shortName: 'DC',   color: '#17479E' },
-  { id: 'punjab-kings',                espnId: '4336',    name: 'Punjab Kings',                shortName: 'PBKS', color: '#AA0800' },
-  { id: 'rajasthan-royals',            espnId: '4337',    name: 'Rajasthan Royals',            shortName: 'RR',   color: '#EA1A85' },
-  { id: 'gujarat-titans',              espnId: '1298769', name: 'Gujarat Titans',              shortName: 'GT',   color: '#1B2133' },
-  { id: 'lucknow-super-giants',        espnId: '1298770', name: 'Lucknow Super Giants',        shortName: 'LSG',  color: '#0F5296' },
+  { id: 'chennai-super-kings',         espnId: '335974',  name: 'Chennai Super Kings',         shortName: 'CSK',  color: '#F5AE0C', logo: espnLogoUrl('335974')  },
+  { id: 'mumbai-indians',              espnId: '335978',  name: 'Mumbai Indians',              shortName: 'MI',   color: '#004B8D', logo: espnLogoUrl('335978')  },
+  { id: 'royal-challengers-bengaluru', espnId: '335970',  name: 'Royal Challengers Bengaluru', shortName: 'RCB',  color: '#F10920', logo: espnLogoUrl('335970')  },
+  { id: 'kolkata-knight-riders',       espnId: '335971',  name: 'Kolkata Knight Riders',       shortName: 'KKR',  color: '#573F82', logo: espnLogoUrl('335971')  },
+  { id: 'sunrisers-hyderabad',         espnId: '628333',  name: 'Sunrisers Hyderabad',         shortName: 'SRH',  color: '#EE7429', logo: espnLogoUrl('628333')  },
+  { id: 'delhi-capitals',              espnId: '335975',  name: 'Delhi Capitals',              shortName: 'DC',   color: '#2561AE', logo: espnLogoUrl('335975')  },
+  { id: 'punjab-kings',                espnId: '335973',  name: 'Punjab Kings',                shortName: 'PBKS', color: '#B3181E', logo: espnLogoUrl('335973')  },
+  { id: 'rajasthan-royals',            espnId: '335977',  name: 'Rajasthan Royals',            shortName: 'RR',   color: '#C511E8', logo: espnLogoUrl('335977')  },
+  { id: 'gujarat-titans',              espnId: '1298769', name: 'Gujarat Titans',              shortName: 'GT',   color: '#334779', logo: espnLogoUrl('1298769') },
+  { id: 'lucknow-super-giants',        espnId: '1298768', name: 'Lucknow Super Giants',        shortName: 'LSG',  color: '#0057E2', logo: espnLogoUrl('1298768') },
 ];
 
 const BY_ID = new Map<TeamId, CricketTeamInfo>(CRICKET_TEAMS.map((t) => [t.id, t]));

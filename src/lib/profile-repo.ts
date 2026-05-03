@@ -11,6 +11,8 @@ export interface UserProfile {
   username: string;
   phone: string;
   fan_team_id: TeamId;
+  /** Cricket fan team. Null until the user picks one. */
+  cricket_fan_team_id: TeamId | null;
   dob: string | null;
   city: string | null;
   referral_code: string;
@@ -25,6 +27,7 @@ export interface PublicProfile {
   email: string | null;
   image: string | null;
   fan_team_id: TeamId;
+  cricket_fan_team_id: TeamId | null;
   city: string | null;
   created_at?: string | null;
 }
@@ -61,7 +64,10 @@ interface UpsertProfileInput {
   image: string | null;
   username: string;
   phone: string;
-  fanTeamId: TeamId;
+  /** Optional now — a cricket-only onboarder won't pick a football team. Skip when undefined. */
+  fanTeamId?: TeamId;
+  /** Optional — only set when the cricket fan-team flow updates it. Leave undefined to skip. */
+  cricketFanTeamId?: TeamId | null;
   dob: string | null;
   city: string | null;
   invitedByGoogleSub?: string | null;
@@ -82,7 +88,7 @@ export interface ReferralSnapshot {
 export async function getProfileByGoogleSub(googleSub: string): Promise<UserProfile | null> {
   const withFullName = await supabase
     .from('profiles')
-    .select('google_sub,full_name,email,image,username,phone,fan_team_id,dob,city,referral_code,invited_by_google_sub,created_at')
+    .select('google_sub,full_name,email,image,username,phone,fan_team_id,cricket_fan_team_id,dob,city,referral_code,invited_by_google_sub,created_at')
     .eq('google_sub', googleSub)
     .maybeSingle<UserProfile>();
 
@@ -96,7 +102,7 @@ export async function getProfileByGoogleSub(googleSub: string): Promise<UserProf
 
   const legacy = await supabase
     .from('profiles')
-    .select('google_sub,email,image,username,phone,fan_team_id,dob,city,referral_code,invited_by_google_sub,created_at')
+    .select('google_sub,email,image,username,phone,fan_team_id,cricket_fan_team_id,dob,city,referral_code,invited_by_google_sub,created_at')
     .eq('google_sub', googleSub)
     .maybeSingle<Omit<UserProfile, 'full_name'>>();
 
@@ -136,18 +142,25 @@ export async function upsertProfile(input: UpsertProfileInput): Promise<UserProf
     image: input.image,
     username: input.username,
     phone: input.phone,
-    fan_team_id: input.fanTeamId,
     dob: input.dob,
     city: input.city,
   };
+  // Only write fan_team_id / cricket_fan_team_id when explicitly provided so we don't
+  // overwrite an existing value with null (e.g. football onboarder later picking cricket).
+  if (input.fanTeamId !== undefined) {
+    upsertPayload.fan_team_id = input.fanTeamId;
+  }
   if (input.invitedByGoogleSub !== undefined) {
     upsertPayload.invited_by_google_sub = input.invitedByGoogleSub;
+  }
+  if (input.cricketFanTeamId !== undefined) {
+    upsertPayload.cricket_fan_team_id = input.cricketFanTeamId;
   }
 
   const withFullName = await supabase
     .from('profiles')
     .upsert(upsertPayload, { onConflict: 'google_sub' })
-    .select('google_sub,full_name,email,image,username,phone,fan_team_id,dob,city,referral_code,invited_by_google_sub,created_at')
+    .select('google_sub,full_name,email,image,username,phone,fan_team_id,cricket_fan_team_id,dob,city,referral_code,invited_by_google_sub,created_at')
     .single<UserProfile>();
 
   if (!withFullName.error) {
@@ -158,23 +171,23 @@ export async function upsertProfile(input: UpsertProfileInput): Promise<UserProf
     throw new Error(withFullName.error.message);
   }
 
+  const legacyPayload: Record<string, unknown> = {
+    google_sub: input.googleSub,
+    email: input.email,
+    image: input.image,
+    username: input.username,
+    phone: input.phone,
+    dob: input.dob,
+    city: input.city,
+    invited_by_google_sub: input.invitedByGoogleSub,
+  };
+  if (input.fanTeamId !== undefined) legacyPayload.fan_team_id = input.fanTeamId;
+  if (input.cricketFanTeamId !== undefined) legacyPayload.cricket_fan_team_id = input.cricketFanTeamId;
+
   const legacy = await supabase
     .from('profiles')
-    .upsert(
-      {
-        google_sub: input.googleSub,
-        email: input.email,
-        image: input.image,
-        username: input.username,
-        phone: input.phone,
-        fan_team_id: input.fanTeamId,
-        dob: input.dob,
-        city: input.city,
-        invited_by_google_sub: input.invitedByGoogleSub,
-      },
-      { onConflict: 'google_sub' },
-    )
-    .select('google_sub,email,image,username,phone,fan_team_id,dob,city,referral_code,invited_by_google_sub,created_at')
+    .upsert(legacyPayload, { onConflict: 'google_sub' })
+    .select('google_sub,email,image,username,phone,fan_team_id,cricket_fan_team_id,dob,city,referral_code,invited_by_google_sub,created_at')
     .single<Omit<UserProfile, 'full_name'>>();
 
   if (legacy.error) {
@@ -182,6 +195,21 @@ export async function upsertProfile(input: UpsertProfileInput): Promise<UserProf
   }
 
   return { ...legacy.data, full_name: input.fullName };
+}
+
+/** Update only the cricket fan team for an existing profile. */
+export async function setCricketFanTeam(
+  googleSub: string,
+  cricketFanTeamId: TeamId | null,
+): Promise<UserProfile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ cricket_fan_team_id: cricketFanTeamId })
+    .eq('google_sub', googleSub)
+    .select('google_sub,full_name,email,image,username,phone,fan_team_id,cricket_fan_team_id,dob,city,referral_code,invited_by_google_sub,created_at')
+    .maybeSingle<UserProfile>();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
 export async function isTeamLeaderForSupporter(googleSub: string, teamId: TeamId): Promise<boolean> {
@@ -250,7 +278,7 @@ function isLegacyMissingLocalAvatar(image: string): boolean {
 export async function getSupportersByTeamId(teamId: TeamId): Promise<PublicProfile[]> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('google_sub,full_name,username,email,image,fan_team_id,city,created_at')
+    .select('google_sub,full_name,username,email,image,fan_team_id,cricket_fan_team_id,city,created_at')
     .eq('fan_team_id', teamId)
     .order('username', { ascending: true })
     .returns<PublicProfile[]>();
@@ -328,7 +356,7 @@ export async function getPublicProfileByIdOrUsername(idOrUsername: string): Prom
 
   const byId = await supabase
     .from('profiles')
-    .select('google_sub,full_name,username,email,image,fan_team_id,city,created_at')
+    .select('google_sub,full_name,username,email,image,fan_team_id,cricket_fan_team_id,city,created_at')
     .eq('google_sub', trimmed)
     .maybeSingle<PublicProfile>();
 
@@ -342,7 +370,7 @@ export async function getPublicProfileByIdOrUsername(idOrUsername: string): Prom
 
   const byUsername = await supabase
     .from('profiles')
-    .select('google_sub,full_name,username,email,image,fan_team_id,city,created_at')
+    .select('google_sub,full_name,username,email,image,fan_team_id,cricket_fan_team_id,city,created_at')
     .ilike('username', trimmed)
     .limit(1)
     .maybeSingle<PublicProfile>();
@@ -362,7 +390,7 @@ export async function getAllPublicProfiles(): Promise<PublicProfile[]> {
   for (;;) {
     const { data, error } = await db
       .from('profiles')
-      .select('google_sub,full_name,username,email,image,fan_team_id,city,created_at')
+      .select('google_sub,full_name,username,email,image,fan_team_id,cricket_fan_team_id,city,created_at')
       .order('created_at', { ascending: true })
       .range(offset, offset + PROFILE_FETCH_PAGE_SIZE - 1)
       .returns<PublicProfile[]>();
@@ -380,16 +408,44 @@ export async function getAllPublicProfiles(): Promise<PublicProfile[]> {
   return all;
 }
 
-export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
+export type LeaderboardSport = 'football' | 'cricket' | 'all';
+
+export interface GetLeaderboardOptions {
+  /** When 'cricket' or 'football', stats are scoped to that sport's chat rooms only. */
+  sport?: LeaderboardSport;
+}
+
+export async function getLeaderboardProfiles(
+  options: GetLeaderboardOptions = {},
+): Promise<LeaderboardProfile[]> {
+  const sport: LeaderboardSport = options.sport ?? 'all';
   const profiles = await getAllPublicProfiles();
   if (profiles.length === 0) return [];
 
   const db = getLeaderboardDb();
-  const [messagesResult, referralsResult] = await Promise.all([
-    db
+
+  // Scope chat_messages by the cricket-prefixed match_id when the caller asks for one sport.
+  // Cricket match ids are prefixed `cricket-`; football ids are not.
+  let messagesQuery = db
+    .from('chat_messages')
+    .select('user_id,reactions')
+    .returns<Array<{ user_id: string; reactions: Record<string, string[]> | null }>>();
+  if (sport === 'cricket') {
+    messagesQuery = db
       .from('chat_messages')
       .select('user_id,reactions')
-      .returns<Array<{ user_id: string; reactions: Record<string, string[]> | null }>>(),
+      .like('match_id', 'cricket-%')
+      .returns<Array<{ user_id: string; reactions: Record<string, string[]> | null }>>();
+  } else if (sport === 'football') {
+    messagesQuery = db
+      .from('chat_messages')
+      .select('user_id,reactions')
+      .not('match_id', 'like', 'cricket-%')
+      .returns<Array<{ user_id: string; reactions: Record<string, string[]> | null }>>();
+  }
+
+  const [messagesResult, referralsResult] = await Promise.all([
+    messagesQuery,
     db
       .from('profiles')
       .select('invited_by_google_sub')
@@ -406,6 +462,7 @@ export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
     throw new Error(referralsError.message);
   }
 
+  // successfulInvites stays sport-agnostic (signup-driven).
   const successfulInvitesByUser = new Map<string, number>();
   for (const row of referralRows ?? []) {
     const inviterGoogleSub = row.invited_by_google_sub;
@@ -426,14 +483,21 @@ export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
     statsByUser.set(row.user_id, current);
   }
 
+  // For founding-fan tiering, bucket by the team relevant to the sport view. In cricket
+  // mode use cricket_fan_team_id (and skip users who haven't picked one).
+  const teamFor = (p: PublicProfile): TeamId | null =>
+    sport === 'cricket' ? (p.cricket_fan_team_id ?? null) : p.fan_team_id;
+
   const earliestGoldByTeam = new Map<TeamId, Set<string>>();
   const earliestSilverByTeam = new Map<TeamId, Set<string>>();
   const earliestBronzeByTeam = new Map<TeamId, Set<string>>();
   const profilesByTeam = new Map<TeamId, PublicProfile[]>();
   for (const profile of profiles) {
-    const existing = profilesByTeam.get(profile.fan_team_id) ?? [];
+    const team = teamFor(profile);
+    if (!team) continue;
+    const existing = profilesByTeam.get(team) ?? [];
     existing.push(profile);
-    profilesByTeam.set(profile.fan_team_id, existing);
+    profilesByTeam.set(team, existing);
   }
 
   for (const [teamId, teamProfiles] of profilesByTeam.entries()) {
@@ -451,11 +515,12 @@ export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
     earliestBronzeByTeam.set(teamId, new Set(bronzeTier));
   }
 
-  return profiles.map((profile) => {
+  const ranked: LeaderboardProfile[] = profiles.map((profile) => {
     const stats = statsByUser.get(profile.google_sub);
-    const leadersForTeam = earliestGoldByTeam.get(profile.fan_team_id);
-    const topSilverForTeam = earliestSilverByTeam.get(profile.fan_team_id);
-    const topBronzeForTeam = earliestBronzeByTeam.get(profile.fan_team_id);
+    const team = teamFor(profile);
+    const leadersForTeam = team ? earliestGoldByTeam.get(team) : undefined;
+    const topSilverForTeam = team ? earliestSilverByTeam.get(team) : undefined;
+    const topBronzeForTeam = team ? earliestBronzeByTeam.get(team) : undefined;
     const isTeamLeader = leadersForTeam ? leadersForTeam.has(profile.google_sub) : false;
     const isTopSilver = topSilverForTeam ? topSilverForTeam.has(profile.google_sub) : false;
     const isTopBronze = topBronzeForTeam ? topBronzeForTeam.has(profile.google_sub) : false;
@@ -476,4 +541,16 @@ export async function getLeaderboardProfiles(): Promise<LeaderboardProfile[]> {
       foundingFanTier,
     };
   });
+
+  // In cricket mode, drop users who have never engaged with cricket (no cricket messages
+  // AND no cricket fan-team picked) — keeps the cricket board focused.
+  if (sport === 'cricket') {
+    return ranked.filter(
+      (p) =>
+        Boolean(p.cricket_fan_team_id) ||
+        p.messagesSent > 0 ||
+        p.reactionsReceived > 0,
+    );
+  }
+  return ranked;
 }

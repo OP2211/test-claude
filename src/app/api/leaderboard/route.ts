@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getLeaderboardProfiles } from '@/lib/profile-repo';
+import { getLeaderboardProfiles, type LeaderboardSport } from '@/lib/profile-repo';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,12 +17,18 @@ function createdAtSortKey(iso: string | null | undefined): number {
   return Number.isFinite(t) ? t : Number.NEGATIVE_INFINITY;
 }
 
+function parseSport(raw: string | null): LeaderboardSport {
+  if (raw === 'cricket' || raw === 'football') return raw;
+  return 'all';
+}
+
 export async function GET(request: NextRequest) {
   const search = (request.nextUrl.searchParams.get('search') || '').trim().toLowerCase();
   const page = Math.max(1, parseInt(request.nextUrl.searchParams.get('page') || '1', 10));
   const sort = request.nextUrl.searchParams.get('sort') || 'latest';
+  const sport = parseSport(request.nextUrl.searchParams.get('sport'));
 
-  const allProfiles = await getLeaderboardProfiles();
+  const allProfiles = await getLeaderboardProfiles({ sport });
 
   // Filter by search
   const filtered = search

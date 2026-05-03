@@ -270,7 +270,7 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
           tab: chatTab,
           userId: user.userId,
           username: user.username,
-          fanTeamId: user.fanTeamId,
+          fanTeamId: user.cricketFanTeamId ?? null,
           image: user.image,
           text,
         }),
@@ -317,7 +317,7 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
           vote,
           username: user.username?.trim() || 'Fan',
           image: user.image,
-          fanTeamId: user.fanTeamId,
+          fanTeamId: user.cricketFanTeamId ?? null,
         }),
       });
       const data = await res.json();
@@ -474,7 +474,6 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
               placeholder="Talk your talk…"
               linkSenderProfile
               compact
-              hideTeamFlair
             />
           ) : (
             <div className="ckr-banter-locked">

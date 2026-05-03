@@ -1,10 +1,13 @@
 import type { TeamId } from '@/lib/types';
-import { isValidTeamId } from '@/lib/teams';
+import { isCricketTeamId, isFootballTeamId } from '@/lib/teams';
 
 export interface ProfileInput {
   username: string;
   phone: string;
-  fanTeamId: TeamId;
+  /** Football fan team. Optional — a cricket-only onboarder won't have one. */
+  fanTeamId?: TeamId;
+  /** Cricket fan team. Optional — a football-only onboarder won't have one. */
+  cricketFanTeamId?: TeamId;
   dob: string | null;
   city: string | null;
 }
@@ -27,9 +30,11 @@ export function isOnboardingComplete(profile: {
   username?: string | null;
   phone?: string | null;
   fan_team_id?: string | null;
+  cricket_fan_team_id?: string | null;
 } | null): boolean {
   if (!profile) return false;
-  return Boolean(profile.username?.trim() && profile.phone?.trim() && profile.fan_team_id?.trim());
+  const hasTeam = Boolean(profile.fan_team_id?.trim() || profile.cricket_fan_team_id?.trim());
+  return Boolean(profile.username?.trim() && profile.phone?.trim() && hasTeam);
 }
 
 export function validateProfileInput(input: unknown): { value?: ProfileInput; error?: string } {
@@ -43,6 +48,7 @@ export function validateProfileInput(input: unknown): { value?: ProfileInput; er
   const username = usernameValidation.value;
   const phoneRaw = String(payload.phone ?? '').trim();
   const fanTeamIdRaw = String(payload.fanTeamId ?? '').trim();
+  const cricketFanTeamIdRaw = String(payload.cricketFanTeamId ?? '').trim();
   const dobRaw = payload.dob;
   const cityRaw = payload.city;
 
@@ -52,8 +58,15 @@ export function validateProfileInput(input: unknown): { value?: ProfileInput; er
     return { error: 'Phone number must have exactly 10 digits' };
   }
 
-  if (!isValidTeamId(fanTeamIdRaw)) {
-    return { error: 'Invalid team selection' };
+  // Caller may submit either a football team, a cricket team, or both — but at least one.
+  if (!fanTeamIdRaw && !cricketFanTeamIdRaw) {
+    return { error: 'Pick a team to support' };
+  }
+  if (fanTeamIdRaw && !isFootballTeamId(fanTeamIdRaw)) {
+    return { error: 'Invalid football team selection' };
+  }
+  if (cricketFanTeamIdRaw && !isCricketTeamId(cricketFanTeamIdRaw)) {
+    return { error: 'Invalid cricket team selection' };
   }
 
   let dob: string | null = null;
@@ -71,9 +84,20 @@ export function validateProfileInput(input: unknown): { value?: ProfileInput; er
     value: {
       username,
       phone: phoneDigits,
-      fanTeamId: fanTeamIdRaw,
+      fanTeamId: fanTeamIdRaw || undefined,
+      cricketFanTeamId: cricketFanTeamIdRaw || undefined,
       dob,
       city,
     },
   };
+}
+
+/** Validates a cricket team id payload for the standalone cricket fan-team flow. */
+export function validateCricketTeamId(input: unknown): { value?: TeamId; error?: string } {
+  if (!input || typeof input !== 'object') return { error: 'Invalid payload' };
+  const raw = (input as Record<string, unknown>).cricketFanTeamId;
+  const id = String(raw ?? '').trim();
+  if (!id) return { error: 'cricketFanTeamId is required' };
+  if (!isCricketTeamId(id)) return { error: 'Invalid cricket team selection' };
+  return { value: id };
 }

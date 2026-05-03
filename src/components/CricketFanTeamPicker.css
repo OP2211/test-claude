@@ -1,0 +1,142 @@
+.ckft {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 18px 16px;
+  margin-bottom: 22px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
+}
+.ckft::before {
+  content: '';
+  position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--accent-blue) 70%, transparent),
+    color-mix(in srgb, var(--accent-yellow) 70%, transparent),
+    color-mix(in srgb, var(--accent-blue) 70%, transparent));
+}
+
+.ckft-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.ckft-eyebrow {
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.ckft-title {
+  font-family: var(--font-brand);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+.ckft-sub {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 540px;
+  line-height: 1.5;
+}
+.ckft-skip {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 999px;
+  transition: background var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+  flex-shrink: 0;
+}
+.ckft-skip:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.ckft-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.ckft-team {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 10px 12px;
+  background: var(--bg-surface);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out),
+              background var(--duration-fast) var(--ease-out);
+  font: inherit;
+  color: inherit;
+}
+.ckft-team:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--team-color, var(--accent-blue)) 50%, transparent);
+  background: color-mix(in srgb, var(--team-color, var(--accent-blue)) 6%, var(--bg-surface));
+  transform: translateY(-2px);
+}
+.ckft-team:disabled { opacity: 0.5; cursor: wait; }
+.ckft-team--loading {
+  border-color: var(--team-color, var(--accent-blue));
+  background: color-mix(in srgb, var(--team-color, var(--accent-blue)) 12%, var(--bg-surface));
+}
+
+.ckft-team-crest {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 900; font-size: 0.74rem;
+  flex-shrink: 0; overflow: hidden;
+  box-shadow: 0 2px 6px rgba(var(--neutral-rgb), 0.14);
+}
+.ckft-team-crest img {
+  width: 88%; height: 88%; object-fit: contain;
+  background: #fff; border-radius: 8px; padding: 3px;
+}
+
+.ckft-team-name {
+  font-family: var(--font-brand);
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--text-primary);
+}
+.ckft-team-full {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.1px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.ckft-error {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent-red) 10%, transparent);
+  color: var(--accent-red);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
