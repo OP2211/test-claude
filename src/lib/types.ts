@@ -112,6 +112,8 @@ export interface User {
   username: string;
   profileUsername?: string;
   fanTeamId: TeamId | null;
+  /** Cricket fan team — separate from football fanTeamId. Null until user picks one. */
+  cricketFanTeamId?: TeamId | null;
   email?: string;
   image?: string;
   phone?: string;

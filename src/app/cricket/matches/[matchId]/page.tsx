@@ -23,7 +23,8 @@ interface ProfileResponse {
     image: string | null;
     username: string;
     phone: string;
-    fan_team_id: TeamId;
+    fan_team_id: TeamId | null;
+    cricket_fan_team_id: TeamId | null;
     dob: string | null;
     city: string | null;
   } | null;
@@ -53,6 +54,7 @@ function mapProfileToUser(p: NonNullable<ProfileResponse['profile']>): User {
     email: p.email ?? undefined,
     image: p.image ?? undefined,
     fanTeamId: p.fan_team_id,
+    cricketFanTeamId: p.cricket_fan_team_id,
     phone: p.phone,
     dob: p.dob,
     city: p.city,
@@ -137,10 +139,16 @@ function CricketMatchDetailsInner() {
 
   const handleOnboardingComplete = async (payload: OnboardingPayload) => {
     const referralCode = getStoredReferralCode();
+    // Cricket sport here → the modal returns an IPL team in fanTeamId; rename to cricketFanTeamId.
+    const { fanTeamId, ...rest } = payload;
     const res = await fetch('/api/profile/upsert', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...payload, referralCode }),
+      body: JSON.stringify({
+        ...rest,
+        cricketFanTeamId: fanTeamId,
+        referralCode,
+      }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error ?? 'Failed to save profile');
@@ -187,7 +195,7 @@ function CricketMatchDetailsInner() {
     );
   }
 
-  if (!user || !user.fanTeamId) {
+  if (!user || (!user.fanTeamId && !user.cricketFanTeamId)) {
     return (
       <div className="app">
         <AppHeader
@@ -205,6 +213,7 @@ function CricketMatchDetailsInner() {
         />
         {showOnboarding && (
           <OnboardingModal
+            sport="cricket"
             onComplete={handleOnboardingComplete}
             onClose={() => {
               setShowOnboarding(false);

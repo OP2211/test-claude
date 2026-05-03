@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { TeamId } from '@/lib/types';
 import { TEAMS } from '@/lib/teams';
+import { CRICKET_TEAMS } from '@/lib/cricket/teams';
 import Logo from './Logo';
 import TeamLogoImage from './TeamLogoImage';
 import './OnboardingModal.css';
@@ -18,9 +19,34 @@ interface OnboardingData {
 interface OnboardingModalProps {
   onComplete: (data: OnboardingData) => Promise<void>;
   onClose: () => void;
+  /** Which sport's teams to show on the picker step. Default 'football'. */
+  sport?: 'football' | 'cricket';
 }
 
-export default function OnboardingModal({ onComplete, onClose }: OnboardingModalProps) {
+interface TeamCard {
+  id: TeamId;
+  name: string;
+  logo: string;
+  color: string;
+}
+
+export default function OnboardingModal({ onComplete, onClose, sport = 'football' }: OnboardingModalProps) {
+  const teams: TeamCard[] = useMemo(() => {
+    if (sport === 'cricket') {
+      return CRICKET_TEAMS.map((t) => ({
+        id: t.id,
+        name: t.name,
+        // Cricket franchises mostly don't ship a logo URL — TeamLogoImage falls back gracefully.
+        logo: t.logo ?? '',
+        color: t.color,
+      }));
+    }
+    return TEAMS.map((t) => ({ id: t.id, name: t.name, logo: t.logo, color: t.color }));
+  }, [sport]);
+  const teamPickerTitle = sport === 'cricket' ? 'Pick Your IPL Franchise' : 'Pick Your Club';
+  const teamPickerSub = sport === 'cricket'
+    ? 'Show everyone whose camp you’re in'
+    : 'Show everyone whose side you’re on';
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedTeam, setSelectedTeam] = useState<TeamId | null>(null);
   const [username, setUsername] = useState('');
@@ -199,19 +225,27 @@ export default function OnboardingModal({ onComplete, onClose }: OnboardingModal
             </button>
 
             <div className="ob-hero compact">
-              <h1 className="ob-title">Pick Your Club</h1>
-              <p className="ob-subtitle">Show everyone whose side you're on</p>
+              <h1 className="ob-title">{teamPickerTitle}</h1>
+              <p className="ob-subtitle">{teamPickerSub}</p>
             </div>
 
             <div className="ob-team-grid">
-              {TEAMS.map(t => (
+              {teams.map(t => (
                 <button
                   key={t.id}
                   className={`ob-team-card ${selectedTeam === t.id ? 'selected' : ''}`}
                   style={{ '--team-color': t.color } as React.CSSProperties}
                   onClick={() => { setSelectedTeam(t.id); setError(''); }}
                 >
-                  <TeamLogoImage src={t.logo} alt="" className="ob-team-logo" />
+                  {t.logo
+                    ? <TeamLogoImage src={t.logo} alt="" className="ob-team-logo" />
+                    : <span
+                        className="ob-team-logo ob-team-logo--initials"
+                        style={{ background: t.color }}
+                        aria-hidden
+                      >
+                        {t.name.split(/\s+/).map(w => w[0]).join('').slice(0, 3).toUpperCase()}
+                      </span>}
                   <span className="ob-team-name">{t.name}</span>
                   {selectedTeam === t.id && (
                     <span className="ob-team-check">

@@ -1,0 +1,251 @@
+.cks {
+  padding: 4px 0 calc(28px + var(--safe-bottom));
+}
+
+.cks-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.cks-head-titles { min-width: 0; }
+.cks-title {
+  font-family: var(--font-brand);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  margin: 0 0 4px;
+  color: var(--text-primary);
+}
+.cks-sub {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.cks-refresh {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
+.cks-refresh:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+.cks-refresh:disabled { opacity: 0.7; cursor: wait; }
+.cks-refresh svg {
+  flex-shrink: 0;
+  transform-origin: center;
+}
+.cks-refresh--spinning svg {
+  animation: cksRefreshSpin 0.8s linear infinite;
+}
+@keyframes cksRefreshSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Table ────────────────────────────────────────────────────── */
+.cks-table-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
+}
+
+.cks-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.cks-table thead {
+  background: color-mix(in srgb, var(--neutral-rgb) 2%, transparent);
+}
+.cks-table th {
+  text-align: right;
+  padding: 12px 10px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.cks-table th.cks-col-rank,
+.cks-table th.cks-col-team {
+  text-align: left;
+}
+.cks-table td {
+  text-align: right;
+  padding: 12px 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+.cks-table tr:last-child td { border-bottom: 0; }
+.cks-table tbody tr {
+  transition: background var(--duration-fast) var(--ease-out);
+}
+.cks-table tbody tr:hover {
+  background: color-mix(in srgb, var(--neutral-rgb) 2%, transparent);
+}
+
+.cks-col-rank {
+  width: 44px;
+  text-align: center !important;
+}
+.cks-col-team {
+  text-align: left !important;
+  min-width: 160px;
+}
+
+.cks-rank-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-family: var(--font-brand);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  letter-spacing: 0.2px;
+}
+.cks-rank-chip--qual {
+  background: color-mix(in srgb, var(--color-success) 18%, transparent);
+  color: var(--color-success);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-success) 28%, transparent);
+}
+
+.cks-col-pts {
+  font-family: var(--font-brand);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.2px;
+}
+.cks-col-win {
+  color: var(--color-success);
+  font-weight: 800;
+}
+.cks-col-nrr {
+  color: var(--text-secondary);
+}
+
+.cks-team {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.cks-team-crest {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 900; font-size: 0.62rem;
+  flex-shrink: 0; overflow: hidden;
+  box-shadow: 0 1px 3px rgba(var(--neutral-rgb), 0.1);
+}
+.cks-team-crest img {
+  width: 88%; height: 88%; object-fit: contain;
+  background: #fff; border-radius: 6px; padding: 2px;
+}
+.cks-team-text {
+  display: flex; flex-direction: column; min-width: 0;
+}
+.cks-team-short {
+  font-family: var(--font-brand);
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+.cks-team-full {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.cks-row--playoff {
+  background: color-mix(in srgb, var(--color-success) 4%, transparent);
+}
+.cks-row--playoff:hover {
+  background: color-mix(in srgb, var(--color-success) 7%, transparent) !important;
+}
+
+.cks-legend {
+  margin: 12px 4px 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cks-legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-success) 60%, transparent);
+  display: inline-block;
+}
+
+.cks-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.cks-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: cksSpin 0.7s linear infinite;
+}
+@keyframes cksSpin {
+  to { transform: rotate(360deg); }
+}
+
+.cks-empty {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/* Hide T and NR columns on small screens — they're rare in T20 IPL anyway. */
+@media (max-width: 560px) {
+  .cks-table th, .cks-table td { padding: 10px 6px; font-size: 0.78rem; }
+  .cks-col-hide-sm { display: none; }
+  .cks-team-full { display: none; }
+  .cks-col-team { min-width: 100px; }
+  .cks-team-crest { width: 26px; height: 26px; }
+  .cks-col-pts { font-size: 1rem; }
+}

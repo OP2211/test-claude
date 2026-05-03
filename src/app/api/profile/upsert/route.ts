@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
       username: validation.value.username,
       phone: validation.value.phone,
       fanTeamId: validation.value.fanTeamId,
+      cricketFanTeamId: validation.value.cricketFanTeamId,
       dob: validation.value.dob,
       city: validation.value.city,
       invitedByGoogleSub,

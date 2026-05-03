@@ -1,0 +1,297 @@
+.cksl {
+  padding: 4px 0 calc(28px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ── Cap header cards ─────────────────────────────────────────── */
+.cksl-cap-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+@media (min-width: 720px) {
+  .cksl-cap-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.cksl-cap {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
+}
+.cksl-cap--orange {
+  background:
+    radial-gradient(ellipse at top right, color-mix(in srgb, #FF8A00 14%, transparent) 0%, transparent 60%),
+    var(--bg-card);
+  border-color: color-mix(in srgb, #FF8A00 22%, var(--border));
+}
+.cksl-cap--purple {
+  background:
+    radial-gradient(ellipse at top right, color-mix(in srgb, #6E3BFF 14%, transparent) 0%, transparent 60%),
+    var(--bg-card);
+  border-color: color-mix(in srgb, #6E3BFF 22%, var(--border));
+}
+
+.cksl-cap-head {
+  display: flex; flex-direction: column; gap: 2px;
+  margin-bottom: 12px;
+}
+.cksl-cap-title {
+  font-family: var(--font-brand);
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.cksl-cap--orange .cksl-cap-title { color: #E26A00; }
+.cksl-cap--purple .cksl-cap-title { color: #5A2EE0; }
+
+.cksl-cap-sub {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cksl-cap-body {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.cksl-cap-name {
+  display: flex; align-items: center; gap: 12px;
+  min-width: 0;
+}
+.cksl-cap-crest {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 900; font-size: 0.7rem;
+  flex-shrink: 0; overflow: hidden;
+  box-shadow: 0 2px 6px rgba(var(--neutral-rgb), 0.14);
+}
+.cksl-cap-crest img {
+  width: 88%; height: 88%; object-fit: contain;
+  background: #fff; border-radius: 8px; padding: 3px;
+}
+.cksl-cap-player {
+  font-family: var(--font-brand);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+.cksl-cap-team {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.4px;
+  margin-top: 2px;
+}
+
+.cksl-cap-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.cksl-cap-big {
+  font-family: var(--font-brand);
+  font-size: 2.6rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(var(--neutral-rgb), 0.04);
+}
+.cksl-cap--orange .cksl-cap-big { color: #E26A00; }
+.cksl-cap--purple .cksl-cap-big { color: #5A2EE0; }
+.cksl-cap-unit {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+}
+.cksl-cap-extras {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+.cksl-cap-empty {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  padding: 12px 0;
+}
+
+/* ── Section + table ──────────────────────────────────────────── */
+.cksl-section {
+  display: flex; flex-direction: column;
+  gap: 10px;
+}
+.cksl-section-title {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-brand);
+  font-size: var(--text-md);
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+.cksl-section-pill {
+  display: inline-flex; align-items: center;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.cksl-section-pill--orange {
+  background: color-mix(in srgb, #FF8A00 18%, transparent);
+  color: #C75A00;
+}
+.cksl-section-pill--purple {
+  background: color-mix(in srgb, #6E3BFF 18%, transparent);
+  color: #4A1FCF;
+}
+
+.cksl-table-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.cksl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.cksl-table thead {
+  background: var(--bg-surface);
+}
+.cksl-table th {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 10px 8px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+.cksl-table td {
+  padding: 10px 8px;
+  text-align: right;
+  font-weight: 700;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+.cksl-table tr:last-child td { border-bottom: 0; }
+/* Need !important because `.cksl-table td` has higher specificity than a single
+ * class — without this the player cell silently renders right-aligned. */
+.cksl-col-name { text-align: left !important; min-width: 200px; }
+.cksl-col-rank {
+  text-align: center !important;
+  width: 36px;
+  font-family: var(--font-brand);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.cksl-col-prim {
+  font-family: var(--font-brand);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary) !important;
+  letter-spacing: 0.3px;
+}
+
+.cksl-pname {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  text-align: left;
+}
+.cksl-pname-crest {
+  width: 30px; height: 30px;
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 900; font-size: 0.62rem;
+  flex-shrink: 0; overflow: hidden;
+  box-shadow: 0 1px 2px rgba(var(--neutral-rgb), 0.08);
+}
+.cksl-pname-crest img {
+  width: 88%; height: 88%; object-fit: contain;
+  background: #fff; border-radius: 5px; padding: 1px;
+}
+.cksl-pname-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  align-items: flex-start;
+  text-align: left;
+  gap: 1px;
+}
+.cksl-pname-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  line-height: 1.2;
+  text-align: left;
+}
+.cksl-pname-team {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.4px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.cksl-loading {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+  flex-wrap: wrap;
+}
+.cksl-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: ckslSpin 0.7s linear infinite;
+}
+@keyframes ckslSpin {
+  to { transform: rotate(360deg); }
+}
+
+.cksl-empty,
+.cksl-empty-row {
+  padding: 36px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.cksl-note {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin: 6px 0 0;
+  font-style: italic;
+}
+
+@media (max-width: 520px) {
+  .cksl-table th, .cksl-table td { padding: 9px 6px; font-size: 0.78rem; }
+  .cksl-col-name { min-width: 130px; }
+  .cksl-pname-team { display: none; }
+}
