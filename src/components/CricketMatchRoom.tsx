@@ -2,9 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Pusher from 'pusher-js';
+import { useSession } from 'next-auth/react';
 import type { CricketMatch } from '@/lib/cricket/types';
 import { isCricketChatOpen } from '@/lib/cricket/types';
 import type { Message, User, VoteChoice, VoteTally, TabId, Reactions } from '@/lib/types';
+import { startGoogleSignInRedirect } from '@/lib/google-signin';
+import { isCricketMatchReadOnly } from '@/lib/match-access';
+import AuthRequiredModal from './AuthRequiredModal';
 import ChatPanel from './ChatPanel';
 import CricketScorecard from './CricketScorecard';
 import CricketSquad from './CricketSquad';
@@ -123,6 +127,7 @@ function headerOvers(match: CricketMatch, side: 'home' | 'away'): string {
 }
 
 export default function CricketMatchRoom({ match: initialMatch, user, onBack }: Props) {
+  const { status: sessionStatus } = useSession();
   const [match, setMatch] = useState<CricketMatch>(initialMatch);
   const [activeTab, setActiveTab] = useState<CricketTabId>('predictions');
   const [messages, setMessages] = useState<Record<'predictions' | 'banter', Message[]>>({
@@ -144,6 +149,7 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
     return key ? { key, cluster } : null;
   });
   const pusherRef = useRef<Pusher | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Load realtime config from server if not in env
   useEffect(() => {
@@ -259,6 +265,11 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
 
   const sendMessage = useCallback(async (text: string): Promise<void> => {
     if (!text.trim()) return;
+    if (isCricketMatchReadOnly(match)) return;
+    if (sessionStatus !== 'authenticated') {
+      setShowAuthModal(true);
+      return;
+    }
     const chatTab = toChatTab(activeTab);
     if (!chatTab) return;
     try {
@@ -283,7 +294,7 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
     } catch (err) {
       console.error('[cricket] send failed', err);
     }
-  }, [match.id, activeTab, user, upsertMessage]);
+  }, [match, activeTab, user, upsertMessage, sessionStatus]);
 
   const reactToMessage = useCallback(async (messageId: string, tab: 'predictions' | 'banter', emoji: string): Promise<void> => {
     try {
@@ -306,6 +317,11 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
   }, [match.id, user.userId, user.username, user.image]);
 
   const castVote = useCallback(async (vote: VoteChoice): Promise<void> => {
+    if (isCricketMatchReadOnly(match)) return;
+    if (sessionStatus !== 'authenticated') {
+      setShowAuthModal(true);
+      return;
+    }
     if (vote === 'draw') return;
     try {
       const res = await fetch('/api/vote', {
@@ -331,15 +347,21 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
     } catch (err) {
       console.error('[cricket] vote failed', err);
     }
-  }, [match.id, user]);
+  }, [match, user, sessionStatus]);
 
   const isLive = match.status === 'live';
+  const isReadOnly = isCricketMatchReadOnly(match);
+  const requireLoginForPrediction = sessionStatus !== 'authenticated';
   const chatOpen = isCricketChatOpen(match);
+  const canOpenBanter = chatOpen || isReadOnly;
+  const banterEmptyStateText = isReadOnly
+    ? 'Match ended. Banter is available in read-only mode.'
+    : undefined;
 
   // If user lands on the banter tab while chat is closed, bounce them to predictions.
   useEffect(() => {
-    if (activeTab === 'banter' && !chatOpen) setActiveTab('predictions');
-  }, [activeTab, chatOpen]);
+    if (activeTab === 'banter' && !canOpenBanter) setActiveTab('predictions');
+  }, [activeTab, canOpenBanter]);
 
   return (
     <div className="ckr-room">
@@ -414,7 +436,7 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
       <nav className="ckr-tabs" aria-label="Match sections">
         {TABS.map((t) => {
           const active = activeTab === t.id;
-          const isLocked = t.id === 'banter' && !chatOpen;
+          const isLocked = t.id === 'banter' && !canOpenBanter;
           return (
             <button
               key={t.id}
@@ -448,6 +470,8 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
               votes={votes}
               userVote={userVote}
               onVote={castVote}
+              readOnly={isReadOnly}
+              requireLogin={requireLoginForPrediction}
             />
           </div>
         )}
@@ -465,7 +489,7 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
         )}
 
         {activeTab === 'banter' && (
-          chatOpen ? (
+          canOpenBanter ? (
             <ChatPanel
               messages={messages.banter}
               user={user}
@@ -474,6 +498,8 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
               placeholder="Talk your talk…"
               linkSenderProfile
               compact
+              readOnly={isReadOnly}
+              emptyStateText={banterEmptyStateText}
             />
           ) : (
             <div className="ckr-banter-locked">
@@ -487,6 +513,17 @@ export default function CricketMatchRoom({ match: initialMatch, user, onBack }: 
           )
         )}
       </div>
+      {showAuthModal && (
+        <AuthRequiredModal
+          title="Login required to participate"
+          message="You can read this room as a guest. Login or signup to post messages and make predictions."
+          onClose={() => setShowAuthModal(false)}
+          onContinue={() => {
+            setShowAuthModal(false);
+            void startGoogleSignInRedirect();
+          }}
+        />
+      )}
     </div>
   );
 }

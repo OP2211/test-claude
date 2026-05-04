@@ -9,6 +9,8 @@ interface Props {
   votes: VoteTally;
   userVote: VoteChoice | null;
   onVote: (choice: VoteChoice) => void;
+  readOnly?: boolean;
+  requireLogin?: boolean;
 }
 
 function pct(part: number, total: number): number {
@@ -16,7 +18,14 @@ function pct(part: number, total: number): number {
   return Math.round((part / total) * 100);
 }
 
-export default function CricketVotePicker({ match, votes, userVote, onVote }: Props) {
+export default function CricketVotePicker({
+  match,
+  votes,
+  userVote,
+  onVote,
+  readOnly = false,
+  requireLogin = false,
+}: Props) {
   const total = votes.home + votes.away;
   const homePct = pct(votes.home, total);
   const awayPct = pct(votes.away, total);
@@ -43,6 +52,7 @@ export default function CricketVotePicker({ match, votes, userVote, onVote }: Pr
         className={`ck-vp-row ${selected ? 'ck-vp-row--active' : ''}`}
         style={{ '--team-color': color } as React.CSSProperties}
         onClick={() => onVote(choice)}
+        disabled={readOnly || requireLogin}
       >
         <div className="ck-vp-bar" style={{ width: `${percent}%` }} />
         <div className="ck-vp-row-inner">
@@ -67,7 +77,11 @@ export default function CricketVotePicker({ match, votes, userVote, onVote }: Pr
         <p className="ck-vp-sub">
           {userVote
             ? 'You can change your pick anytime.'
-            : 'Lock in your call — tap a team.'}
+            : readOnly
+              ? 'Match ended. Predictions are read-only.'
+              : requireLogin
+                ? 'Login to submit your prediction.'
+                : 'Lock in your call — tap a team.'}
         </p>
       </div>
 

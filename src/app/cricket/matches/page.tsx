@@ -115,10 +115,6 @@ function CricketMatchesPageInner() {
   );
 
   useEffect(() => {
-    if (sessionStatus === 'unauthenticated') router.replace('/');
-  }, [sessionStatus, router]);
-
-  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     storeReferralCodeFromQuery(params.get('ref'));
   }, []);
@@ -170,13 +166,6 @@ function CricketMatchesPageInner() {
 
   const handleSelectMatch = (match: CricketMatch) => {
     if (isProfileLoading) return;
-    // Onboarding complete = user has at least one fan team. We don't gate cricket-room
-    // entry on having a cricket-specific team — that's prompted optionally via the banner.
-    if (!user || (!user.fanTeamId && !user.cricketFanTeamId)) {
-      setPendingMatchId(match.id);
-      setShowOnboarding(true);
-      return;
-    }
     router.push(`/cricket/matches/${match.id}`);
   };
 
@@ -214,8 +203,6 @@ function CricketMatchesPageInner() {
   if (sessionStatus === 'loading') {
     return <div className="mp-loading-full"><div className="mp-spinner" /></div>;
   }
-  if (sessionStatus === 'unauthenticated') return null;
-
   return (
     <div className="app">
       <AppHeader

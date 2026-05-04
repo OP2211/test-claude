@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useSession } from 'next-auth/react';
 import type { Message, User } from '@/lib/types';
 import { getTeamInfo } from '@/lib/teams';
 import TeamLogoImage from './TeamLogoImage';
@@ -37,6 +38,8 @@ interface ChatPanelProps {
   readOnly?: boolean;
   /** When true, sender names link to their profile in a new tab. */
   linkSenderProfile?: boolean;
+  /** Optional empty-state text override for this panel context. */
+  emptyStateText?: string;
 }
 
 export default function ChatPanel({
@@ -52,7 +55,9 @@ export default function ChatPanel({
   compact,
   readOnly = false,
   linkSenderProfile = false,
+  emptyStateText,
 }: ChatPanelProps) {
+  const { status: sessionStatus } = useSession();
   const [input, setInput] = useState<string>('');
   const [showEmojiFor, setShowEmojiFor] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -102,6 +107,11 @@ export default function ChatPanel({
     return { profileSlug, displayName, rest };
   };
 
+  const defaultEmptyStateText =
+    sessionStatus === 'authenticated'
+      ? 'Be the first to talk!'
+      : 'Join the Fanground and Be the first to talk!';
+
   return (
     <div className={`cp ${fullHeight ? 'cp-full' : ''} ${compact ? 'cp-compact' : ''}`} onClick={() => setShowEmojiFor(null)}>
 
@@ -124,7 +134,7 @@ export default function ChatPanel({
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
             </div>
-            <p className="cp-empty-text">Be the first to talk!</p>
+            <p className="cp-empty-text">{emptyStateText || defaultEmptyStateText}</p>
           </div>
         )}
 
@@ -179,7 +189,7 @@ export default function ChatPanel({
 
                 <div className="cp-bubble-wrap">
                   <div className={`cp-bubble ${isOwn ? 'cp-bubble-own' : ''}`}>
-                    {msg.userId === 'fanground' ? (() => {
+                    {(() => {
                       const parsed = parseFangroundUserMention(msg.text);
                       if (!parsed) return msg.text;
                       const profileUrl = `/profile/${encodeURIComponent(parsed.profileSlug)}`;
@@ -201,7 +211,7 @@ export default function ChatPanel({
                           <span>{parsed.rest}</span>
                         </>
                       );
-                    })() : msg.text}
+                    })()}
                   </div>
                   {msg.moderation?.moderated && (
                     <span

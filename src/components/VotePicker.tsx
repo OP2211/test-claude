@@ -37,6 +37,8 @@ export interface VotePickerProps {
   userVote: VoteChoice | null;
   onVote: (vote: VoteChoice) => void;
   onScoreLocked?: (homeGoals: string, awayGoals: string) => void;
+  readOnly?: boolean;
+  requireLogin?: boolean;
 }
 
 interface VoteOption {
@@ -68,9 +70,13 @@ function UsersGlyph() {
 function ScorePrediction({
   match,
   onScoreLocked,
+  readOnly = false,
+  requireLogin = false,
 }: {
   match: Match;
   onScoreLocked?: (homeGoals: string, awayGoals: string) => void;
+  readOnly?: boolean;
+  requireLogin?: boolean;
 }) {
   const scoreKey = `ffc_score_${match.id}`;
   const [homeGoals, setHomeGoals] = useState<string>(() => {
@@ -97,6 +103,7 @@ function ScorePrediction({
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleSubmit = () => {
+    if (readOnly || requireLogin) return;
     if (homeGoals !== '' && awayGoals !== '') {
       setShowConfirm(true);
     }
@@ -139,7 +146,7 @@ function ScorePrediction({
             className={`vp-score-box ${submitted ? 'locked' : ''}`}
             value={homeGoals}
             onChange={e => handleDigit(e.target.value, setHomeGoals, () => awayRef.current?.focus())}
-            disabled={submitted}
+            disabled={submitted || readOnly || requireLogin}
             placeholder="0"
             aria-label={`${match.homeTeam.shortName} goals`}
           />
@@ -153,7 +160,7 @@ function ScorePrediction({
             value={awayGoals}
             onChange={e => handleDigit(e.target.value, setAwayGoals)}
             onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
-            disabled={submitted}
+            disabled={submitted || readOnly || requireLogin}
             placeholder="0"
             aria-label={`${match.awayTeam.shortName} goals`}
           />
@@ -169,12 +176,12 @@ function ScorePrediction({
         </div>
       </div>
 
-      {!submitted && !showConfirm && homeGoals !== '' && awayGoals !== '' && (
+      {!readOnly && !requireLogin && !submitted && !showConfirm && homeGoals !== '' && awayGoals !== '' && (
         <button className="vp-score-submit" onClick={handleSubmit}>
           Lock Prediction
         </button>
       )}
-      {showConfirm && !submitted && (
+      {showConfirm && !submitted && !readOnly && !requireLogin && (
         <div className="vp-score-confirm">
           <p className="vp-score-confirm-text">
             Lock <strong>{homeGoals} - {awayGoals}</strong>? This can't be changed.
@@ -193,6 +200,9 @@ function ScorePrediction({
           Prediction locked
         </p>
       )}
+      {requireLogin && !readOnly && (
+        <p className="vp-score-locked">Login to submit score prediction.</p>
+      )}
     </div>
   );
 }
@@ -205,6 +215,8 @@ export default function VotePicker({
   userVote,
   onVote,
   onScoreLocked,
+  readOnly = false,
+  requireLogin = false,
 }: VotePickerProps) {
   const total = votes.home + votes.draw + votes.away;
   const pct = (n: number): number => (total === 0 ? 0 : Math.round((n / total) * 100));
@@ -242,6 +254,12 @@ export default function VotePicker({
   const [pendingVote, setPendingVote] = useState<VoteChoice | null>(null);
 
   const handleVoteClick = useCallback((choice: VoteChoice) => {
+    if (readOnly) return;
+    if (requireLogin) {
+      setLockMessage('Login to submit your prediction.');
+      setTimeout(() => setLockMessage(''), 3000);
+      return;
+    }
     if (userVote === choice) return; // Already selected
 
     if (isVoteLocked()) {
@@ -255,7 +273,7 @@ export default function VotePicker({
     }
 
     setPendingVote(choice);
-  }, [userVote, isVoteLocked, voteChangeCount]);
+  }, [userVote, isVoteLocked, voteChangeCount, readOnly, requireLogin]);
 
   const confirmVote = useCallback(() => {
     if (!pendingVote) return;
@@ -284,7 +302,7 @@ export default function VotePicker({
     { key: 'away', label: match.awayTeam.shortName, logo: match.awayTeam.logo, badge: match.awayTeam.badge, color: 'var(--accent-red)', pct: awayPct, count: votes.away },
   ];
 
-  const locked = isVoteLocked();
+  const locked = readOnly || requireLogin || isVoteLocked();
 
   return (
     <div className="vp-root">
@@ -415,7 +433,12 @@ export default function VotePicker({
         {total === 0 && !userVote && <p className="vp-nudge">Cast your prediction!</p>}
       </div>
 
-      <ScorePrediction match={match} onScoreLocked={onScoreLocked} />
+      <ScorePrediction
+        match={match}
+        onScoreLocked={onScoreLocked}
+        readOnly={readOnly}
+        requireLogin={requireLogin}
+      />
     </div>
   );
 }

@@ -226,8 +226,9 @@ export default function TeamSheet({ match }: TeamSheetProps) {
   const [view, setView] = useState<'home' | 'away'>('home');
   const teamData = view === 'home' ? match.homeTeam : match.awayTeam;
   const sheetData = view === 'home' ? match.teamSheet.home : match.teamSheet.away;
-  // Real match-day lineup is only present when positions[] is populated (from ESPN summary)
-  const hasRealLineup = Array.isArray(sheetData.positions) && sheetData.positions.length > 0;
+  // If players exist, we can render a lineup view (with or without exact ESPN positions).
+  const hasLineupData = Array.isArray(sheetData.players) && sheetData.players.length > 0;
+  const hasExactPositions = Array.isArray(sheetData.positions) && sheetData.positions.length > 0;
 
   return (
     <div className="ts">
@@ -258,7 +259,7 @@ export default function TeamSheet({ match }: TeamSheetProps) {
       </div>
 
       {/* Status */}
-      {hasRealLineup && (
+      {hasLineupData && (
         <div className="ts-status">
           {/* <span className={`ts-confirmed ${sheetData.confirmed ? 'yes' : 'no'}`}>
             {sheetData.confirmed ? (
@@ -277,12 +278,14 @@ export default function TeamSheet({ match }: TeamSheetProps) {
               </>
             )}
           </span> */}
-          <span className="ts-formation-badge">{sheetData.formation}</span>
+          <span className="ts-formation-badge">
+            {hasExactPositions ? sheetData.formation : `${sheetData.formation} (estimated)`}
+          </span>
         </div>
       )}
 
       {/* Pitch + Subs side by side */}
-      {hasRealLineup ? (
+      {hasLineupData ? (
         <div className="ts-main">
           <div className="ts-pitch-col">
             <PitchView
@@ -320,8 +323,14 @@ export default function TeamSheet({ match }: TeamSheetProps) {
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
           </svg>
-          <p className="ts-empty-title">Lineups not announced yet</p>
-          <p className="ts-empty-sub">Usually confirmed 60 minutes before kickoff</p>
+          <p className="ts-empty-title">
+            {match.status === 'finished' ? 'Lineups unavailable for this match' : 'Lineups not announced yet'}
+          </p>
+          <p className="ts-empty-sub">
+            {match.status === 'finished'
+              ? 'This match has ended, but official lineup details are unavailable.'
+              : 'Usually confirmed 60 minutes before kickoff'}
+          </p>
         </div>
       )}
     </div>

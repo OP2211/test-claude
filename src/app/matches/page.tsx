@@ -226,13 +226,6 @@ function MatchesPageContent() {
       : null
   );
 
-  // Redirect to home if not logged in
-  useEffect(() => {
-    if (sessionStatus === 'unauthenticated') {
-      router.replace('/');
-    }
-  }, [sessionStatus, router]);
-
   useEffect(() => {
     setActiveTab(queryTab);
   }, [queryTab]);
@@ -301,11 +294,6 @@ function MatchesPageContent() {
 
   const handleSelectMatch = (match: Match) => {
     if (isProfileLoading) return;
-    if (!user || !user.fanTeamId) {
-      setPendingMatchId(match.id);
-      setShowOnboarding(true);
-      return;
-    }
     router.push(`/matches/${match.id}`);
   };
 
@@ -345,8 +333,6 @@ function MatchesPageContent() {
   if (sessionStatus === 'loading') {
     return <div className="mp-loading-full"><div className="mp-spinner" /></div>;
   }
-
-  if (sessionStatus === 'unauthenticated') return null;
 
   return (
     <div className="app">

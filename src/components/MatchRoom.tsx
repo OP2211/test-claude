@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Pusher from 'pusher-js';
+import { useSession } from 'next-auth/react';
 import type { Match, User, Message, VoteTally, VoteChoice, VoteVoter, VoteHistoryPoint, TabId, Reactions, TeamId } from '@/lib/types';
+import { startGoogleSignInRedirect } from '@/lib/google-signin';
+import { isFootballMatchReadOnly } from '@/lib/match-access';
+import AuthRequiredModal from './AuthRequiredModal';
 import ChatPanel from './ChatPanel';
 import TeamSheet from './TeamSheet';
 import VotePicker from './VotePicker';
@@ -255,6 +259,7 @@ function parseIncomingMessage(raw: unknown): Message | null {
 }
 
 export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRoomProps) {
+  const { status: sessionStatus } = useSession();
   const [match, setMatch] = useState<Match>(initialMatch);
   const [activeTab, setActiveTab] = useState<TabId>('predictions');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -275,6 +280,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isDesktop, setIsDesktop] = useState(false);
   const [reactionBursts, setReactionBursts] = useState<ReactionBurst[]>([]);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [realtime, setRealtime] = useState<RealtimeConfig | null>(() => {
     const key = process.env.NEXT_PUBLIC_PUSHER_KEY;
     const cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'eu';
@@ -546,6 +552,14 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
 
   const sendMessage = useCallback(async (text: string): Promise<void> => {
     if (!text.trim()) return;
+    if (isFootballMatchReadOnly(matchRef.current)) {
+      addNotification('Match ended. Room is read-only.', 'warning');
+      return;
+    }
+    if (sessionStatus !== 'authenticated') {
+      setShowAuthModal(true);
+      return;
+    }
     try {
       const res = await fetch('/api/message', {
         method: 'POST',
@@ -577,7 +591,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     } catch (err) {
       console.error('Send failed', err);
     }
-  }, [match.id, activeTab, user, upsertMessage, addNotification]);
+  }, [match.id, activeTab, user, upsertMessage, addNotification, sessionStatus]);
 
   const sendPredictionSystemMessage = useCallback(async (text: string): Promise<void> => {
     if (!text.trim()) return;
@@ -697,6 +711,14 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
   }, [match.id, user.userId, user.username, user.image, realtime, triggerReactionBurst]);
 
   const castVote = useCallback(async (vote: VoteChoice): Promise<void> => {
+    if (isFootballMatchReadOnly(matchRef.current)) {
+      addNotification('Match ended. Predictions are read-only.', 'warning');
+      return;
+    }
+    if (sessionStatus !== 'authenticated') {
+      setShowAuthModal(true);
+      return;
+    }
     try {
       const res = await fetch('/api/vote', {
         method: 'POST',
@@ -732,7 +754,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
     } catch (err) {
       console.error('Vote failed', err);
     }
-  }, [match.id, user.userId, user.username, match, addNotification, realtime, maybePostCombinedPrediction]);
+  }, [match.id, user.userId, user.username, match, addNotification, realtime, maybePostCombinedPrediction, sessionStatus]);
 
   const copyRoomLink = useCallback(async () => {
     if (typeof window === 'undefined') return;
@@ -767,6 +789,17 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
   }, [addNotification]);
 
   const isLive = match.status === 'live';
+  const isReadOnly = isFootballMatchReadOnly(match);
+  const requireLoginForPrediction = sessionStatus !== 'authenticated';
+  const predictionEmptyStateText =
+    isReadOnly
+      ? 'Match ended. Predictions are available in read-only mode.'
+      : sessionStatus === 'authenticated'
+      ? 'No predictions yet. Be the first fan to drop your prediction.'
+      : 'Join Fanground to submit your first prediction.';
+  const banterEmptyStateText = isReadOnly
+    ? 'Match ended. Banter is available in read-only mode.'
+    : undefined;
   const kickoff = new Date(match.kickoff);
   const kickoffStr = kickoff.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
@@ -992,6 +1025,8 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
                   onScoreLocked={(home, away) => {
                     void maybePostCombinedPrediction({ score: { home, away } });
                   }}
+                  readOnly={isReadOnly}
+                  requireLogin={requireLoginForPrediction}
                 />
               )}
               <p className="mr-drawer-section-label">Chats</p>
@@ -1040,6 +1075,8 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
                   onScoreLocked={(home, away) => {
                     void maybePostCombinedPrediction({ score: { home, away } });
                   }}
+                  readOnly={isReadOnly}
+                  requireLogin={requireLoginForPrediction}
                 />
               </aside>
               <div className="mr-predict-chat">
@@ -1054,6 +1091,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
                   placeholder="Your prediction…"
                   compact
                   readOnly
+                  emptyStateText={predictionEmptyStateText}
                 />
               </div>
             </div>
@@ -1069,6 +1107,7 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
               placeholder="Your prediction…"
               compact
               readOnly
+              emptyStateText={predictionEmptyStateText}
             />
           ))}
         {activeTab === 'teamsheet' && (
@@ -1088,9 +1127,22 @@ export default function MatchRoom({ match: initialMatch, user, onBack }: MatchRo
             placeholder="Talk your talk…"
             linkSenderProfile
             compact
+              readOnly={isReadOnly}
+              emptyStateText={banterEmptyStateText}
           />
         )}
       </div>
+      {showAuthModal && (
+        <AuthRequiredModal
+          title="Login required to participate"
+          message="You can read this room as a guest. Login or signup to post messages and make predictions."
+          onClose={() => setShowAuthModal(false)}
+          onContinue={() => {
+            setShowAuthModal(false);
+            void startGoogleSignInRedirect();
+          }}
+        />
+      )}
     </div>
   );
 }
