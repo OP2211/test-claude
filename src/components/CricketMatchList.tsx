@@ -83,58 +83,6 @@ function Countdown({ iso }: { iso: string }) {
   return <span className="ckl-countdown">{label}</span>;
 }
 
-function TeamRow({
-  team, line, batting, isWinner, isLive,
-}: {
-  team: CricketTeamInfo;
-  line: ScoreLine;
-  batting: boolean;
-  isWinner: boolean;
-  isLive: boolean;
-}) {
-  const color = team.color || '#334779';
-  const initials = team.shortName.slice(0, 3);
-  return (
-    <div
-      className={[
-        'ckl-team-row',
-        batting ? 'ckl-team-row--batting' : '',
-        isWinner ? 'ckl-team-row--winner' : '',
-        !line.hasScore ? 'ckl-team-row--idle' : '',
-      ].filter(Boolean).join(' ')}
-      style={{ '--team-color': color } as React.CSSProperties}
-    >
-      <div className="ckl-team-crest" style={{ background: color }}>
-        {team.logo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={team.logo} alt="" />
-        ) : (
-          <span>{initials}</span>
-        )}
-      </div>
-      <div className="ckl-team-name">
-        <span className="ckl-team-short">{team.shortName}</span>
-        <span className="ckl-team-full">{team.name}</span>
-      </div>
-      <div className="ckl-team-score">
-        {line.hasScore ? (
-          <>
-            {batting && isLive && (
-              <span className="ckl-team-batting-pill" aria-label="Currently batting">
-                <span className="ckl-team-batting-dot" /> Batting
-              </span>
-            )}
-            <span className="ckl-team-runs">{line.score}</span>
-            <span className="ckl-team-overs">{line.overs}</span>
-          </>
-        ) : (
-          <span className="ckl-team-yetbat">Yet to bat</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function CricketCard({ match, onClick, disabled }: {
   match: CricketMatch;
   onClick: () => void;
@@ -158,10 +106,72 @@ function CricketCard({ match, onClick, disabled }: {
   // Upcoming matches are entirely disabled until they go live, regardless of when chat would open.
   const cardDisabled = disabled || isUpcoming;
 
+  const statusLabel = isLive ? 'LIVE' : match.status === 'finished' ? 'RESULT' : 'UPCOMING';
+  const statusClass = isLive ? 'live' : match.status === 'finished' ? 'finished' : 'upcoming';
+
   // CTA copy by state.
   const ctaText = isLive ? 'Join the room' : isUpcoming ? 'Opens when live' : 'View room';
 
   const matchTitle = shortMatchTitle(match.description, match.leagueName);
+  const headTime = match.status === 'upcoming' ? <Countdown iso={match.start} /> : <span className="ckl-head-time">{dateLabel(match.start)}</span>;
+  const renderTeam = (
+    team: CricketTeamInfo,
+    line: ScoreLine,
+    batting: boolean,
+    isWinner: boolean,
+    align: 'home' | 'away',
+  ) => {
+    const color = team.color || '#334779';
+    const initials = team.shortName.slice(0, 3);
+
+    return (
+      <div className={`ckl-team ${align === 'away' ? 'ckl-team-away' : ''}`}>
+        {align === 'home' && (
+          <>
+            <div className="ckl-team-crest" style={{ background: color }}>
+              {team.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={team.logo} alt="" />
+              ) : (
+                <span>{initials}</span>
+              )}
+            </div>
+            <div className="ckl-team-text">
+              <span className={`ckl-team-name ${isWinner ? 'ckl-team-name--winner' : ''}`}>{team.shortName}</span>
+              <span className="ckl-team-sub">
+                {line.hasScore ? `${line.score} ${line.overs}` : 'Yet to bat'}
+              </span>
+            </div>
+          </>
+        )}
+
+        {align === 'away' && (
+          <>
+            <div className="ckl-team-text ckl-team-text-right">
+              <span className={`ckl-team-name ${isWinner ? 'ckl-team-name--winner' : ''}`}>{team.shortName}</span>
+              <span className="ckl-team-sub">
+                {line.hasScore ? `${line.score} ${line.overs}` : 'Yet to bat'}
+              </span>
+            </div>
+            <div className="ckl-team-crest" style={{ background: color }}>
+              {team.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={team.logo} alt="" />
+              ) : (
+                <span>{initials}</span>
+              )}
+            </div>
+          </>
+        )}
+
+        {batting && isLive && (
+          <span className={`ckl-team-batting-pill ${align === 'away' ? 'ckl-team-batting-pill--away' : ''}`}>
+            <span className="ckl-team-batting-dot" /> Batting
+          </span>
+        )}
+      </div>
+    );
+  };
 
   return (
     <button
@@ -174,70 +184,38 @@ function CricketCard({ match, onClick, disabled }: {
         '--away-color': match.away.color || '#334779',
       } as React.CSSProperties}
     >
-      {/* Top-edge stripe (live: animated red→amber; recent: subtle; upcoming: blue tint) */}
       <span className="ckl-card-stripe" aria-hidden />
 
-      {/* Head: status + match title + time/countdown */}
-      <div className="ckl-card-head">
-        <div className="ckl-head-left">
-          {isLive ? (
-            <span className="ckl-pill ckl-pill--live">
-              <span className="ckl-pill-dot" aria-hidden />
-              LIVE
-            </span>
-          ) : match.status === 'finished' ? (
-            <span className="ckl-pill ckl-pill--fin">RESULT</span>
-          ) : (
-            <span className="ckl-pill ckl-pill--up">UPCOMING</span>
-          )}
-          <span className="ckl-head-league">IPL</span>
-          {matchTitle && <span className="ckl-head-title">{matchTitle}</span>}
-        </div>
-        <div className="ckl-head-right">
-          {match.status === 'upcoming' ? (
-            <Countdown iso={match.start} />
-          ) : (
-            <span className="ckl-head-time">{dateLabel(match.start)}</span>
-          )}
-        </div>
+      <div className="ckl-card-top">
+        <span className="ckl-comp">{match.leagueName || 'IPL'}</span>
+        <span className={`ckl-status ckl-status-${statusClass}`}>
+          {isLive && <span className="ckl-live-dot" />}
+          {statusLabel}
+        </span>
       </div>
 
-      {/* Body: stacked team rows */}
-      <div className="ckl-card-body">
-        <TeamRow team={match.home} line={home} batting={homeBatting} isWinner={homeWinner} isLive={isLive} />
-        <TeamRow team={match.away} line={away} batting={awayBatting} isWinner={awayWinner} isLive={isLive} />
+      <div className="ckl-teams">
+        {renderTeam(match.home, home, homeBatting, homeWinner, 'home')}
+        <div className="ckl-center">
+          <div className="ckl-center-box">
+            <span className="ckl-center-label">{matchTitle || 'Match'}</span>
+            {headTime}
+          </div>
+        </div>
+        {renderTeam(match.away, away, awayBatting, awayWinner, 'away')}
       </div>
 
-      {/* Foot: result/toss/venue + CTA */}
-      <div className="ckl-card-foot">
-        <div className="ckl-foot-text">
+      <div className="ckl-card-bottom">
+        <span className="ckl-foot-text">
           {match.result ? (
-            <span className="ckl-foot-result">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-                <path d="M4 22h16" />
-                <path d="M10 22V13a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v9" />
-                <path d="M18 2v7a6 6 0 0 1-12 0V2" />
-              </svg>
-              {match.result}
-            </span>
+            match.result
           ) : match.toss ? (
-            <span className="ckl-foot-toss">{match.toss}</span>
+            match.toss
           ) : (
-            <span className="ckl-foot-venue">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              {match.venue}
-            </span>
+            match.venue
           )}
-          {isUpcoming && (
-            <span className="ckl-foot-hint">· Opens when the match goes live</span>
-          )}
-        </div>
-        <span className="ckl-foot-cta">
+        </span>
+        <span className="ckl-join-cta">
           {ctaText}
           {isUpcoming ? (
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
