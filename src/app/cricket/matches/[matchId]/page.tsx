@@ -90,10 +90,6 @@ function CricketMatchDetailsInner() {
     storeReferralCodeFromQuery(params.get('ref'));
   }, []);
 
-  useEffect(() => {
-    if (sessionStatus === 'unauthenticated') router.replace('/');
-  }, [sessionStatus, router]);
-
   const loadProfile = useCallback(async () => {
     try {
       const { ok, data } = await fetchProfileMeShared();
@@ -167,8 +163,6 @@ function CricketMatchDetailsInner() {
   if (sessionStatus === 'loading' || loadingMatch) {
     return <div className="mp-loading-full"><div className="mp-spinner" /></div>;
   }
-  if (sessionStatus === 'unauthenticated') return null;
-
   if (notFound || !match) {
     return (
       <div className="app">
@@ -195,35 +189,12 @@ function CricketMatchDetailsInner() {
     );
   }
 
-  if (!user || (!user.fanTeamId && !user.cricketFanTeamId)) {
-    return (
-      <div className="app">
-        <AppHeader
-          variant="home"
-          onLogoClick={handleBack}
-          inRoom={false}
-          homeActions={{
-            installPrompt: false,
-            onInstall: () => {},
-            user: headerUser,
-            onSignOut: handleSignOut,
-            showGoogleSignIn: false,
-            onSignInWithGoogle: () => {},
-          }}
-        />
-        {showOnboarding && (
-          <OnboardingModal
-            sport="cricket"
-            onComplete={handleOnboardingComplete}
-            onClose={() => {
-              setShowOnboarding(false);
-              router.push('/cricket/matches');
-            }}
-          />
-        )}
-      </div>
-    );
-  }
+  const roomUser: User = user ?? {
+    userId: 'guest',
+    username: 'Guest',
+    fanTeamId: null,
+    cricketFanTeamId: null,
+  };
 
   return (
     <div className="app">
@@ -234,14 +205,14 @@ function CricketMatchDetailsInner() {
         homeActions={{
           installPrompt: false,
           onInstall: () => {},
-          user,
+          user: headerUser,
           onSignOut: handleSignOut,
           showGoogleSignIn: false,
           onSignInWithGoogle: () => {},
         }}
       />
       <main className="app-main mp-detail-main">
-        <CricketMatchRoom match={match} user={user} onBack={handleBack} />
+        <CricketMatchRoom match={match} user={roomUser} onBack={handleBack} />
       </main>
     </div>
   );

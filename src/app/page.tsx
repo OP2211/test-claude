@@ -140,18 +140,7 @@ export default function Home() {
 
   const handleSelectMatch = (match: Match) => {
     if (sessionStatus === 'loading') return;
-
-    if (!session?.user) {
-      setPendingMatch(match);
-      void startGoogleSignInRedirect();
-      return;
-    }
-
-    if (!user || !user.fanTeamId) {
-      setPendingMatch(match);
-      setShowOnboarding(true);
-      return;
-    }
+    // Guests can enter any room; write actions are gated inside the room.
     setActiveMatch(match);
   };
 
@@ -198,7 +187,12 @@ export default function Home() {
     document.getElementById('match-rooms')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
-  const isInRoom = activeMatch && user;
+  const isInRoom = Boolean(activeMatch);
+  const roomUser: User = user ?? {
+    userId: 'guest',
+    username: 'Guest',
+    fanTeamId: null,
+  };
 
   const handleSignOut = () => {
     setUser(null);
@@ -227,7 +221,7 @@ export default function Home() {
 
       <main className="app-main">
         {isInRoom ? (
-          <MatchRoom match={activeMatch!} user={user!} onBack={handleBack} />
+          <MatchRoom match={activeMatch!} user={roomUser} onBack={handleBack} />
         ) : (
           <>
             <LandingHome onEnterFanGround={scrollToMatchRooms} onSeeLiveRooms={scrollToMatchRooms} />

@@ -2,6 +2,7 @@ import type { Team, Match } from './types';
 import {
   fetchAllMatches,
   fetchEspnMatchSummaryData,
+  fetchMatch,
   fetchMatchLineups,
   fetchMatchEvents,
   fetchTeamRoster,
@@ -299,7 +300,13 @@ export async function getMatch(id: string): Promise<Match | null> {
     return buildDemoLiveMatch(sourceMatches);
   }
   const all = await getMatches();
-  const match = all.find(m => m.id === id) || null;
+  let match = all.find(m => m.id === id) || null;
+  if (!match) {
+    const espnEventId = extractEspnId(id);
+    if (espnEventId) {
+      match = await fetchMatch(espnEventId);
+    }
+  }
   if (match) {
     await ensureRoster(match);
   }

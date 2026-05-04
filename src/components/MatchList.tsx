@@ -130,17 +130,26 @@ function formatResultDate(iso: string): string {
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
-function renderResultCard(match: Match, index: number) {
+function renderResultCard(
+  match: Match,
+  index: number,
+  onSelectMatch: (match: Match) => void,
+  isJoinDisabled: boolean,
+) {
   const kickoff = new Date(match.kickoff);
   const dateStr = kickoff.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   const timeStr = kickoff.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div
+    <button
       key={match.id}
       className="ml-card ml-card-result"
       style={{ animationDelay: `${index * 70}ms` }}
       aria-label={`${match.homeTeam.name} ${match.homeScore ?? 0} - ${match.awayScore ?? 0} ${match.awayTeam.name}, FT`}
+      onClick={() => {
+        if (!isJoinDisabled) onSelectMatch(match);
+      }}
+      disabled={isJoinDisabled}
     >
       {/* Header row */}
       <div className="ml-card-top">
@@ -187,11 +196,17 @@ function renderResultCard(match: Match, index: number) {
         <span className="ml-venue">{match.venue}</span>
         <span className="ml-locked-info">{dateStr} &middot; {timeStr}</span>
       </div>
-    </div>
+    </button>
   );
 }
 
-function RecentResults() {
+function RecentResults({
+  onSelectMatch,
+  isJoinDisabled,
+}: {
+  onSelectMatch: (match: Match) => void;
+  isJoinDisabled: boolean;
+}) {
   const [results, setResults] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -229,7 +244,7 @@ function RecentResults() {
         <div key={group.label} className="ml-results-group">
           <p className="ml-results-date">{group.label}</p>
           <div className="ml-grid">
-            {group.matches.map((m, i) => renderResultCard(m, i))}
+            {group.matches.map((m, i) => renderResultCard(m, i, onSelectMatch, isJoinDisabled))}
           </div>
         </div>
       ))}
@@ -446,7 +461,12 @@ export default function MatchList({
       ))}
 
       {/* Recent results */}
-      {!isLoading && <RecentResults />}
+      {!isLoading && (
+        <RecentResults
+          onSelectMatch={onSelectMatch}
+          isJoinDisabled={isJoinDisabled}
+        />
+      )}
 
       {/* Empty state */}
       {!isLoading && matches.length === 0 && (
