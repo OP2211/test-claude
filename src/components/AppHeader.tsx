@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { createPortal } from 'react-dom';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Logo from '@/components/Logo';
 import SportSelector from '@/components/SportSelector';
@@ -300,7 +300,9 @@ export default function AppHeader({
 
         {!inRoom && (
           <div className="app-header-center">
-            <SportSelector />
+            <Suspense fallback={<div aria-hidden style={{ minHeight: 38 }} />}>
+              <SportSelector />
+            </Suspense>
           </div>
         )}
 
