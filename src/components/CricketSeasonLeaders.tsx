@@ -33,7 +33,7 @@ export default function CricketSeasonLeaders() {
     return (
       <div className="cksl-loading">
         <div className="cksl-spinner" />
-        Crunching every match summary… (first load takes a few seconds, then cached)
+        Crunching every match summary....
       </div>
     );
   }
